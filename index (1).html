@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octevent — Every arm of your event, under control</title>
+<meta name="description" content="From guest lists and budgets to room bookings and table plans — Octevent handles every moving part of your event in one place.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --amber:#F5A800;
+  --amber-light:#FFF8E6;
+  --amber-dark:#C98A00;
+  --ink:#18181A;
+  --ink2:#555;
+  --ink3:#999;
+  --cream:#FAFAF7;
+  --rule:#ECEAE4;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:#fff;color:var(--ink);overflow-x:hidden;}
+
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 3rem;border-bottom:1px solid var(--rule);
+  position:sticky;top:0;background:rgba(255,255,255,0.96);
+  backdrop-filter:blur(8px);z-index:100;
+}
+.logo-img{height:36px;width:auto;}
+.nav-links{display:flex;align-items:center;gap:2rem;}
+.nav-links a{font-size:0.85rem;color:var(--ink2);text-decoration:none;transition:color 0.2s;}
+.nav-links a:hover{color:var(--ink);}
+.nav-cta{
+  font-size:0.82rem;font-weight:600;padding:0.65rem 1.5rem;
+  background:var(--amber);color:var(--ink);text-decoration:none;
+  border-radius:100px;transition:all 0.2s;border:2px solid var(--amber);
+}
+.nav-cta:hover{background:var(--amber-dark);border-color:var(--amber-dark);color:#fff;}
+
+.hero{display:grid;grid-template-columns:1fr 1fr;min-height:88vh;border-bottom:1px solid var(--rule);}
+.hero-left{
+  padding:5rem 4rem 5rem 3rem;display:flex;flex-direction:column;
+  justify-content:center;border-right:1px solid var(--rule);
+}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;font-size:0.72rem;
+  letter-spacing:0.12em;text-transform:uppercase;color:var(--amber-dark);
+  font-weight:600;margin-bottom:1.75rem;background:var(--amber-light);
+  padding:6px 14px;border-radius:100px;width:fit-content;
+}
+.eyebrow::before{content:'●';font-size:6px;color:var(--amber);}
+h1{
+  font-family:'Nunito',sans-serif;font-size:3.8rem;line-height:1.08;
+  letter-spacing:-0.02em;margin-bottom:1.5rem;font-weight:800;
+}
+h1 em{font-style:italic;color:var(--amber);}
+.hero-sub{
+  font-size:1.05rem;color:var(--ink2);line-height:1.75;
+  max-width:420px;margin-bottom:2.5rem;font-weight:300;
+}
+.hero-sub strong{color:var(--ink);font-weight:500;}
+.capture-wrap{max-width:440px;}
+.capture{
+  display:flex;border:2px solid var(--ink);border-radius:100px;
+  overflow:hidden;background:#fff;padding:4px 4px 4px 1.25rem;
+}
+.capture input{
+  flex:1;padding:0.6rem 0;border:none;outline:none;
+  font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--ink);background:transparent;
+}
+.capture input::placeholder{color:#bbb;}
+.capture button{
+  padding:0.7rem 1.4rem;background:var(--amber);color:var(--ink);border:none;
+  cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;
+  border-radius:100px;transition:background 0.2s;white-space:nowrap;
+}
+.capture button:hover{background:var(--amber-dark);color:#fff;}
+.small-note{margin-top:0.75rem;font-size:0.75rem;color:var(--ink3);}
+.success-msg{display:none;font-size:0.85rem;color:#2d6a4f;margin-top:0.75rem;padding:0.75rem 1rem;background:#f0f7f4;border-radius:8px;}
+
+.hero-right{
+  background:var(--cream);display:flex;align-items:center;
+  justify-content:center;padding:3rem;position:relative;overflow:hidden;
+}
+.hero-bg-circle{
+  position:absolute;width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,var(--amber-light) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+}
+.app-mockup{
+  width:100%;max-width:340px;background:#fff;border:1px solid var(--rule);
+  border-radius:20px;overflow:hidden;position:relative;z-index:1;
+  box-shadow:0 8px 40px rgba(0,0,0,0.08);
+}
+.mockup-topbar{padding:0.7rem 1.25rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:6px;}
+.dot{width:9px;height:9px;border-radius:50%;}
+.dot-r{background:#ff6b6b;}.dot-y{background:#ffd93d;}.dot-g{background:#6bcb77;}
+.mockup-bar{padding:0.9rem 1.25rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;}
+.mockup-title{font-size:0.78rem;font-weight:600;color:var(--ink);}
+.mockup-pill{font-size:0.62rem;padding:3px 10px;border-radius:20px;background:#FFF3CD;color:#856404;font-weight:600;}
+.mockup-body{padding:1rem 1.25rem;}
+.mockup-event-name{font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:800;margin-bottom:0.2rem;}
+.mockup-meta{font-size:0.7rem;color:var(--ink3);margin-bottom:1.25rem;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem;}
+.stat{background:var(--cream);border-radius:10px;padding:0.65rem 0.5rem;text-align:center;border:1px solid var(--rule);}
+.stat-n{font-size:1.1rem;font-weight:700;font-family:'Nunito',sans-serif;}
+.stat-l{font-size:0.58rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;}
+.room-list{display:flex;flex-direction:column;gap:7px;}
+.room-row{display:flex;align-items:center;gap:10px;padding:0.55rem 0.75rem;border:1px solid var(--rule);border-radius:10px;}
+.room-icon{width:30px;height:30px;background:var(--cream);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;}
+.room-info{flex:1;}
+.room-n{font-size:0.76rem;font-weight:600;}
+.room-d{font-size:0.62rem;color:var(--ink3);}
+.tag{font-size:0.6rem;padding:2px 9px;border-radius:20px;font-weight:600;white-space:nowrap;}
+.tag-green{background:#f0f7f4;color:#2d6a4f;}
+.tag-amber{background:#FFF3CD;color:#856404;}
+.tag-red{background:#fdf0f0;color:#9b2c2c;}
+
+.strip{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--rule);}
+.strip-item{padding:2.75rem;border-right:1px solid var(--rule);transition:background 0.2s;}
+.strip-item:last-child{border-right:none;}
+.strip-item:hover{background:var(--amber-light);}
+.step-bubble{
+  width:36px;height:36px;border-radius:50%;background:var(--amber);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.8rem;font-weight:700;color:var(--ink);margin-bottom:1rem;
+}
+.strip-item h3{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.4rem;}
+.strip-item p{font-size:0.83rem;color:var(--ink2);line-height:1.75;font-weight:300;}
+
+.for-section{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--rule);}
+.for-left{padding:5rem 4rem 5rem 3rem;border-right:1px solid var(--rule);}
+.for-left h2{font-family:'Nunito',sans-serif;font-size:2.8rem;line-height:1.1;margin-bottom:1.25rem;font-weight:800;}
+.for-left h2 em{font-style:italic;color:var(--amber);}
+.for-left p{font-size:0.9rem;color:var(--ink2);line-height:1.8;font-weight:300;max-width:360px;margin-bottom:2rem;}
+.anchor-link{
+  display:inline-flex;align-items:center;gap:8px;font-size:0.82rem;
+  font-weight:600;color:var(--ink);text-decoration:none;
+  padding:0.65rem 1.4rem;border:2px solid var(--ink);border-radius:100px;transition:all 0.2s;
+}
+.anchor-link:hover{background:var(--ink);color:#fff;}
+.for-right{padding:3.5rem 3rem;display:flex;flex-direction:column;gap:12px;}
+.for-card{
+  padding:1.4rem;border:1px solid var(--rule);border-radius:12px;
+  display:flex;gap:1rem;align-items:flex-start;transition:all 0.2s;
+}
+.for-card:hover{border-color:var(--amber);background:var(--amber-light);}
+.for-card-icon{
+  font-size:1.2rem;flex-shrink:0;width:40px;height:40px;
+  background:var(--amber-light);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+}
+.for-card h4{font-size:0.88rem;font-weight:600;margin-bottom:0.3rem;}
+.for-card p{font-size:0.78rem;color:var(--ink2);line-height:1.65;font-weight:300;}
+
+.features{padding:5rem 3rem;border-bottom:1px solid var(--rule);}
+.section-eyebrow{font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber-dark);font-weight:600;margin-bottom:0.5rem;}
+.section-title{font-family:'Nunito',sans-serif;font-size:2.5rem;font-weight:800;margin-bottom:3rem;}
+.section-title em{font-style:italic;color:var(--amber);}
+.feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.feat-item{
+  background:var(--cream);padding:1.75rem 1.5rem;border-radius:16px;
+  border:1px solid var(--rule);transition:all 0.2s;
+}
+.feat-item:hover{border-color:var(--amber);background:var(--amber-light);transform:translateY(-3px);}
+.feat-icon{
+  font-size:1.3rem;margin-bottom:0.75rem;width:44px;height:44px;
+  background:#fff;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;border:1px solid var(--rule);
+}
+.feat-item h4{font-size:0.88rem;font-weight:600;margin-bottom:0.35rem;}
+.feat-item p{font-size:0.78rem;color:var(--ink2);line-height:1.65;font-weight:300;}
+.feat-badge{
+  display:inline-block;font-size:0.6rem;letter-spacing:0.08em;
+  text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-top:0.6rem;font-weight:600;
+}
+.badge-free{background:var(--rule);color:var(--ink3);}
+.badge-pro{background:var(--amber);color:var(--ink);}
+
+.pricing{padding:5rem 3rem;border-bottom:1px solid var(--rule);background:var(--cream);}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:3rem;}
+.p-card{border:1px solid var(--rule);border-radius:20px;padding:2rem;display:flex;flex-direction:column;background:#fff;}
+.p-card.featured{border:2.5px solid var(--amber);position:relative;}
+.p-popular{
+  position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  background:var(--amber);color:var(--ink);font-size:0.65rem;font-weight:700;
+  letter-spacing:0.06em;text-transform:uppercase;padding:4px 16px;
+  border-radius:100px;white-space:nowrap;
+}
+.p-tier{font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);font-weight:600;margin-bottom:0.75rem;}
+.p-price{font-family:'Nunito',sans-serif;font-size:2.8rem;font-weight:800;margin-bottom:0.2rem;line-height:1;}
+.p-price span{font-size:0.9rem;font-weight:400;font-family:'DM Sans',sans-serif;color:var(--ink2);}
+.p-desc{font-size:0.78rem;color:var(--ink2);margin:0.75rem 0 1.25rem;line-height:1.65;font-weight:300;}
+.p-divider{height:1px;background:var(--rule);margin-bottom:1.25rem;}
+.p-features{list-style:none;display:flex;flex-direction:column;gap:0.65rem;margin-bottom:2rem;flex:1;}
+.p-features li{font-size:0.8rem;color:var(--ink2);display:flex;align-items:flex-start;gap:10px;font-weight:300;}
+.p-features li::before{content:'✓';color:var(--amber);flex-shrink:0;font-weight:700;font-size:0.8rem;}
+.p-btn{
+  display:block;text-align:center;padding:0.85rem;font-family:'DM Sans',sans-serif;
+  font-size:0.82rem;font-weight:600;border-radius:100px;cursor:pointer;
+  text-decoration:none;transition:all 0.2s;
+}
+.p-btn-outline{border:2px solid var(--rule);color:var(--ink);}
+.p-btn-outline:hover{border-color:var(--ink);}
+.p-btn-amber{background:var(--amber);color:var(--ink);border:2px solid var(--amber);}
+.p-btn-amber:hover{background:var(--amber-dark);border-color:var(--amber-dark);color:#fff;}
+
+.social-proof{
+  padding:4rem 3rem;border-bottom:1px solid var(--rule);
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:3rem;
+}
+.proof-quote{font-family:'Nunito',sans-serif;font-size:1.5rem;font-style:italic;font-weight:700;line-height:1.4;}
+.proof-attr{margin-top:1rem;font-size:0.78rem;color:var(--ink3);font-weight:300;}
+.proof-vdivider{width:1px;background:var(--rule);align-self:stretch;}
+.proof-stats{display:flex;flex-direction:column;gap:2rem;}
+.proof-stat-n{font-family:'Nunito',sans-serif;font-size:2.8rem;font-weight:800;line-height:1;color:var(--amber);}
+.proof-stat-l{font-size:0.75rem;color:var(--ink3);font-weight:300;margin-top:4px;}
+
+.cta-band{
+  background:var(--ink);padding:6rem 3rem;
+  display:flex;align-items:center;justify-content:space-between;gap:4rem;
+}
+.cta-band h2{font-family:'Nunito',sans-serif;font-size:3.2rem;line-height:1.05;max-width:440px;font-weight:800;color:#fff;}
+.cta-band h2 em{font-style:italic;color:var(--amber);}
+.cta-band p{font-size:0.9rem;color:#888;font-weight:300;max-width:380px;margin-top:1rem;line-height:1.7;}
+.cta-right{flex-shrink:0;min-width:340px;}
+.cta-right .capture{border-color:#444;background:rgba(255,255,255,0.04);}
+.cta-right .capture input{color:#fff;}
+.cta-right .capture input::placeholder{color:#555;}
+.cta-right .small-note{color:#555;}
+.cta-right .success-msg{background:rgba(245,168,0,0.15);color:var(--amber);}
+
+footer{
+  padding:2rem 3rem;display:flex;align-items:center;
+  justify-content:space-between;border-top:1px solid var(--rule);
+}
+.footer-logo{height:26px;width:auto;}
+.footer-links{display:flex;gap:1.5rem;}
+.footer-links a{font-size:0.75rem;color:var(--ink3);text-decoration:none;transition:color 0.2s;}
+.footer-links a:hover{color:var(--ink);}
+footer p{font-size:0.75rem;color:var(--ink3);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{opacity:0;animation:fadeUp 0.65s ease forwards;}
+.d1{animation-delay:0.05s;}.d2{animation-delay:0.18s;}.d3{animation-delay:0.3s;}.d4{animation-delay:0.42s;}
+
+.feature-picker{margin-top:1rem;display:none;}
+.feature-picker p{font-size:0.8rem;color:var(--ink2);margin-bottom:0.6rem;font-weight:400;}
+.feature-options{display:flex;flex-wrap:wrap;gap:8px;}
+.feat-opt{
+  font-size:0.78rem;padding:6px 14px;border-radius:100px;
+  border:1.5px solid var(--rule);color:var(--ink2);cursor:pointer;
+  background:#fff;font-family:'DM Sans',sans-serif;transition:all 0.15s;
+}
+.feat-opt:hover{border-color:var(--amber);color:var(--ink);}
+.feat-opt.selected{border-color:var(--amber);background:var(--amber);color:var(--ink);font-weight:600;}
+.feat-submit{
+  margin-top:0.75rem;font-size:0.78rem;font-weight:600;
+  padding:0.6rem 1.25rem;border-radius:100px;border:none;
+  background:var(--ink);color:#fff;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:opacity 0.2s;display:none;
+}
+.feat-submit:hover{opacity:0.8;}
+.feat-thanks{display:none;font-size:0.82rem;color:#2d6a4f;margin-top:0.5rem;}
+</style>
+</head>
+<body>
+
+<nav>
+  <img src="octevent-logo.png" alt="Octevent" class="logo-img">
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#waitlist">Early access</a>
+  </div>
+  <a href="#waitlist" class="nav-cta">Join waitlist</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-left">
+    <div class="eyebrow fade-up d1">Event management, reimagined</div>
+    <h1 class="fade-up d2">Every arm of<br>your event,<br><em>under control</em></h1>
+    <p class="hero-sub fade-up d3">From guest lists and budgets to room bookings and table plans — Octevent handles <strong>every moving part</strong> of your event in one place. No spreadsheets. No WhatsApp chaos.</p>
+    <div class="capture-wrap fade-up d4" id="waitlist">
+      <div class="capture">
+        <input type="email" id="hero-email" placeholder="your@email.com">
+        <button onclick="signup('hero-email','hero-ok')">Join waitlist</button>
+      </div>
+      <div class="success-msg" id="hero-ok">🎉 You're on the list!</div>
+      <div class="feature-picker" id="hero-picker">
+        <p>One quick question — which feature do you need most?</p>
+        <div class="feature-options">
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Guest list & RSVP</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Room booking & payments</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Budget tracker</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Run sheet</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Table plan</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Guest event site</button>
+        </div>
+        <button class="feat-submit" id="hero-submit" onclick="submitFeature('hero')">Submit →</button>
+        <div class="feat-thanks" id="hero-thanks">Thanks — that really helps us prioritise! 🙌</div>
+      </div>
+      <p class="small-note">Free early access · No credit card needed · Launching 2025</p>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-bg-circle"></div>
+    <div class="app-mockup">
+      <div class="mockup-topbar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      </div>
+      <div class="mockup-bar">
+        <span class="mockup-title">Villa Mas Solà · Aug 2025</span>
+        <span class="mockup-pill">● Live</span>
+      </div>
+      <div class="mockup-body">
+        <div class="mockup-event-name">Retreat in Costa Brava</div>
+        <div class="mockup-meta">12–16 August · 38 guests · 14 rooms</div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-n">34</div><div class="stat-l">RSVPs</div></div>
+          <div class="stat"><div class="stat-n">11</div><div class="stat-l">Rooms</div></div>
+          <div class="stat"><div class="stat-n">€4.2k</div><div class="stat-l">Collected</div></div>
+        </div>
+        <div class="room-list">
+          <div class="room-row"><div class="room-icon">🛏</div><div class="room-info"><div class="room-n">Master Suite</div><div class="room-d">King · Sea view · 2 guests</div></div><span class="tag tag-red">Taken</span></div>
+          <div class="room-row"><div class="room-icon">🌿</div><div class="room-info"><div class="room-n">Garden Room</div><div class="room-d">Twin · Pool access · 2 guests</div></div><span class="tag tag-green">Available</span></div>
+          <div class="room-row"><div class="room-icon">🪟</div><div class="room-info"><div class="room-n">The Loft</div><div class="room-d">Double · Terrace · 2 guests</div></div><span class="tag tag-amber">On hold</span></div>
+          <div class="room-row"><div class="room-icon">🏡</div><div class="room-info"><div class="room-n">Cottage Annexe</div><div class="room-d">Super king · Private · 2 guests</div></div><span class="tag tag-green">Available</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="strip">
+  <div class="strip-item"><div class="step-bubble">01</div><h3>Create your event</h3><p>Set up in minutes. Add rooms with photos, build your run sheet, track your budget and manage your full guest list — all in one place.</p></div>
+  <div class="strip-item"><div class="step-bubble">02</div><h3>Share with guests</h3><p>One beautiful link. Guests RSVP, browse rooms, pay their share and confirm their details — no spreadsheet, no WhatsApp thread.</p></div>
+  <div class="strip-item"><div class="step-bubble">03</div><h3>Stay in control</h3><p>Watch everything update in real time. Table plan, payments, dietary needs, arrivals — nothing falls through the cracks.</p></div>
+</section>
+
+<section class="for-section">
+  <div class="for-left">
+    <h2>Built for anyone<br>who <em>runs</em> events</h2>
+    <p>Whether you're a professional planner managing a full calendar or someone organising one big event a year — Octevent removes the admin chaos and gives you back your time.</p>
+    <a href="#waitlist" class="anchor-link">Get early access →</a>
+  </div>
+  <div class="for-right">
+    <div class="for-card"><div class="for-card-icon">💼</div><div><h4>Event planners & agencies</h4><p>Manage multiple events, venues and clients from one dashboard. Built for professionals who run this every single day.</p></div></div>
+    <div class="for-card"><div class="for-card-icon">💍</div><div><h4>Weddings & private parties</h4><p>Coordinate accommodation, table plans and RSVPs. Let guests self-serve their rooms so you can focus on the day itself.</p></div></div>
+    <div class="for-card"><div class="for-card-icon">🌿</div><div><h4>Retreats & villa hosts</h4><p>Take room payments, share itineraries, manage arrivals and keep your group informed — all from one shareable link.</p></div></div>
+    <div class="for-card"><div class="for-card-icon">🏢</div><div><h4>Venues & hospitality teams</h4><p>Offer clients a seamless booking experience. Upload your rooms once and share with every event that comes through your doors.</p></div></div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="section-eyebrow">Features</div>
+  <div class="section-title">Eight arms. <em>One platform.</em></div>
+  <div class="feat-grid">
+    <div class="feat-item"><div class="feat-icon">📋</div><h4>Event management</h4><p>Create and manage events with dates, venues, notes and all your key details organised in one place.</p><span class="feat-badge badge-free">Free</span></div>
+    <div class="feat-item"><div class="feat-icon">👥</div><h4>Guest list</h4><p>Build your list, track RSVPs, add dietary notes and manage +1s with a proper mini CRM.</p><span class="feat-badge badge-free">Free</span></div>
+    <div class="feat-item"><div class="feat-icon">📅</div><h4>Run sheet</h4><p>Build a drag-and-drop day timeline. Share it with your team so everyone knows what's happening when.</p><span class="feat-badge badge-free">Free</span></div>
+    <div class="feat-item"><div class="feat-icon">💰</div><h4>Budget tracker</h4><p>Track every line item, supplier and payment. See your running total so nothing surprises you on the day.</p><span class="feat-badge badge-free">Free</span></div>
+    <div class="feat-item"><div class="feat-icon">🌐</div><h4>Guest event site</h4><p>A beautiful branded page your guests visit to RSVP, see details and get excited about the event.</p><span class="feat-badge badge-pro">Pro</span></div>
+    <div class="feat-item"><div class="feat-icon">🛏</div><h4>Room reservations</h4><p>Upload rooms with photos. Guests browse and reserve their own room — no back and forth from you.</p><span class="feat-badge badge-pro">Pro</span></div>
+    <div class="feat-item"><div class="feat-icon">💳</div><h4>Room payments</h4><p>Collect deposits or full payments via Stripe. Money lands in your account, automatically reconciled.</p><span class="feat-badge badge-pro">Pro</span></div>
+    <div class="feat-item"><div class="feat-icon">🪑</div><h4>Table plan</h4><p>Drag guests to seats, share the plan with your client for approval, and update it live as RSVPs come in.</p><span class="feat-badge badge-pro">Pro</span></div>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <div class="section-eyebrow">Pricing</div>
+  <div class="section-title">Simple, honest pricing</div>
+  <div class="pricing-grid">
+    <div class="p-card">
+      <div class="p-tier">Free</div>
+      <div class="p-price">€0 <span>/ forever</span></div>
+      <div class="p-desc">Everything you need to plan and manage a great event yourself.</div>
+      <div class="p-divider"></div>
+      <ul class="p-features">
+        <li>Event creation & management</li>
+        <li>Guest list (up to 50 guests)</li>
+        <li>Run sheet & timeline builder</li>
+        <li>Budget tracker</li>
+        <li>Room & space inventory</li>
+      </ul>
+      <a href="#waitlist" class="p-btn p-btn-outline">Get started free</a>
+    </div>
+    <div class="p-card featured">
+      <div class="p-popular">Most popular</div>
+      <div class="p-tier">Pro</div>
+      <div class="p-price">€19 <span>/ event</span></div>
+      <div class="p-desc">Everything in Free, plus the full guest-facing experience.</div>
+      <div class="p-divider"></div>
+      <ul class="p-features">
+        <li>Public event site for guests</li>
+        <li>RSVP & guest portal</li>
+        <li>Room reservations</li>
+        <li>Room payments via Stripe</li>
+        <li>Table plan builder</li>
+        <li>Unlimited guests (mini CRM)</li>
+        <li>Dietary & preference tracking</li>
+      </ul>
+      <a href="#waitlist" class="p-btn p-btn-amber">Join waitlist</a>
+    </div>
+    <div class="p-card">
+      <div class="p-tier">Agency</div>
+      <div class="p-price">€79 <span>/ month</span></div>
+      <div class="p-desc">For planners managing multiple events and clients at once.</div>
+      <div class="p-divider"></div>
+      <ul class="p-features">
+        <li>Unlimited events</li>
+        <li>All Pro features included</li>
+        <li>Client collaboration & approval</li>
+        <li>White-label event pages</li>
+        <li>Team member access</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="#waitlist" class="p-btn p-btn-outline">Join waitlist</a>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--amber);padding:3rem 3rem;">
+  <div style="max-width:800px;margin:0 auto;text-align:center;">
+    <p style="font-family:'Nunito',sans-serif;font-size:1.5rem;font-weight:800;color:var(--ink);line-height:1.4;margin-bottom:0.75rem;">Built by event planners, for event planners.</p>
+    <p style="font-size:0.95rem;color:var(--ink);opacity:0.75;font-weight:300;line-height:1.7;">We've managed the spreadsheets, the WhatsApp groups, the last-minute room swaps. We built Octevent because we lived the problem — and we knew there had to be a better way.</p>
+  </div>
+</section>
+
+<section class="social-proof">
+  <div>
+    <div class="proof-quote">"Finally — one place for everything. I used to manage venues across three spreadsheets and a WhatsApp group. Those days are gone."</div>
+    <div class="proof-attr">— Beta tester, corporate event planner · Barcelona</div>
+  </div>
+  <div class="proof-vdivider"></div>
+  <div class="proof-stats">
+    <div><div class="proof-stat-n">8</div><div class="proof-stat-l">modules in one platform</div></div>
+    <div><div class="proof-stat-n">0</div><div class="proof-stat-l">spreadsheets needed</div></div>
+    <div><div class="proof-stat-n">∞</div><div class="proof-stat-l">WhatsApp threads saved</div></div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div>
+    <h2>Eight arms.<br><em>One platform.</em><br>Zero chaos.</h2>
+    <p>Launching 2025. Join the waitlist now and lock in early access pricing — forever.</p>
+  </div>
+  <div class="cta-right">
+    <div class="capture">
+      <input type="email" id="cta-email" placeholder="your@email.com">
+      <button onclick="signup('cta-email','cta-ok')">Get early access</button>
+    </div>
+    <div class="success-msg" id="cta-ok">🎉 You're on the list!</div>
+    <div class="feature-picker" id="cta-picker" style="margin-top:0.75rem;">
+      <p style="color:#aaa;">One quick question — which feature do you need most?</p>
+      <div class="feature-options">
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Guest list & RSVP</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Room booking & payments</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Budget tracker</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Run sheet</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Table plan</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Guest event site</button>
+      </div>
+      <button class="feat-submit" id="cta-submit" onclick="submitFeature('cta')" style="background:var(--amber);color:var(--ink);">Submit →</button>
+      <div class="feat-thanks" id="cta-thanks" style="color:var(--amber);">Thanks — that really helps us prioritise! 🙌</div>
+    </div>
+    <p class="small-note">Early access pricing locked in forever · No spam</p>
+  </div>
+</section>
+
+<footer>
+  <img src="octevent-logo.png" alt="Octevent" class="footer-logo">
+  <div class="footer-links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="mailto:hello@octevent.com">hello@octevent.com</a>
+  </div>
+  <p>© 2025 Octevent · octevent.com</p>
+</footer>
+
+<script>
+function pickFeature(btn, section) {
+  document.querySelectorAll('#' + section + '-picker .feat-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(section + '-submit').style.display = 'inline-block';
+}
+
+async function submitFeature(section) {
+  const selected = document.querySelector('#' + section + '-picker .feat-opt.selected');
+  if (!selected) return;
+  const feature = selected.textContent;
+  const email = document.getElementById(section === 'hero' ? 'hero-email' : 'cta-email').value;
+  document.getElementById(section + '-submit').style.display = 'none';
+  document.getElementById(section + '-picker').querySelector('.feature-options').style.display = 'none';
+  document.getElementById(section + '-thanks').style.display = 'block';
+  try {
+    await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, feature })
+    });
+  } catch(e) {}
+}
+
+async function signup(inputId, successId) {
+  const input = document.getElementById(inputId);
+  const ok    = document.getElementById(successId);
+  const val   = input.value.trim();
+
+  if (!val || !val.includes('@')) {
+    input.style.outline = '2px solid #e53e3e';
+    input.focus();
+    setTimeout(() => input.style.outline = '', 1800);
+    return;
+  }
+
+  const btn = input.closest('.capture').querySelector('button');
+  btn.textContent = 'Adding...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: val })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      input.closest('.capture').style.display = 'none';
+      ok.style.display = 'block';
+      const section = inputId.replace('-email','');
+      const picker = document.getElementById(section + '-picker');
+      if (picker) picker.style.display = 'block';
+    } else {
+      throw new Error(data.error || 'Something went wrong');
+    }
+  } catch (err) {
+    btn.textContent = 'Join waitlist';
+    btn.disabled = false;
+    input.closest('.capture').style.display = 'none';
+    ok.textContent = '🎉 You\'re on the list!';
+    ok.style.display = 'block';
+    const section = inputId.replace('-email','');
+    const picker = document.getElementById(section + '-picker');
+    if (picker) picker.style.display = 'block';
+    console.error('Subscribe error:', err);
+  }
+}
+
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior:'smooth' }); }
+  });
+});
+</script>
+</body>
+</html>
