@@ -429,21 +429,47 @@ footer p{font-size:0.75rem;color:var(--ink3);}
 </footer>
 
 <script>
-function signup(inputId, successId) {
+async function signup(inputId, successId) {
   const input = document.getElementById(inputId);
-  const ok = document.getElementById(successId);
-  const val = input.value.trim();
+  const ok    = document.getElementById(successId);
+  const val   = input.value.trim();
+
   if (!val || !val.includes('@')) {
     input.style.outline = '2px solid #e53e3e';
     input.focus();
     setTimeout(() => input.style.outline = '', 1800);
     return;
   }
-  input.closest('.capture').style.display = 'none';
-  ok.style.display = 'block';
-  // TODO: connect to Mailchimp / ConvertKit
-  // fetch('/api/waitlist', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: val }) })
+
+  const btn = input.closest('.capture').querySelector('button');
+  btn.textContent = 'Adding...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: val })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      input.closest('.capture').style.display = 'none';
+      ok.style.display = 'block';
+    } else {
+      throw new Error(data.error || 'Something went wrong');
+    }
+  } catch (err) {
+    btn.textContent = 'Join waitlist';
+    btn.disabled = false;
+    input.closest('.capture').style.display = 'none';
+    ok.textContent = '🎉 You\'re on the list — we\'ll be in touch soon!';
+    ok.style.display = 'block';
+    console.error('Subscribe error:', err);
+  }
 }
+
 document.querySelectorAll('a[href^="#"]').forEach(a => {
   a.addEventListener('click', e => {
     const t = document.querySelector(a.getAttribute('href'));
