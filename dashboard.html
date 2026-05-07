@@ -311,7 +311,7 @@ main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-create" id="create-btn" onclick="createEvent()">Create event</button>
+      <button class="btn-create" id="create-btn" onclick="handleCreateEvent()">Create event</button>
     </div>
   </div>
 </div>
@@ -447,7 +447,7 @@ function handleOverlayClick(e) {
   if (e.target === document.getElementById('modal')) closeModal();
 }
 
-async function createEvent() {
+async function handleCreateEvent() {
   const name  = document.getElementById('new-name').value.trim();
   const date  = document.getElementById('new-date').value;
   const type  = document.getElementById('new-type').value;
