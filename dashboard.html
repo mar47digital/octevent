@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octevent — My Events</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --amber:#F5A800;
+  --amber-light:#FFF8E6;
+  --amber-dark:#C98A00;
+  --ink:#18181A;
+  --ink2:#555;
+  --ink3:#999;
+  --cream:#FAFAF7;
+  --rule:#ECEAE4;
+}
+html,body{min-height:100%;background:var(--cream);}
+body{font-family:'DM Sans',sans-serif;color:var(--ink);}
+
+/* NAV */
+nav{
+  background:#fff;border-bottom:1px solid var(--rule);
+  padding:0 2.5rem;height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.nav-logo img{height:40px;width:auto;}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-user{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.85rem;color:var(--ink2);
+}
+.nav-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--amber);display:flex;align-items:center;
+  justify-content:center;font-size:0.8rem;font-weight:700;
+  color:var(--ink);flex-shrink:0;
+}
+.sign-out-btn{
+  font-size:0.78rem;color:var(--ink3);background:none;
+  border:none;cursor:pointer;font-family:'DM Sans',sans-serif;
+  padding:0.4rem 0.75rem;border-radius:100px;transition:all 0.2s;
+}
+.sign-out-btn:hover{background:var(--rule);color:var(--ink);}
+
+/* MAIN */
+main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
+
+/* HEADER ROW */
+.page-header{
+  display:flex;align-items:center;
+  justify-content:space-between;margin-bottom:2.5rem;
+}
+.page-header h1{
+  font-family:'Nunito',sans-serif;
+  font-size:2rem;font-weight:800;
+}
+.new-event-btn{
+  display:flex;align-items:center;gap:8px;
+  padding:0.75rem 1.5rem;background:var(--amber);
+  color:var(--ink);border:none;border-radius:100px;
+  font-family:'DM Sans',sans-serif;font-size:0.88rem;
+  font-weight:600;cursor:pointer;transition:all 0.2s;
+  text-decoration:none;
+}
+.new-event-btn:hover{background:var(--amber-dark);color:#fff;}
+.new-event-btn svg{width:16px;height:16px;}
+
+/* FILTER TABS */
+.filter-tabs{
+  display:flex;gap:8px;margin-bottom:2rem;
+}
+.filter-tab{
+  padding:0.5rem 1.1rem;border-radius:100px;
+  font-size:0.82rem;font-weight:500;cursor:pointer;
+  border:1.5px solid var(--rule);background:#fff;
+  color:var(--ink2);font-family:'DM Sans',sans-serif;
+  transition:all 0.2s;
+}
+.filter-tab.active{
+  background:var(--ink);color:#fff;border-color:var(--ink);
+}
+.filter-tab:hover:not(.active){border-color:var(--ink);}
+
+/* EVENT GRID */
+.events-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:20px;
+}
+
+/* EVENT CARD */
+.event-card{
+  background:#fff;border-radius:20px;overflow:hidden;
+  border:1px solid var(--rule);transition:all 0.2s;
+  cursor:pointer;text-decoration:none;color:inherit;
+  display:block;
+}
+.event-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.08);}
+.card-image{
+  height:180px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+}
+.card-image.gradient-1{background:linear-gradient(135deg,#1a1a2e,#533483);}
+.card-image.gradient-2{background:linear-gradient(135deg,#0f3460,#e94560);}
+.card-image.gradient-3{background:linear-gradient(135deg,#2d6a4f,#40916c);}
+.card-image.gradient-4{background:linear-gradient(135deg,#c98a00,#f5a800);}
+.card-image.gradient-5{background:linear-gradient(135deg,#3d405b,#81b29a);}
+.card-image.gradient-6{background:linear-gradient(135deg,#582c4d,#c9a227);}
+.card-image img{width:100%;height:100%;object-fit:cover;}
+.card-status{
+  position:absolute;top:12px;right:12px;
+  font-size:0.65rem;font-weight:700;letter-spacing:0.06em;
+  text-transform:uppercase;padding:4px 12px;border-radius:100px;
+}
+.status-upcoming{background:rgba(245,168,0,0.9);color:var(--ink);}
+.status-live{background:rgba(45,106,79,0.9);color:#fff;}
+.status-past{background:rgba(0,0,0,0.5);color:#fff;}
+.status-draft{background:rgba(255,255,255,0.8);color:var(--ink2);}
+.card-event-name{
+  position:absolute;bottom:12px;left:14px;right:14px;
+  font-family:'Nunito',sans-serif;font-size:1.2rem;
+  font-weight:800;color:#fff;
+  text-shadow:0 1px 4px rgba(0,0,0,0.4);
+  line-height:1.2;
+}
+.card-body{padding:1.1rem 1.25rem;}
+.card-meta{
+  display:flex;align-items:center;gap:1rem;
+  font-size:0.78rem;color:var(--ink3);
+}
+.card-meta-item{display:flex;align-items:center;gap:5px;}
+.card-meta-item svg{width:13px;height:13px;opacity:0.6;}
+.card-divider{height:1px;background:var(--rule);margin:0.9rem 0;}
+.card-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+.card-stat{text-align:center;padding:0.4rem 0;}
+.card-stat:not(:last-child){border-right:1px solid var(--rule);}
+.card-stat-n{
+  font-family:'Nunito',sans-serif;font-size:1.3rem;
+  font-weight:800;color:var(--ink);line-height:1;
+}
+.card-stat-l{font-size:0.62rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-top:3px;}
+
+/* EMPTY STATE */
+.empty-state{
+  grid-column:1/-1;text-align:center;
+  padding:5rem 2rem;
+}
+.empty-oct{font-size:3rem;margin-bottom:1rem;opacity:0.3;}
+.empty-state h3{
+  font-family:'Nunito',sans-serif;font-size:1.4rem;
+  font-weight:800;margin-bottom:0.5rem;
+}
+.empty-state p{font-size:0.9rem;color:var(--ink3);margin-bottom:1.5rem;font-weight:300;}
+
+/* NEW EVENT MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  z-index:200;display:flex;align-items:center;
+  justify-content:center;padding:1.5rem;
+  opacity:0;pointer-events:none;transition:opacity 0.2s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{
+  background:#fff;border-radius:20px;
+  width:100%;max-width:520px;padding:2rem;
+  transform:translateY(20px);transition:transform 0.2s;
+}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-header{
+  display:flex;align-items:center;
+  justify-content:space-between;margin-bottom:1.75rem;
+}
+.modal-title{font-family:'Nunito',sans-serif;font-size:1.3rem;font-weight:800;}
+.modal-close{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--cream);border:none;cursor:pointer;
+  font-size:1.1rem;display:flex;align-items:center;
+  justify-content:center;transition:background 0.2s;
+}
+.modal-close:hover{background:var(--rule);}
+.field{margin-bottom:1rem;}
+.field label{
+  display:block;font-size:0.78rem;font-weight:500;
+  color:var(--ink2);margin-bottom:0.4rem;
+}
+.field input,.field select,.field textarea{
+  width:100%;padding:0.8rem 1rem;
+  border:1.5px solid var(--rule);border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:0.88rem;
+  color:var(--ink);background:#fff;outline:none;
+  transition:border-color 0.2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);}
+.field textarea{resize:vertical;min-height:80px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-footer{
+  display:flex;gap:10px;justify-content:flex-end;
+  margin-top:1.5rem;
+}
+.btn-cancel{
+  padding:0.75rem 1.25rem;border-radius:100px;
+  border:1.5px solid var(--rule);background:#fff;
+  color:var(--ink2);font-family:'DM Sans',sans-serif;
+  font-size:0.85rem;font-weight:500;cursor:pointer;
+  transition:border-color 0.2s;
+}
+.btn-cancel:hover{border-color:var(--ink);}
+.btn-create{
+  padding:0.75rem 1.5rem;border-radius:100px;
+  background:var(--amber);color:var(--ink);border:none;
+  font-family:'DM Sans',sans-serif;font-size:0.85rem;
+  font-weight:600;cursor:pointer;transition:all 0.2s;
+}
+.btn-create:hover{background:var(--amber-dark);color:#fff;}
+.btn-create:disabled{opacity:0.6;cursor:not-allowed;}
+
+/* LOADING */
+.loading{
+  grid-column:1/-1;display:flex;
+  align-items:center;justify-content:center;
+  padding:5rem;
+}
+.spinner{
+  width:32px;height:32px;border:3px solid var(--rule);
+  border-top-color:var(--amber);border-radius:50%;
+  animation:spin 0.7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.event-card{animation:fadeUp 0.4s ease both;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><img src="octevent-logo.png" alt="Octevent"></div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="nav-avatar" id="user-avatar">?</div>
+      <span id="user-name">Loading...</span>
+    </div>
+    <button class="sign-out-btn" onclick="signOut()">Sign out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-header">
+    <h1>My Events</h1>
+    <button class="new-event-btn" onclick="openModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      New event
+    </button>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterEvents('all',this)">All events</button>
+    <button class="filter-tab" onclick="filterEvents('upcoming',this)">Upcoming</button>
+    <button class="filter-tab" onclick="filterEvents('live',this)">Live</button>
+    <button class="filter-tab" onclick="filterEvents('past',this)">Past</button>
+    <button class="filter-tab" onclick="filterEvents('draft',this)">Drafts</button>
+  </div>
+
+  <div class="events-grid" id="events-grid">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</main>
+
+<!-- NEW EVENT MODAL -->
+<div class="modal-overlay" id="modal" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Create new event</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Event name *</label>
+      <input type="text" id="new-name" placeholder="e.g. Sarah & Tom's Wedding">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Event date *</label>
+        <input type="date" id="new-date">
+      </div>
+      <div class="field">
+        <label>Event type</label>
+        <select id="new-type">
+          <option value="wedding">Wedding</option>
+          <option value="corporate">Corporate</option>
+          <option value="retreat">Retreat</option>
+          <option value="party">Private party</option>
+          <option value="villa">Villa event</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Venue / Location</label>
+      <input type="text" id="new-venue" placeholder="e.g. Villa Mas Solà, Costa Brava">
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="new-notes" placeholder="Any initial notes about the event..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-create" id="create-btn" onclick="createEvent()">Create event</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://esjmzvhxbwcpslutprel.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzam16dmh4YndjcHNsdXRwcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzcxNjAsImV4cCI6MjA5Mzc1MzE2MH0.fsr1_P_ZB68SaiK00GPXvJLQUePM4eLght_CaAYOeF0';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let allEvents = [];
+const gradients = ['gradient-1','gradient-2','gradient-3','gradient-4','gradient-5','gradient-6'];
+
+// Auth check
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (!session) { window.location.href = '/login.html'; return; }
+  currentUser = session.user;
+  const name = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+  loadEvents();
+});
+
+async function loadEvents() {
+  const { data, error } = await sb
+    .from('events')
+    .select('*')
+    .order('event_date', { ascending: true });
+
+  if (error) {
+    console.error(error);
+    renderEvents([]);
+    return;
+  }
+  allEvents = data || [];
+  renderEvents(allEvents);
+}
+
+function getStatus(event) {
+  if (event.status === 'draft') return 'draft';
+  const today = new Date();
+  const date  = new Date(event.event_date);
+  const diff  = (date - today) / (1000 * 60 * 60 * 24);
+  if (diff < -1) return 'past';
+  if (diff <= 1) return 'live';
+  return 'upcoming';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function renderEvents(events) {
+  const grid = document.getElementById('events-grid');
+  if (!events.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-oct">🐙</div>
+        <h3>No events yet</h3>
+        <p>Create your first event and start managing it like a pro.</p>
+        <button class="new-event-btn" onclick="openModal()" style="margin:0 auto;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+          Create first event
+        </button>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = events.map((ev, i) => {
+    const status  = getStatus(ev);
+    const grad    = gradients[i % gradients.length];
+    const imgHtml = ev.cover_image
+      ? `<img src="${ev.cover_image}" alt="${ev.name}">`
+      : '';
+    return `
+    <a class="event-card" href="/event.html?id=${ev.id}" style="animation-delay:${i * 0.06}s">
+      <div class="card-image ${grad}">
+        ${imgHtml}
+        <span class="card-status status-${status}">${status}</span>
+        <div class="card-event-name">${ev.name}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-meta">
+          <div class="card-meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            ${formatDate(ev.event_date)}
+          </div>
+          ${ev.venue ? `<div class="card-meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${ev.venue}
+          </div>` : ''}
+        </div>
+        <div class="card-divider"></div>
+        <div class="card-stats">
+          <div class="card-stat">
+            <div class="card-stat-n">${ev.guest_count || 0}</div>
+            <div class="card-stat-l">Guests</div>
+          </div>
+          <div class="card-stat">
+            <div class="card-stat-n">${ev.room_count || 0}</div>
+            <div class="card-stat-l">Rooms</div>
+          </div>
+          <div class="card-stat">
+            <div class="card-stat-n">${ev.rsvp_count || 0}</div>
+            <div class="card-stat-l">RSVPs</div>
+          </div>
+        </div>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+function filterEvents(filter, btn) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  if (filter === 'all') { renderEvents(allEvents); return; }
+  renderEvents(allEvents.filter(ev => getStatus(ev) === filter));
+}
+
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('new-date').value = new Date().toISOString().split('T')[0];
+  setTimeout(() => document.getElementById('new-name').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+async function createEvent() {
+  const name  = document.getElementById('new-name').value.trim();
+  const date  = document.getElementById('new-date').value;
+  const type  = document.getElementById('new-type').value;
+  const venue = document.getElementById('new-venue').value.trim();
+  const notes = document.getElementById('new-notes').value.trim();
+  const btn   = document.getElementById('create-btn');
+
+  if (!name || !date) {
+    document.getElementById('new-name').style.borderColor = !name ? '#e53e3e' : '';
+    document.getElementById('new-date').style.borderColor = !date ? '#e53e3e' : '';
+    return;
+  }
+
+  btn.textContent = 'Creating...'; btn.disabled = true;
+
+  const { data, error } = await sb.from('events').insert([{
+    name, event_date: date, event_type: type,
+    venue, notes, status: 'draft',
+    user_id: currentUser.id,
+    guest_count: 0, room_count: 0, rsvp_count: 0
+  }]).select().single();
+
+  if (error) {
+    console.error(error);
+    btn.textContent = 'Create event'; btn.disabled = false;
+    alert('Could not create event. Make sure your database table is set up.');
+    return;
+  }
+
+  closeModal();
+  window.location.href = `/event.html?id=${data.id}`;
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  window.location.href = '/login.html';
+}
+</script>
+</body>
+</html>
