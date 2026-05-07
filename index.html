@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OctEvent — Every arm of your event, under control</title>
-<meta name="description" content="From guest lists and budgets to room bookings and table plans — OctEvent handles every moving part of your event in one place.">
+<title>Octevent — Every arm of your event, under control</title>
+<meta name="description" content="From guest lists and budgets to room bookings and table plans — Octevent handles every moving part of your event in one place.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -245,12 +245,31 @@ footer p{font-size:0.75rem;color:var(--ink3);}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 .fade-up{opacity:0;animation:fadeUp 0.65s ease forwards;}
 .d1{animation-delay:0.05s;}.d2{animation-delay:0.18s;}.d3{animation-delay:0.3s;}.d4{animation-delay:0.42s;}
+
+.feature-picker{margin-top:1rem;display:none;}
+.feature-picker p{font-size:0.8rem;color:var(--ink2);margin-bottom:0.6rem;font-weight:400;}
+.feature-options{display:flex;flex-wrap:wrap;gap:8px;}
+.feat-opt{
+  font-size:0.78rem;padding:6px 14px;border-radius:100px;
+  border:1.5px solid var(--rule);color:var(--ink2);cursor:pointer;
+  background:#fff;font-family:'DM Sans',sans-serif;transition:all 0.15s;
+}
+.feat-opt:hover{border-color:var(--amber);color:var(--ink);}
+.feat-opt.selected{border-color:var(--amber);background:var(--amber);color:var(--ink);font-weight:600;}
+.feat-submit{
+  margin-top:0.75rem;font-size:0.78rem;font-weight:600;
+  padding:0.6rem 1.25rem;border-radius:100px;border:none;
+  background:var(--ink);color:#fff;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:opacity 0.2s;display:none;
+}
+.feat-submit:hover{opacity:0.8;}
+.feat-thanks{display:none;font-size:0.82rem;color:#2d6a4f;margin-top:0.5rem;}
 </style>
 </head>
 <body>
 
 <nav>
-  <img src="1.png" alt="OctEvent" class="logo-img">
+  <img src="octevent-logo.png" alt="Octevent" class="logo-img">
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
@@ -263,13 +282,26 @@ footer p{font-size:0.75rem;color:var(--ink3);}
   <div class="hero-left">
     <div class="eyebrow fade-up d1">Event management, reimagined</div>
     <h1 class="fade-up d2">Every arm of<br>your event,<br><em>under control</em></h1>
-    <p class="hero-sub fade-up d3">From guest lists and budgets to room bookings and table plans — OctEvent handles <strong>every moving part</strong> of your event in one place. No spreadsheets. No WhatsApp chaos.</p>
+    <p class="hero-sub fade-up d3">From guest lists and budgets to room bookings and table plans — Octevent handles <strong>every moving part</strong> of your event in one place. No spreadsheets. No WhatsApp chaos.</p>
     <div class="capture-wrap fade-up d4" id="waitlist">
       <div class="capture">
         <input type="email" id="hero-email" placeholder="your@email.com">
         <button onclick="signup('hero-email','hero-ok')">Join waitlist</button>
       </div>
-      <div class="success-msg" id="hero-ok">🎉 You're on the list — we'll be in touch soon!</div>
+      <div class="success-msg" id="hero-ok">🎉 You're on the list!</div>
+      <div class="feature-picker" id="hero-picker">
+        <p>One quick question — which feature do you need most?</p>
+        <div class="feature-options">
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Guest list & RSVP</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Room booking & payments</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Budget tracker</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Run sheet</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Table plan</button>
+          <button class="feat-opt" onclick="pickFeature(this,'hero')">Guest event site</button>
+        </div>
+        <button class="feat-submit" id="hero-submit" onclick="submitFeature('hero')">Submit →</button>
+        <div class="feat-thanks" id="hero-thanks">Thanks — that really helps us prioritise! 🙌</div>
+      </div>
       <p class="small-note">Free early access · No credit card needed · Launching 2025</p>
     </div>
   </div>
@@ -311,7 +343,7 @@ footer p{font-size:0.75rem;color:var(--ink3);}
 <section class="for-section">
   <div class="for-left">
     <h2>Built for anyone<br>who <em>runs</em> events</h2>
-    <p>Whether you're a professional planner managing a full calendar or someone organising one big event a year — OctEvent removes the admin chaos and gives you back your time.</p>
+    <p>Whether you're a professional planner managing a full calendar or someone organising one big event a year — Octevent removes the admin chaos and gives you back your time.</p>
     <a href="#waitlist" class="anchor-link">Get early access →</a>
   </div>
   <div class="for-right">
@@ -390,6 +422,13 @@ footer p{font-size:0.75rem;color:var(--ink3);}
   </div>
 </section>
 
+<section style="background:var(--amber);padding:3rem 3rem;">
+  <div style="max-width:800px;margin:0 auto;text-align:center;">
+    <p style="font-family:'Nunito',sans-serif;font-size:1.5rem;font-weight:800;color:var(--ink);line-height:1.4;margin-bottom:0.75rem;">Built by event planners, for event planners.</p>
+    <p style="font-size:0.95rem;color:var(--ink);opacity:0.75;font-weight:300;line-height:1.7;">We've managed the spreadsheets, the WhatsApp groups, the last-minute room swaps. We built Octevent because we lived the problem — and we knew there had to be a better way.</p>
+  </div>
+</section>
+
 <section class="social-proof">
   <div>
     <div class="proof-quote">"Finally — one place for everything. I used to manage venues across three spreadsheets and a WhatsApp group. Those days are gone."</div>
@@ -413,22 +452,58 @@ footer p{font-size:0.75rem;color:var(--ink3);}
       <input type="email" id="cta-email" placeholder="your@email.com">
       <button onclick="signup('cta-email','cta-ok')">Get early access</button>
     </div>
-    <div class="success-msg" id="cta-ok">🎉 You're on the list — exciting things ahead!</div>
+    <div class="success-msg" id="cta-ok">🎉 You're on the list!</div>
+    <div class="feature-picker" id="cta-picker" style="margin-top:0.75rem;">
+      <p style="color:#aaa;">One quick question — which feature do you need most?</p>
+      <div class="feature-options">
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Guest list & RSVP</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Room booking & payments</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Budget tracker</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Run sheet</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Table plan</button>
+        <button class="feat-opt" style="background:transparent;color:#aaa;border-color:#444;" onclick="pickFeature(this,'cta')">Guest event site</button>
+      </div>
+      <button class="feat-submit" id="cta-submit" onclick="submitFeature('cta')" style="background:var(--amber);color:var(--ink);">Submit →</button>
+      <div class="feat-thanks" id="cta-thanks" style="color:var(--amber);">Thanks — that really helps us prioritise! 🙌</div>
+    </div>
     <p class="small-note">Early access pricing locked in forever · No spam</p>
   </div>
 </section>
 
 <footer>
-  <img src="1.png" alt="OctEvent" class="footer-logo">
+  <img src="octevent-logo.png" alt="Octevent" class="footer-logo">
   <div class="footer-links">
     <a href="#">Privacy</a>
     <a href="#">Terms</a>
     <a href="mailto:hello@octevent.com">hello@octevent.com</a>
   </div>
-  <p>© 2025 OctEvent · octevent.com</p>
+  <p>© 2025 Octevent · octevent.com</p>
 </footer>
 
 <script>
+function pickFeature(btn, section) {
+  document.querySelectorAll('#' + section + '-picker .feat-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(section + '-submit').style.display = 'inline-block';
+}
+
+async function submitFeature(section) {
+  const selected = document.querySelector('#' + section + '-picker .feat-opt.selected');
+  if (!selected) return;
+  const feature = selected.textContent;
+  const email = document.getElementById(section === 'hero' ? 'hero-email' : 'cta-email').value;
+  document.getElementById(section + '-submit').style.display = 'none';
+  document.getElementById(section + '-picker').querySelector('.feature-options').style.display = 'none';
+  document.getElementById(section + '-thanks').style.display = 'block';
+  try {
+    await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, feature })
+    });
+  } catch(e) {}
+}
+
 async function signup(inputId, successId) {
   const input = document.getElementById(inputId);
   const ok    = document.getElementById(successId);
@@ -457,6 +532,9 @@ async function signup(inputId, successId) {
     if (res.ok) {
       input.closest('.capture').style.display = 'none';
       ok.style.display = 'block';
+      const section = inputId.replace('-email','');
+      const picker = document.getElementById(section + '-picker');
+      if (picker) picker.style.display = 'block';
     } else {
       throw new Error(data.error || 'Something went wrong');
     }
@@ -464,8 +542,11 @@ async function signup(inputId, successId) {
     btn.textContent = 'Join waitlist';
     btn.disabled = false;
     input.closest('.capture').style.display = 'none';
-    ok.textContent = '🎉 You\'re on the list — we\'ll be in touch soon!';
+    ok.textContent = '🎉 You\'re on the list!';
     ok.style.display = 'block';
+    const section = inputId.replace('-email','');
+    const picker = document.getElementById(section + '-picker');
+    if (picker) picker.style.display = 'block';
     console.error('Subscribe error:', err);
   }
 }
