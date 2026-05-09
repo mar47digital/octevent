@@ -27,8 +27,12 @@ function closeMobileBudget() {
 function updateMobileCats() {
   const isIncome = document.getElementById('mb-type').value === 'income';
   const cats = isIncome ? incomeCats : expenseCats;
-  const sel = document.getElementById('mb-category');
-  sel.innerHTML = cats.map(c => `<option value="${c}">${catLabel(c)}</option>`).join('');
+  const catSel = document.getElementById('mb-category');
+  catSel.innerHTML = cats.map(c => `<option value="${c}">${catLabel(c)}</option>`).join('');
+  const statusSel = document.getElementById('mb-paid-status');
+  statusSel.innerHTML = isIncome
+    ? `<option value="expected">Expected</option><option value="partial_received">Part received</option><option value="received">Received</option>`
+    : `<option value="unpaid">Unpaid</option><option value="deposit">Deposit paid</option><option value="partial">Part paid</option><option value="paid">Paid</option>`;
 }
 
 async function saveMobileBudget() {
@@ -103,7 +107,7 @@ nav{background:#fff;border-bottom:1px solid var(--rule);padding:0 2.5rem;height:
 .tab.active{color:var(--ink);border-bottom-color:var(--amber);}
 
 /* MAIN */
-main{max-width:1100px;margin:0 auto;padding:2rem 2.5rem;}
+main{max-width:100%;padding:2rem 2.5rem;}
 .panel{display:none;}
 .panel.active{display:block;}
 
@@ -152,7 +156,7 @@ tr:hover td{background:var(--cream);}
 .budget-card-value.green{color:#2d6a4f;}
 .budget-card-value.amber{color:var(--amber-dark);}
 .budget-card-value.red{color:#c0392b;}
-table.budget-table{width:100%;border-collapse:collapse;min-width:1000px;}
+table.budget-table{width:100%;border-collapse:collapse;}
 table.budget-table thead{background:var(--cream);position:sticky;top:0;}
 table.budget-table th{padding:0.7rem 0.85rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--rule);white-space:nowrap;}
 table.budget-table th.num{text-align:right;}
@@ -275,6 +279,22 @@ tr:hover .row-del{opacity:1;}
   .mobile-only{display:inline-flex;}
   .budget-summary{grid-template-columns:repeat(2,1fr);}
 }
+
+/* BUDGET MOBILE CARDS */
+@media(max-width:768px){
+  .budget-table-wrap{display:none;}
+  .budget-cards{display:flex;flex-direction:column;gap:10px;}
+  .budget-card-row{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:1rem;}
+  .budget-card-row-header{display:flex;align-items:center;gap:8px;margin-bottom:0.75rem;flex-wrap:wrap;}
+  .budget-card-row-amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:0.5rem;}
+  .budget-card-row-amount{text-align:center;padding:0.5rem;background:var(--cream);border-radius:8px;}
+  .budget-card-row-amount-label{font-size:0.62rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;}
+  .budget-card-row-amount-value{font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:700;}
+  .budget-card-row-footer{display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;font-size:0.78rem;color:var(--ink3);}
+}
+@media(min-width:769px){
+  .budget-cards{display:none;}
+}
 </style>
 </head>
 <body>
@@ -382,7 +402,7 @@ tr:hover .row-del{opacity:1;}
       <div class="budget-card"><div class="budget-card-label">Total deposits</div><div class="budget-card-value amber" id="b-total-deposit">€0</div></div>
       <div class="budget-card"><div class="budget-card-label" id="b-net-label">Net surplus</div><div class="budget-card-value green" id="b-net">€0</div></div>
     </div>
-    <div class="table-wrap table-wrap-scroll" id="budget-wrap">
+    <div class="table-wrap budget-table-wrap" id="budget-wrap">
       <div class="spinner"></div>
     </div>
   </div>
@@ -721,8 +741,11 @@ function fmt(n) {
 function fmtSum(n) { return '€' + parseFloat(n||0).toLocaleString('en-GB', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
 function catClass(c) { return 'cat-'+(c||'other'); }
 function catLabel(c) { return ({venue:'Venue',catering:'Catering',flowers:'Flowers',music:'Music',photography:'Photography',transport:'Transport',accommodation:'Accommodation',staffing:'Staffing',decor:'Decor',other:'Other',room_rental:'Room rental',ticket_sales:'Ticket sales',sponsorship:'Sponsorship',client_payment:'Client payment',other_income:'Other income'})[c]||'Other'; }
-function paidLabel(s) { return ({paid:'Paid',deposit:'Deposit',partial:'Partial',unpaid:'Unpaid'})[s]||'Unpaid'; }
-function paidClass(s) { return ({paid:'paid-yes',deposit:'paid-partial',partial:'paid-partial',unpaid:'paid-no'})[s]||'paid-no'; }
+function paidLabel(s, type) {
+  if (type === 'income') return ({received:'Received',partial_received:'Part received',expected:'Expected',unpaid:'Unpaid'})[s]||'Expected';
+  return ({paid:'Paid',deposit:'Deposit paid',partial:'Part paid',unpaid:'Unpaid'})[s]||'Unpaid';
+}
+function paidClass(s) { return ({paid:'paid-yes',received:'paid-yes',deposit:'paid-partial',partial:'paid-partial',partial_received:'paid-partial',expected:'paid-no',unpaid:'paid-no'})[s]||'paid-no'; }
 
 function updateSummary(items) {
   const exp = items.filter(i => i.item_type !== 'income');
@@ -933,6 +956,43 @@ function renderBudget(items) {
   const tbody = document.getElementById('budget-tbody');
   items.forEach(item => tbody.appendChild(buildBudgetRow(item)));
   updateSummary(items);
+
+  // Mobile cards
+  let mobileCards = document.getElementById('budget-mobile-cards');
+  if (!mobileCards) {
+    mobileCards = document.createElement('div');
+    mobileCards.id = 'budget-mobile-cards';
+    mobileCards.className = 'budget-cards';
+    wrap.after(mobileCards);
+  }
+  mobileCards.innerHTML = items.map(item => `
+    <div class="budget-card-row">
+      <div class="budget-card-row-header">
+        <span class="type-badge ${item.item_type==='income'?'type-income':'type-expense'}">${item.item_type==='income'?'Income':'Expense'}</span>
+        <span class="category-badge ${catClass(item.category)}">${catLabel(item.category)}</span>
+        ${item.supplier ? `<strong style="font-size:0.88rem;">${item.supplier}</strong>` : ''}
+        <span class="paid-badge ${paidClass(item.paid_status)}" style="margin-left:auto;">${paidLabel(item.paid_status, item.item_type)}</span>
+      </div>
+      <div class="budget-card-row-amounts">
+        <div class="budget-card-row-amount">
+          <div class="budget-card-row-amount-label">Allocated</div>
+          <div class="budget-card-row-amount-value">${fmt(item.allocated_budget)}</div>
+        </div>
+        <div class="budget-card-row-amount">
+          <div class="budget-card-row-amount-label">Quoted</div>
+          <div class="budget-card-row-amount-value">${fmt(item.quoted_amount)}</div>
+        </div>
+        <div class="budget-card-row-amount">
+          <div class="budget-card-row-amount-label">Actual</div>
+          <div class="budget-card-row-amount-value ${parseFloat(item.actual_amount||0)>parseFloat(item.allocated_budget||0)&&item.item_type!=='income'?'red':''}">${fmt(item.actual_amount)}</div>
+        </div>
+      </div>
+      ${item.description ? `<div style="font-size:0.78rem;color:var(--ink3);margin-top:0.25rem;">${item.description}</div>` : ''}
+      <div class="budget-card-row-footer">
+        <span>${item.notes||''}</span>
+        <button class="row-del" style="opacity:1;" onclick="deleteBudgetItem('${item.id}')">Delete</button>
+      </div>
+    </div>`).join('');
 }
 
 async function addBudgetRow() {
@@ -1009,8 +1069,12 @@ function closeMobileBudget() {
 function updateMobileCats() {
   const isIncome = document.getElementById('mb-type').value === 'income';
   const cats = isIncome ? incomeCats : expenseCats;
-  const sel = document.getElementById('mb-category');
-  sel.innerHTML = cats.map(c => `<option value="${c}">${catLabel(c)}</option>`).join('');
+  const catSel = document.getElementById('mb-category');
+  catSel.innerHTML = cats.map(c => `<option value="${c}">${catLabel(c)}</option>`).join('');
+  const statusSel = document.getElementById('mb-paid-status');
+  statusSel.innerHTML = isIncome
+    ? `<option value="expected">Expected</option><option value="partial_received">Part received</option><option value="received">Received</option>`
+    : `<option value="unpaid">Unpaid</option><option value="deposit">Deposit paid</option><option value="partial">Part paid</option><option value="paid">Paid</option>`;
 }
 
 async function saveMobileBudget() {
@@ -1078,8 +1142,8 @@ async function saveMobileBudget() {
         <select id="mb-paid-status">
           <option value="unpaid">Unpaid</option>
           <option value="deposit">Deposit paid</option>
-          <option value="partial">Partially paid</option>
-          <option value="paid">Fully paid</option>
+          <option value="partial">Part paid</option>
+          <option value="paid">Paid</option>
         </select>
       </div>
     </div>
