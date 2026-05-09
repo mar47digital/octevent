@@ -6,7 +6,208 @@
 <title>Octevent — Event</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ============ BUDGET ============
+let allBudgetItems = [];
+let editingBudgetId = null;
+
+async function loadBudget() {
+  const { data } = await sb.from('budget_items').select('*')
+    .eq('event_id', eventId).order('created_at', { ascending: true });
+  allBudgetItems = data || [];
+  renderBudget(allBudgetItems);
+}
+
+function fmt(n) {
+  if (!n || n === 0) return '—';
+  return '€' + parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtSum(n) {
+  return '€' + parseFloat(n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function catClass(cat) {
+  return 'cat-' + (cat || 'other');
+}
+
+function catLabel(cat) {
+  const labels = {
+    venue:'Venue', catering:'Catering', flowers:'Flowers',
+    music:'Music', photography:'Photography', transport:'Transport',
+    accommodation:'Accommodation', staffing:'Staffing', decor:'Decor', other:'Other'
+  };
+  return labels[cat] || 'Other';
+}
+
+function paidLabel(status) {
+  const labels = { paid:'Paid', deposit:'Deposit', partial:'Partial', unpaid:'Unpaid' };
+  return labels[status] || 'Unpaid';
+}
+
+function paidClass(status) {
+  const classes = { paid:'paid-yes', deposit:'paid-partial', partial:'paid-partial', unpaid:'paid-no' };
+  return classes[status] || 'paid-no';
+}
+
+function renderBudget(items) {
+  const el = document.getElementById('budget-content');
+
+  // Totals
+  const totals = items.reduce((acc, item) => {
+    acc.budget += parseFloat(item.allocated_budget || 0);
+    acc.quoted += parseFloat(item.quoted_amount || 0);
+    acc.actual += parseFloat(item.actual_amount || 0);
+    acc.paid   += parseFloat(item.paid_amount || 0);
+    acc.deposit+= parseFloat(item.deposit_amount || 0);
+    return acc;
+  }, { budget:0, quoted:0, actual:0, paid:0, deposit:0 });
+
+  const remaining = totals.budget - totals.actual;
+  document.getElementById('b-total-budget').textContent  = fmtSum(totals.budget);
+  document.getElementById('b-total-quoted').textContent  = fmtSum(totals.quoted);
+  document.getElementById('b-total-actual').textContent  = fmtSum(totals.actual);
+  document.getElementById('b-total-paid').textContent    = fmtSum(totals.paid);
+  document.getElementById('b-total-deposit').textContent = fmtSum(totals.deposit);
+  const remEl = document.getElementById('b-remaining');
+  remEl.textContent = fmtSum(remaining);
+  remEl.className = 'budget-card-value ' + (remaining < 0 ? 'red' : remaining === 0 ? '' : 'green');
+
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first item to start tracking.</p><button class="btn-primary" onclick="openAddBudget()">+ Add first item</button></div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="budget-table">
+      <thead><tr>
+        <th>Category</th>
+        <th>Supplier</th>
+        <th>Description</th>
+        <th class="num">Allocated</th>
+        <th class="num">Quoted</th>
+        <th class="num">Actual</th>
+        <th class="num">Deposit</th>
+        <th class="num">Paid</th>
+        <th>Status</th>
+        <th>Notes</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${items.map(item => `<tr>
+          <td><span class="category-badge ${catClass(item.category)}">${catLabel(item.category)}</span></td>
+          <td>${item.supplier || '—'}</td>
+          <td>${item.description || '—'}</td>
+          <td class="num">${fmt(item.allocated_budget)}</td>
+          <td class="num">${fmt(item.quoted_amount)}</td>
+          <td class="num ${item.actual_amount > item.allocated_budget ? 'red' : ''}">${fmt(item.actual_amount)}</td>
+          <td class="num">${fmt(item.deposit_amount)}</td>
+          <td class="num ${item.paid_status === 'paid' ? 'green' : ''}">${fmt(item.paid_amount)}</td>
+          <td><span class="paid-badge ${paidClass(item.paid_status)}">${paidLabel(item.paid_status)}</span></td>
+          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.notes || '—'}</td>
+          <td><div class="row-actions">
+            <button class="row-btn" onclick="editBudgetItem('${item.id}')">Edit</button>
+            <button class="row-btn del" onclick="deleteBudgetItem('${item.id}')">Delete</button>
+          </div></td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot><tr>
+        <td colspan="3"><strong>Totals</strong></td>
+        <td class="num"><strong>${fmtSum(totals.budget)}</strong></td>
+        <td class="num"><strong>${fmtSum(totals.quoted)}</strong></td>
+        <td class="num"><strong>${fmtSum(totals.actual)}</strong></td>
+        <td class="num"><strong>${fmtSum(totals.deposit)}</strong></td>
+        <td class="num"><strong>${fmtSum(totals.paid)}</strong></td>
+        <td colspan="3"></td>
+      </tr></tfoot>
+    </table>`;
+}
+
+function openAddBudget() {
+  editingBudgetId = null;
+  document.getElementById('budget-modal-title').textContent = 'Add budget item';
+  document.getElementById('add-budget-btn').textContent = 'Add item';
+  ['b-category','b-supplier','b-description','b-allocated','b-quoted','b-actual','b-deposit','b-paid-amount','b-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = el.tagName === 'SELECT' ? (id === 'b-paid-status' ? 'unpaid' : '') : '';
+  });
+  document.getElementById('b-paid-status').value = 'unpaid';
+  document.getElementById('budget-modal').classList.add('open');
+}
+
+function closeAddBudget() {
+  document.getElementById('budget-modal').classList.remove('open');
+}
+
+function handleBudgetModalClick(e) {
+  if (e.target === document.getElementById('budget-modal')) closeAddBudget();
+}
+
+function editBudgetItem(id) {
+  const item = allBudgetItems.find(i => i.id === id);
+  if (!item) return;
+  editingBudgetId = id;
+  document.getElementById('budget-modal-title').textContent = 'Edit budget item';
+  document.getElementById('add-budget-btn').textContent = 'Save changes';
+  document.getElementById('b-category').value       = item.category || '';
+  document.getElementById('b-supplier').value       = item.supplier || '';
+  document.getElementById('b-description').value    = item.description || '';
+  document.getElementById('b-allocated').value      = item.allocated_budget || '';
+  document.getElementById('b-quoted').value         = item.quoted_amount || '';
+  document.getElementById('b-actual').value         = item.actual_amount || '';
+  document.getElementById('b-deposit').value        = item.deposit_amount || '';
+  document.getElementById('b-paid-amount').value    = item.paid_amount || '';
+  document.getElementById('b-paid-status').value    = item.paid_status || 'unpaid';
+  document.getElementById('b-notes').value          = item.notes || '';
+  document.getElementById('budget-modal').classList.add('open');
+}
+
+async function saveBudgetItem() {
+  const category = document.getElementById('b-category').value;
+  if (!category) { document.getElementById('b-category').style.borderColor = '#e53e3e'; return; }
+  const btn = document.getElementById('add-budget-btn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+
+  const payload = {
+    event_id:         eventId,
+    category,
+    supplier:         document.getElementById('b-supplier').value.trim(),
+    description:      document.getElementById('b-description').value.trim(),
+    allocated_budget: parseFloat(document.getElementById('b-allocated').value) || 0,
+    quoted_amount:    parseFloat(document.getElementById('b-quoted').value) || 0,
+    actual_amount:    parseFloat(document.getElementById('b-actual').value) || 0,
+    deposit_amount:   parseFloat(document.getElementById('b-deposit').value) || 0,
+    paid_amount:      parseFloat(document.getElementById('b-paid-amount').value) || 0,
+    paid_status:      document.getElementById('b-paid-status').value,
+    notes:            document.getElementById('b-notes').value.trim(),
+  };
+
+  let error;
+  if (editingBudgetId) {
+    ({ error } = await sb.from('budget_items').update(payload).eq('id', editingBudgetId));
+  } else {
+    ({ error } = await sb.from('budget_items').insert([payload]));
+  }
+
+  btn.textContent = editingBudgetId ? 'Save changes' : 'Add item';
+  btn.disabled = false;
+
+  if (!error) {
+    closeAddBudget();
+    await loadBudget();
+  } else {
+    console.error(error);
+    alert('Error saving — check console for details.');
+  }
+}
+
+async function deleteBudgetItem(id) {
+  if (!confirm('Delete this budget item?')) return;
+  await sb.from('budget_items').delete().eq('id', id);
+  await loadBudget();
+}
+
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -320,6 +521,83 @@ tr:hover td{background:var(--cream);}
 }
 .photo-placeholder svg{opacity:0.4;}
 .photo-placeholder small{font-size:0.7rem;opacity:0.7;}
+
+.budget-summary{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  gap:10px;margin-bottom:1.25rem;
+}
+.budget-card{
+  background:#fff;border:1px solid var(--rule);
+  border-radius:12px;padding:0.9rem 1rem;
+}
+.budget-card-label{font-size:0.68rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem;}
+.budget-card-value{font-family:'Nunito',sans-serif;font-size:1.3rem;font-weight:800;color:var(--ink);}
+.budget-card-value.green{color:#2d6a4f;}
+.budget-card-value.amber{color:var(--amber-dark);}
+.budget-card-value.red{color:#c0392b;}
+table.budget-table{width:100%;border-collapse:collapse;}
+table.budget-table thead{background:var(--cream);position:sticky;top:0;}
+table.budget-table th{
+  padding:0.7rem 0.85rem;text-align:left;font-size:0.68rem;
+  font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--ink3);border-bottom:1px solid var(--rule);white-space:nowrap;
+}
+table.budget-table th.num{text-align:right;}
+table.budget-table td{
+  padding:0.75rem 0.85rem;font-size:0.82rem;
+  border-bottom:1px solid var(--rule);vertical-align:middle;
+}
+table.budget-table td.num{text-align:right;font-family:'Nunito',sans-serif;font-weight:600;}
+table.budget-table td.num.red{color:#c0392b;}
+table.budget-table td.num.green{color:#2d6a4f;}
+table.budget-table tr:last-child td{border-bottom:none;}
+table.budget-table tr:hover td{background:#fafaf7;}
+table.budget-table tfoot td{
+  padding:0.85rem;font-weight:700;font-size:0.85rem;
+  background:var(--cream);border-top:2px solid var(--rule);
+  font-family:'Nunito',sans-serif;
+}
+table.budget-table tfoot td.num{text-align:right;}
+.category-badge{
+  font-size:0.65rem;font-weight:600;padding:3px 10px;
+  border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;
+  white-space:nowrap;
+}
+.cat-venue{background:#e8f4fd;color:#1a6fa8;}
+.cat-catering{background:#fdf6ec;color:#92600a;}
+.cat-flowers{background:#fdf0f7;color:#8b2a6e;}
+.cat-music{background:#f0f0fd;color:#4a4aab;}
+.cat-photography{background:#f0f7f4;color:#2d6a4f;}
+.cat-transport{background:#fdf0f0;color:#9b2c2c;}
+.cat-accommodation{background:#fff8e6;color:#c98a00;}
+.cat-staffing{background:#f5f0fd;color:#6b3fa0;}
+.cat-decor{background:#fdf5f0;color:#a04a1a;}
+.cat-other{background:var(--rule);color:var(--ink3);}
+.paid-badge{
+  font-size:0.62rem;font-weight:600;padding:2px 8px;
+  border-radius:20px;
+}
+.paid-yes{background:#f0f7f4;color:#2d6a4f;}
+.paid-no{background:#fdf0f0;color:#9b2c2c;}
+.paid-partial{background:#fff8e6;color:#c98a00;}
+.row-actions{display:flex;gap:6px;opacity:0;transition:opacity 0.15s;}
+tr:hover .row-actions{opacity:1;}
+.row-btn{
+  font-size:0.72rem;padding:3px 8px;border-radius:6px;
+  border:1px solid var(--rule);background:#fff;cursor:pointer;
+  font-family:'DM Sans',sans-serif;color:var(--ink2);transition:all 0.15s;
+}
+.row-btn:hover{border-color:var(--ink);color:var(--ink);}
+.row-btn.del:hover{border-color:#e53e3e;color:#e53e3e;}
+
+@media(max-width:768px){
+  .budget-summary{grid-template-columns:repeat(3,1fr);}
+  .table-wrap{overflow-x:auto;}
+  table.budget-table th,table.budget-table td{padding:0.6rem 0.6rem;font-size:0.75rem;}
+}
+@media(max-width:480px){
+  .budget-summary{grid-template-columns:repeat(2,1fr);}
+}
 </style>
 </head>
 <body>
@@ -445,11 +723,44 @@ tr:hover td{background:var(--cream);}
 
   <!-- BUDGET -->
   <div class="panel" id="panel-budget">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">💰</div>
-      <h3>Budget tracker</h3>
-      <p>Track every expense, supplier cost and payment in one place.</p>
-      <div class="coming-badge">Coming soon</div>
+    <div class="panel-header">
+      <div class="panel-title">Budget tracker</div>
+      <div class="right-actions" style="display:flex;gap:8px;align-items:center;">
+        <button class="btn-sm amber" onclick="openAddBudget()">+ Add item</button>
+      </div>
+    </div>
+
+    <!-- BUDGET SUMMARY CARDS -->
+    <div class="budget-summary">
+      <div class="budget-card">
+        <div class="budget-card-label">Total budget</div>
+        <div class="budget-card-value" id="b-total-budget">€0</div>
+      </div>
+      <div class="budget-card">
+        <div class="budget-card-label">Total quoted</div>
+        <div class="budget-card-value" id="b-total-quoted">€0</div>
+      </div>
+      <div class="budget-card">
+        <div class="budget-card-label">Total actual</div>
+        <div class="budget-card-value" id="b-total-actual">€0</div>
+      </div>
+      <div class="budget-card">
+        <div class="budget-card-label">Total paid</div>
+        <div class="budget-card-value green" id="b-total-paid">€0</div>
+      </div>
+      <div class="budget-card">
+        <div class="budget-card-label">Total deposits</div>
+        <div class="budget-card-value amber" id="b-total-deposit">€0</div>
+      </div>
+      <div class="budget-card">
+        <div class="budget-card-label">Remaining</div>
+        <div class="budget-card-value" id="b-remaining">€0</div>
+      </div>
+    </div>
+
+    <!-- BUDGET TABLE -->
+    <div class="table-wrap" id="budget-content">
+      <div class="spinner"></div>
     </div>
   </div>
 
@@ -1015,6 +1326,7 @@ async function addGuest() {
 
 function showTab(name) {
   if (name === 'settings') setTimeout(() => initDragDrop('settings-photo-area','settings-photo-input','settings-photo-preview','settings-photo-placeholder'), 100);
+  if (name === 'budget') loadBudget();
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
@@ -1033,6 +1345,286 @@ function shareEvent() {
     alert('Link copied to clipboard!');
   }
 }
+
+// ============ BUDGET ============
+let allBudgetItems = [];
+let editingBudgetId = null;
+
+async function loadBudget() {
+  const { data } = await sb.from('budget_items').select('*')
+    .eq('event_id', eventId).order('created_at', { ascending: true });
+  allBudgetItems = data || [];
+  renderBudget(allBudgetItems);
+}
+
+function fmt(n) {
+  if (!n || n === 0) return '—';
+  return '€' + parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtSum(n) {
+  return '€' + parseFloat(n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function catClass(cat) {
+  return 'cat-' + (cat || 'other');
+}
+
+function catLabel(cat) {
+  const labels = {
+    venue:'Venue', catering:'Catering', flowers:'Flowers',
+    music:'Music', photography:'Photography', transport:'Transport',
+    accommodation:'Accommodation', staffing:'Staffing', decor:'Decor', other:'Other'
+  };
+  return labels[cat] || 'Other';
+}
+
+function paidLabel(status) {
+  const labels = { paid:'Paid', deposit:'Deposit', partial:'Partial', unpaid:'Unpaid' };
+  return labels[status] || 'Unpaid';
+}
+
+function paidClass(status) {
+  const classes = { paid:'paid-yes', deposit:'paid-partial', partial:'paid-partial', unpaid:'paid-no' };
+  return classes[status] || 'paid-no';
+}
+
+function renderBudget(items) {
+  const el = document.getElementById('budget-content');
+
+  // Totals
+  const totals = items.reduce((acc, item) => {
+    acc.budget += parseFloat(item.allocated_budget || 0);
+    acc.quoted += parseFloat(item.quoted_amount || 0);
+    acc.actual += parseFloat(item.actual_amount || 0);
+    acc.paid   += parseFloat(item.paid_amount || 0);
+    acc.deposit+= parseFloat(item.deposit_amount || 0);
+    return acc;
+  }, { budget:0, quoted:0, actual:0, paid:0, deposit:0 });
+
+  const remaining = totals.budget - totals.actual;
+  document.getElementById('b-total-budget').textContent  = fmtSum(totals.budget);
+  document.getElementById('b-total-quoted').textContent  = fmtSum(totals.quoted);
+  document.getElementById('b-total-actual').textContent  = fmtSum(totals.actual);
+  document.getElementById('b-total-paid').textContent    = fmtSum(totals.paid);
+  document.getElementById('b-total-deposit').textContent = fmtSum(totals.deposit);
+  const remEl = document.getElementById('b-remaining');
+  remEl.textContent = fmtSum(remaining);
+  remEl.className = 'budget-card-value ' + (remaining < 0 ? 'red' : remaining === 0 ? '' : 'green');
+
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first item to start tracking.</p><button class="btn-primary" onclick="openAddBudget()">+ Add first item</button></div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="budget-table">
+      <thead><tr>
+        <th>Category</th>
+        <th>Supplier</th>
+        <th>Description</th>
+        <th class="num">Allocated</th>
+        <th class="num">Quoted</th>
+        <th class="num">Actual</th>
+        <th class="num">Deposit</th>
+        <th class="num">Paid</th>
+        <th>Status</th>
+        <th>Notes</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${items.map(item => `<tr>
+          <td><span class="category-badge ${catClass(item.category)}">${catLabel(item.category)}</span></td>
+          <td>${item.supplier || '—'}</td>
+          <td>${item.description || '—'}</td>
+          <td class="num">${fmt(item.allocated_budget)}</td>
+          <td class="num">${fmt(item.quoted_amount)}</td>
+          <td class="num ${item.actual_amount > item.allocated_budget ? 'red' : ''}">${fmt(item.actual_amount)}</td>
+          <td class="num">${fmt(item.deposit_amount)}</td>
+          <td class="num ${item.paid_status === 'paid' ? 'green' : ''}">${fmt(item.paid_amount)}</td>
+          <td><span class="paid-badge ${paidClass(item.paid_status)}">${paidLabel(item.paid_status)}</span></td>
+          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.notes || '—'}</td>
+          <td><div class="row-actions">
+            <button class="row-btn" onclick="editBudgetItem('${item.id}')">Edit</button>
+            <button class="row-btn del" onclick="deleteBudgetItem('${item.id}')">Delete</button>
+          </div></td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot><tr>
+        <td colspan="3"><strong>Totals</strong></td>
+        <td class="num"><strong>${fmtSum(totals.budget)}</strong></td>
+        <td class="num"><strong>${fmtSum(totals.quoted)}</strong></td>
+        <td class="num"><strong>${fmtSum(totals.actual)}</strong></td>
+        <td class="num"><strong>${fmtSum(totals.deposit)}</strong></td>
+        <td class="num"><strong>${fmtSum(totals.paid)}</strong></td>
+        <td colspan="3"></td>
+      </tr></tfoot>
+    </table>`;
+}
+
+function openAddBudget() {
+  editingBudgetId = null;
+  document.getElementById('budget-modal-title').textContent = 'Add budget item';
+  document.getElementById('add-budget-btn').textContent = 'Add item';
+  ['b-category','b-supplier','b-description','b-allocated','b-quoted','b-actual','b-deposit','b-paid-amount','b-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = el.tagName === 'SELECT' ? (id === 'b-paid-status' ? 'unpaid' : '') : '';
+  });
+  document.getElementById('b-paid-status').value = 'unpaid';
+  document.getElementById('budget-modal').classList.add('open');
+}
+
+function closeAddBudget() {
+  document.getElementById('budget-modal').classList.remove('open');
+}
+
+function handleBudgetModalClick(e) {
+  if (e.target === document.getElementById('budget-modal')) closeAddBudget();
+}
+
+function editBudgetItem(id) {
+  const item = allBudgetItems.find(i => i.id === id);
+  if (!item) return;
+  editingBudgetId = id;
+  document.getElementById('budget-modal-title').textContent = 'Edit budget item';
+  document.getElementById('add-budget-btn').textContent = 'Save changes';
+  document.getElementById('b-category').value       = item.category || '';
+  document.getElementById('b-supplier').value       = item.supplier || '';
+  document.getElementById('b-description').value    = item.description || '';
+  document.getElementById('b-allocated').value      = item.allocated_budget || '';
+  document.getElementById('b-quoted').value         = item.quoted_amount || '';
+  document.getElementById('b-actual').value         = item.actual_amount || '';
+  document.getElementById('b-deposit').value        = item.deposit_amount || '';
+  document.getElementById('b-paid-amount').value    = item.paid_amount || '';
+  document.getElementById('b-paid-status').value    = item.paid_status || 'unpaid';
+  document.getElementById('b-notes').value          = item.notes || '';
+  document.getElementById('budget-modal').classList.add('open');
+}
+
+async function saveBudgetItem() {
+  const category = document.getElementById('b-category').value;
+  if (!category) { document.getElementById('b-category').style.borderColor = '#e53e3e'; return; }
+  const btn = document.getElementById('add-budget-btn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+
+  const payload = {
+    event_id:         eventId,
+    category,
+    supplier:         document.getElementById('b-supplier').value.trim(),
+    description:      document.getElementById('b-description').value.trim(),
+    allocated_budget: parseFloat(document.getElementById('b-allocated').value) || 0,
+    quoted_amount:    parseFloat(document.getElementById('b-quoted').value) || 0,
+    actual_amount:    parseFloat(document.getElementById('b-actual').value) || 0,
+    deposit_amount:   parseFloat(document.getElementById('b-deposit').value) || 0,
+    paid_amount:      parseFloat(document.getElementById('b-paid-amount').value) || 0,
+    paid_status:      document.getElementById('b-paid-status').value,
+    notes:            document.getElementById('b-notes').value.trim(),
+  };
+
+  let error;
+  if (editingBudgetId) {
+    ({ error } = await sb.from('budget_items').update(payload).eq('id', editingBudgetId));
+  } else {
+    ({ error } = await sb.from('budget_items').insert([payload]));
+  }
+
+  btn.textContent = editingBudgetId ? 'Save changes' : 'Add item';
+  btn.disabled = false;
+
+  if (!error) {
+    closeAddBudget();
+    await loadBudget();
+  } else {
+    console.error(error);
+    alert('Error saving — check console for details.');
+  }
+}
+
+async function deleteBudgetItem(id) {
+  if (!confirm('Delete this budget item?')) return;
+  await sb.from('budget_items').delete().eq('id', id);
+  await loadBudget();
+}
+
 </script>
+
+<!-- ADD BUDGET MODAL -->
+<div class="modal-overlay" id="budget-modal" onclick="handleBudgetModalClick(event)">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title" id="budget-modal-title">Add budget item</div>
+      <button class="modal-close" onclick="closeAddBudget()">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Category *</label>
+        <select id="b-category">
+          <option value="">Select category</option>
+          <option value="venue">Venue</option>
+          <option value="catering">Catering</option>
+          <option value="flowers">Flowers & Florals</option>
+          <option value="music">Music & Entertainment</option>
+          <option value="photography">Photography & Video</option>
+          <option value="transport">Transport</option>
+          <option value="accommodation">Accommodation</option>
+          <option value="staffing">Staffing</option>
+          <option value="decor">Decor & Styling</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Supplier</label>
+        <input type="text" id="b-supplier" placeholder="Supplier name">
+      </div>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <input type="text" id="b-description" placeholder="What is this for?">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Allocated budget (€)</label>
+        <input type="number" id="b-allocated" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Quoted amount (€)</label>
+        <input type="number" id="b-quoted" placeholder="0.00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Actual amount (€)</label>
+        <input type="number" id="b-actual" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Deposit paid (€)</label>
+        <input type="number" id="b-deposit" placeholder="0.00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Amount paid (€)</label>
+        <input type="number" id="b-paid-amount" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Payment status</label>
+        <select id="b-paid-status">
+          <option value="unpaid">Unpaid</option>
+          <option value="deposit">Deposit paid</option>
+          <option value="partial">Partially paid</option>
+          <option value="paid">Fully paid</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <input type="text" id="b-notes" placeholder="Any additional notes">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddBudget()">Cancel</button>
+      <button class="btn-primary" id="add-budget-btn" onclick="saveBudgetItem()">Add item</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
