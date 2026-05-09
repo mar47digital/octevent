@@ -261,7 +261,7 @@ main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
   height:140px;cursor:pointer;overflow:hidden;
   transition:border-color 0.2s;background:var(--cream);
 }
-.photo-upload:hover{border-color:var(--amber);}
+.photo-upload:hover{border-color:var(--amber);}.photo-upload.dragover{border-color:var(--amber);background:var(--amber-light);}
 .photo-upload-inner{width:100%;height:100%;position:relative;}
 .photo-placeholder{
   display:flex;flex-direction:column;align-items:center;
@@ -326,7 +326,7 @@ main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
         <div class="photo-upload-inner" id="photo-preview-wrap">
           <div class="photo-placeholder" id="photo-placeholder">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-            <span>Click to upload photo</span>
+            <span>Drag & drop or click to upload</span>
             <small>JPG, PNG — max 5MB</small>
           </div>
           <img id="photo-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:10px;" alt="Preview">
@@ -484,6 +484,7 @@ function filterEvents(filter, btn) {
 }
 
 function openModal() {
+  setTimeout(() => initDragDrop('photo-upload-area','new-photo','photo-preview','photo-placeholder'), 100);
   document.getElementById('modal').classList.add('open');
   document.getElementById('new-date').value = new Date().toISOString().split('T')[0];
   setTimeout(() => document.getElementById('new-name').focus(), 100);
@@ -497,16 +498,38 @@ function handleOverlayClick(e) {
   if (e.target === document.getElementById('modal')) closeModal();
 }
 
+function initDragDrop(areaId, inputId, previewId, placeholderId) {
+  const area = document.getElementById(areaId);
+  if (!area) return;
+  area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('dragover'); });
+  area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+  area.addEventListener('drop', e => {
+    e.preventDefault();
+    area.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const input = document.getElementById(inputId);
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    showPreview(file, previewId, placeholderId);
+  });
+}
+
+function showPreview(file, previewId, placeholderId) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById(previewId).src = ev.target.result;
+    document.getElementById(previewId).style.display = 'block';
+    document.getElementById(placeholderId).style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
 function previewPhoto(e) {
   const file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    document.getElementById('photo-preview').src = ev.target.result;
-    document.getElementById('photo-preview').style.display = 'block';
-    document.getElementById('photo-placeholder').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
+  showPreview(file, 'photo-preview', 'photo-placeholder');
 }
 
 async function handleCreateEvent() {
