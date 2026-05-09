@@ -50,10 +50,7 @@ function paidClass(status) {
   return classes[status] || 'paid-no';
 }
 
-function renderBudget(items) {
-  const el = document.getElementById('budget-content');
-
-  // Totals
+function updateTotals(items) {
   const totals = items.reduce((acc, item) => {
     acc.budget += parseFloat(item.allocated_budget || 0);
     acc.quoted += parseFloat(item.quoted_amount || 0);
@@ -72,6 +69,95 @@ function renderBudget(items) {
   const remEl = document.getElementById('b-remaining');
   remEl.textContent = fmtSum(remaining);
   remEl.className = 'budget-card-value ' + (remaining < 0 ? 'red' : remaining === 0 ? '' : 'green');
+
+  // Update footer totals
+  const footer = document.getElementById('budget-footer');
+  if (footer) {
+    footer.innerHTML = `
+      <td colspan="3"><strong>Totals</strong></td>
+      <td class="num"><strong>${fmtSum(totals.budget)}</strong></td>
+      <td class="num"><strong>${fmtSum(totals.quoted)}</strong></td>
+      <td class="num"><strong>${fmtSum(totals.actual)}</strong></td>
+      <td class="num"><strong>${fmtSum(totals.deposit)}</strong></td>
+      <td class="num"><strong>${fmtSum(totals.paid)}</strong></td>
+      <td colspan="3"></td>`;
+  }
+}
+
+function makeEditable(td, item, field, type='text') {
+  td.classList.add('editing');
+  const orig = td.innerHTML;
+  let input;
+
+  if (type === 'select-category') {
+    input = document.createElement('select');
+    input.className = 'inline-select';
+    ['venue','catering','flowers','music','photography','transport','accommodation','staffing','decor','other'].forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = catLabel(v);
+      if (v === item[field]) o.selected = true;
+      input.appendChild(o);
+    });
+  } else if (type === 'select-status') {
+    input = document.createElement('select');
+    input.className = 'inline-select';
+    ['unpaid','deposit','partial','paid'].forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = paidLabel(v);
+      if (v === item[field]) o.selected = true;
+      input.appendChild(o);
+    });
+  } else {
+    input = document.createElement('input');
+    input.className = 'inline-input';
+    input.type = type === 'number' ? 'number' : 'text';
+    input.value = item[field] || '';
+    if (type === 'number') { input.step = '0.01'; input.min = '0'; }
+  }
+
+  td.innerHTML = '';
+  td.appendChild(input);
+  input.focus();
+  if (input.select) input.select();
+
+  async function save() {
+    const newVal = type === 'number' ? (parseFloat(input.value) || 0) : input.value.trim();
+    item[field] = newVal;
+    td.classList.remove('editing');
+    // Re-render this cell
+    renderCell(td, item, field, type);
+    updateTotals(allBudgetItems);
+    // Save to Supabase
+    await sb.from('budget_items').update({ [field]: newVal }).eq('id', item.id);
+  }
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { td.innerHTML = orig; td.classList.remove('editing'); }
+  });
+}
+
+function renderCell(td, item, field, type) {
+  if (type === 'select-category') {
+    td.innerHTML = `<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`;
+  } else if (type === 'select-status') {
+    td.innerHTML = `<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field])}</span>`;
+  } else if (type === 'number') {
+    const val = parseFloat(item[field] || 0);
+    let cls = '';
+    if (field === 'actual_amount' && val > parseFloat(item.allocated_budget || 0)) cls = 'red';
+    if (field === 'paid_amount' && item.paid_status === 'paid') cls = 'green';
+    td.innerHTML = fmt(item[field]);
+    td.className = 'num' + (cls ? ' ' + cls : '');
+  } else {
+    td.textContent = item[field] || '—';
+  }
+}
+
+function renderBudget(items) {
+  const el = document.getElementById('budget-content');
+  updateTotals(items);
 
   if (!items.length) {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first item to start tracking.</p><button class="btn-primary" onclick="openAddBudget()">+ Add first item</button></div>`;
@@ -93,34 +179,50 @@ function renderBudget(items) {
         <th>Notes</th>
         <th></th>
       </tr></thead>
-      <tbody>
-        ${items.map(item => `<tr>
-          <td><span class="category-badge ${catClass(item.category)}">${catLabel(item.category)}</span></td>
-          <td>${item.supplier || '—'}</td>
-          <td>${item.description || '—'}</td>
-          <td class="num">${fmt(item.allocated_budget)}</td>
-          <td class="num">${fmt(item.quoted_amount)}</td>
-          <td class="num ${item.actual_amount > item.allocated_budget ? 'red' : ''}">${fmt(item.actual_amount)}</td>
-          <td class="num">${fmt(item.deposit_amount)}</td>
-          <td class="num ${item.paid_status === 'paid' ? 'green' : ''}">${fmt(item.paid_amount)}</td>
-          <td><span class="paid-badge ${paidClass(item.paid_status)}">${paidLabel(item.paid_status)}</span></td>
-          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.notes || '—'}</td>
-          <td><div class="row-actions">
-            <button class="row-btn" onclick="editBudgetItem('${item.id}')">Edit</button>
-            <button class="row-btn del" onclick="deleteBudgetItem('${item.id}')">Delete</button>
-          </div></td>
-        </tr>`).join('')}
-      </tbody>
-      <tfoot><tr>
-        <td colspan="3"><strong>Totals</strong></td>
-        <td class="num"><strong>${fmtSum(totals.budget)}</strong></td>
-        <td class="num"><strong>${fmtSum(totals.quoted)}</strong></td>
-        <td class="num"><strong>${fmtSum(totals.actual)}</strong></td>
-        <td class="num"><strong>${fmtSum(totals.deposit)}</strong></td>
-        <td class="num"><strong>${fmtSum(totals.paid)}</strong></td>
-        <td colspan="3"></td>
-      </tr></tfoot>
+      <tbody id="budget-tbody"></tbody>
+      <tfoot><tr id="budget-footer"></tr></tfoot>
     </table>`;
+
+  const tbody = document.getElementById('budget-tbody');
+  items.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = item.id;
+
+    const fields = [
+      { field:'category',         type:'select-category' },
+      { field:'supplier',         type:'text' },
+      { field:'description',      type:'text' },
+      { field:'allocated_budget', type:'number' },
+      { field:'quoted_amount',    type:'number' },
+      { field:'actual_amount',    type:'number' },
+      { field:'deposit_amount',   type:'number' },
+      { field:'paid_amount',      type:'number' },
+      { field:'paid_status',      type:'select-status' },
+      { field:'notes',            type:'text' },
+    ];
+
+    fields.forEach(({ field, type }) => {
+      const td = document.createElement('td');
+      if (type === 'number') td.className = 'num';
+      renderCell(td, item, field, type);
+      td.title = 'Click to edit';
+      td.style.cursor = 'pointer';
+      td.addEventListener('click', () => {
+        if (td.classList.contains('editing')) return;
+        makeEditable(td, item, field, type);
+      });
+      tr.appendChild(td);
+    });
+
+    // Delete button
+    const actionTd = document.createElement('td');
+    actionTd.innerHTML = `<div class="row-actions"><button class="row-btn del" onclick="deleteBudgetItem('${item.id}')">Delete</button></div>`;
+    tr.appendChild(actionTd);
+
+    tbody.appendChild(tr);
+  });
+
+  updateTotals(items);
 }
 
 function openAddBudget() {
@@ -143,24 +245,7 @@ function handleBudgetModalClick(e) {
   if (e.target === document.getElementById('budget-modal')) closeAddBudget();
 }
 
-function editBudgetItem(id) {
-  const item = allBudgetItems.find(i => i.id === id);
-  if (!item) return;
-  editingBudgetId = id;
-  document.getElementById('budget-modal-title').textContent = 'Edit budget item';
-  document.getElementById('add-budget-btn').textContent = 'Save changes';
-  document.getElementById('b-category').value       = item.category || '';
-  document.getElementById('b-supplier').value       = item.supplier || '';
-  document.getElementById('b-description').value    = item.description || '';
-  document.getElementById('b-allocated').value      = item.allocated_budget || '';
-  document.getElementById('b-quoted').value         = item.quoted_amount || '';
-  document.getElementById('b-actual').value         = item.actual_amount || '';
-  document.getElementById('b-deposit').value        = item.deposit_amount || '';
-  document.getElementById('b-paid-amount').value    = item.paid_amount || '';
-  document.getElementById('b-paid-status').value    = item.paid_status || 'unpaid';
-  document.getElementById('b-notes').value          = item.notes || '';
-  document.getElementById('budget-modal').classList.add('open');
-}
+
 
 async function saveBudgetItem() {
   const category = document.getElementById('b-category').value;
@@ -598,6 +683,21 @@ tr:hover .row-actions{opacity:1;}
 @media(max-width:480px){
   .budget-summary{grid-template-columns:repeat(2,1fr);}
 }
+
+td.editing { padding: 2px !important; }
+.inline-input {
+  width: 100%; padding: 4px 8px;
+  border: 2px solid var(--amber); border-radius: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+  color: var(--ink); outline: none; background: #fff;
+}
+.inline-select {
+  width: 100%; padding: 4px 6px;
+  border: 2px solid var(--amber); border-radius: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+  color: var(--ink); outline: none; background: #fff; cursor: pointer;
+}
+table.budget-table td:hover:not(.editing) { background: var(--amber-light) !important; }
 </style>
 </head>
 <body>
@@ -1389,10 +1489,7 @@ function paidClass(status) {
   return classes[status] || 'paid-no';
 }
 
-function renderBudget(items) {
-  const el = document.getElementById('budget-content');
-
-  // Totals
+function updateTotals(items) {
   const totals = items.reduce((acc, item) => {
     acc.budget += parseFloat(item.allocated_budget || 0);
     acc.quoted += parseFloat(item.quoted_amount || 0);
@@ -1411,6 +1508,95 @@ function renderBudget(items) {
   const remEl = document.getElementById('b-remaining');
   remEl.textContent = fmtSum(remaining);
   remEl.className = 'budget-card-value ' + (remaining < 0 ? 'red' : remaining === 0 ? '' : 'green');
+
+  // Update footer totals
+  const footer = document.getElementById('budget-footer');
+  if (footer) {
+    footer.innerHTML = `
+      <td colspan="3"><strong>Totals</strong></td>
+      <td class="num"><strong>${fmtSum(totals.budget)}</strong></td>
+      <td class="num"><strong>${fmtSum(totals.quoted)}</strong></td>
+      <td class="num"><strong>${fmtSum(totals.actual)}</strong></td>
+      <td class="num"><strong>${fmtSum(totals.deposit)}</strong></td>
+      <td class="num"><strong>${fmtSum(totals.paid)}</strong></td>
+      <td colspan="3"></td>`;
+  }
+}
+
+function makeEditable(td, item, field, type='text') {
+  td.classList.add('editing');
+  const orig = td.innerHTML;
+  let input;
+
+  if (type === 'select-category') {
+    input = document.createElement('select');
+    input.className = 'inline-select';
+    ['venue','catering','flowers','music','photography','transport','accommodation','staffing','decor','other'].forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = catLabel(v);
+      if (v === item[field]) o.selected = true;
+      input.appendChild(o);
+    });
+  } else if (type === 'select-status') {
+    input = document.createElement('select');
+    input.className = 'inline-select';
+    ['unpaid','deposit','partial','paid'].forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = paidLabel(v);
+      if (v === item[field]) o.selected = true;
+      input.appendChild(o);
+    });
+  } else {
+    input = document.createElement('input');
+    input.className = 'inline-input';
+    input.type = type === 'number' ? 'number' : 'text';
+    input.value = item[field] || '';
+    if (type === 'number') { input.step = '0.01'; input.min = '0'; }
+  }
+
+  td.innerHTML = '';
+  td.appendChild(input);
+  input.focus();
+  if (input.select) input.select();
+
+  async function save() {
+    const newVal = type === 'number' ? (parseFloat(input.value) || 0) : input.value.trim();
+    item[field] = newVal;
+    td.classList.remove('editing');
+    // Re-render this cell
+    renderCell(td, item, field, type);
+    updateTotals(allBudgetItems);
+    // Save to Supabase
+    await sb.from('budget_items').update({ [field]: newVal }).eq('id', item.id);
+  }
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { td.innerHTML = orig; td.classList.remove('editing'); }
+  });
+}
+
+function renderCell(td, item, field, type) {
+  if (type === 'select-category') {
+    td.innerHTML = `<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`;
+  } else if (type === 'select-status') {
+    td.innerHTML = `<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field])}</span>`;
+  } else if (type === 'number') {
+    const val = parseFloat(item[field] || 0);
+    let cls = '';
+    if (field === 'actual_amount' && val > parseFloat(item.allocated_budget || 0)) cls = 'red';
+    if (field === 'paid_amount' && item.paid_status === 'paid') cls = 'green';
+    td.innerHTML = fmt(item[field]);
+    td.className = 'num' + (cls ? ' ' + cls : '');
+  } else {
+    td.textContent = item[field] || '—';
+  }
+}
+
+function renderBudget(items) {
+  const el = document.getElementById('budget-content');
+  updateTotals(items);
 
   if (!items.length) {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first item to start tracking.</p><button class="btn-primary" onclick="openAddBudget()">+ Add first item</button></div>`;
@@ -1432,34 +1618,50 @@ function renderBudget(items) {
         <th>Notes</th>
         <th></th>
       </tr></thead>
-      <tbody>
-        ${items.map(item => `<tr>
-          <td><span class="category-badge ${catClass(item.category)}">${catLabel(item.category)}</span></td>
-          <td>${item.supplier || '—'}</td>
-          <td>${item.description || '—'}</td>
-          <td class="num">${fmt(item.allocated_budget)}</td>
-          <td class="num">${fmt(item.quoted_amount)}</td>
-          <td class="num ${item.actual_amount > item.allocated_budget ? 'red' : ''}">${fmt(item.actual_amount)}</td>
-          <td class="num">${fmt(item.deposit_amount)}</td>
-          <td class="num ${item.paid_status === 'paid' ? 'green' : ''}">${fmt(item.paid_amount)}</td>
-          <td><span class="paid-badge ${paidClass(item.paid_status)}">${paidLabel(item.paid_status)}</span></td>
-          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.notes || '—'}</td>
-          <td><div class="row-actions">
-            <button class="row-btn" onclick="editBudgetItem('${item.id}')">Edit</button>
-            <button class="row-btn del" onclick="deleteBudgetItem('${item.id}')">Delete</button>
-          </div></td>
-        </tr>`).join('')}
-      </tbody>
-      <tfoot><tr>
-        <td colspan="3"><strong>Totals</strong></td>
-        <td class="num"><strong>${fmtSum(totals.budget)}</strong></td>
-        <td class="num"><strong>${fmtSum(totals.quoted)}</strong></td>
-        <td class="num"><strong>${fmtSum(totals.actual)}</strong></td>
-        <td class="num"><strong>${fmtSum(totals.deposit)}</strong></td>
-        <td class="num"><strong>${fmtSum(totals.paid)}</strong></td>
-        <td colspan="3"></td>
-      </tr></tfoot>
+      <tbody id="budget-tbody"></tbody>
+      <tfoot><tr id="budget-footer"></tr></tfoot>
     </table>`;
+
+  const tbody = document.getElementById('budget-tbody');
+  items.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = item.id;
+
+    const fields = [
+      { field:'category',         type:'select-category' },
+      { field:'supplier',         type:'text' },
+      { field:'description',      type:'text' },
+      { field:'allocated_budget', type:'number' },
+      { field:'quoted_amount',    type:'number' },
+      { field:'actual_amount',    type:'number' },
+      { field:'deposit_amount',   type:'number' },
+      { field:'paid_amount',      type:'number' },
+      { field:'paid_status',      type:'select-status' },
+      { field:'notes',            type:'text' },
+    ];
+
+    fields.forEach(({ field, type }) => {
+      const td = document.createElement('td');
+      if (type === 'number') td.className = 'num';
+      renderCell(td, item, field, type);
+      td.title = 'Click to edit';
+      td.style.cursor = 'pointer';
+      td.addEventListener('click', () => {
+        if (td.classList.contains('editing')) return;
+        makeEditable(td, item, field, type);
+      });
+      tr.appendChild(td);
+    });
+
+    // Delete button
+    const actionTd = document.createElement('td');
+    actionTd.innerHTML = `<div class="row-actions"><button class="row-btn del" onclick="deleteBudgetItem('${item.id}')">Delete</button></div>`;
+    tr.appendChild(actionTd);
+
+    tbody.appendChild(tr);
+  });
+
+  updateTotals(items);
 }
 
 function openAddBudget() {
@@ -1482,24 +1684,7 @@ function handleBudgetModalClick(e) {
   if (e.target === document.getElementById('budget-modal')) closeAddBudget();
 }
 
-function editBudgetItem(id) {
-  const item = allBudgetItems.find(i => i.id === id);
-  if (!item) return;
-  editingBudgetId = id;
-  document.getElementById('budget-modal-title').textContent = 'Edit budget item';
-  document.getElementById('add-budget-btn').textContent = 'Save changes';
-  document.getElementById('b-category').value       = item.category || '';
-  document.getElementById('b-supplier').value       = item.supplier || '';
-  document.getElementById('b-description').value    = item.description || '';
-  document.getElementById('b-allocated').value      = item.allocated_budget || '';
-  document.getElementById('b-quoted').value         = item.quoted_amount || '';
-  document.getElementById('b-actual').value         = item.actual_amount || '';
-  document.getElementById('b-deposit').value        = item.deposit_amount || '';
-  document.getElementById('b-paid-amount').value    = item.paid_amount || '';
-  document.getElementById('b-paid-status').value    = item.paid_status || 'unpaid';
-  document.getElementById('b-notes').value          = item.notes || '';
-  document.getElementById('budget-modal').classList.add('open');
-}
+
 
 async function saveBudgetItem() {
   const category = document.getElementById('b-category').value;
