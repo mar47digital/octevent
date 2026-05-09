@@ -103,7 +103,7 @@ tr:hover td{background:var(--cream);}
 .budget-card-value.green{color:#2d6a4f;}
 .budget-card-value.amber{color:var(--amber-dark);}
 .budget-card-value.red{color:#c0392b;}
-table.budget-table{width:100%;border-collapse:collapse;min-width:900px;}
+table.budget-table{width:100%;border-collapse:collapse;min-width:1000px;}
 table.budget-table thead{background:var(--cream);position:sticky;top:0;}
 table.budget-table th{padding:0.7rem 0.85rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--rule);white-space:nowrap;}
 table.budget-table th.num{text-align:right;}
@@ -134,9 +134,17 @@ td.editing{padding:2px !important;background:#fff !important;}
 .cat-staffing{background:#f5f0fd;color:#6b3fa0;}
 .cat-decor{background:#fdf5f0;color:#a04a1a;}
 .cat-other{background:var(--rule);color:var(--ink3);}
+.cat-room_rental{background:#e8f7f0;color:#1a7a4a;}
+.cat-ticket_sales{background:#e8f0fd;color:#1a3fa8;}
+.cat-sponsorship{background:#f0fde8;color:#3a7a1a;}
+.cat-client_payment{background:#fde8f7;color:#a81a7a;}
+.cat-other_income{background:#f7f0e8;color:#7a4a1a;}
 .paid-badge{font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:20px;}
 .paid-yes{background:#f0f7f4;color:#2d6a4f;}
 .paid-no{background:#fdf0f0;color:#9b2c2c;}
+.type-badge{font-size:0.65rem;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;}
+.type-expense{background:#fdf0f0;color:#9b2c2c;}
+.type-income{background:#f0f7f4;color:#2d6a4f;}
 .paid-partial{background:#fff8e6;color:#c98a00;}
 .row-del{font-size:0.72rem;padding:3px 8px;border-radius:6px;border:1px solid var(--rule);background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ink2);opacity:0;transition:all 0.15s;}
 tr:hover .row-del{opacity:1;}
@@ -311,12 +319,12 @@ tr:hover .row-del{opacity:1;}
       <div class="panel-title">Budget tracker</div>
     </div>
     <div class="budget-summary">
-      <div class="budget-card"><div class="budget-card-label">Total budget</div><div class="budget-card-value" id="b-total-budget">€0</div></div>
-      <div class="budget-card"><div class="budget-card-label">Total quoted</div><div class="budget-card-value" id="b-total-quoted">€0</div></div>
-      <div class="budget-card"><div class="budget-card-label">Total actual</div><div class="budget-card-value" id="b-total-actual">€0</div></div>
-      <div class="budget-card"><div class="budget-card-label">Total paid</div><div class="budget-card-value green" id="b-total-paid">€0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Allocated budget</div><div class="budget-card-value" id="b-total-budget">€0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Total expenses</div><div class="budget-card-value red" id="b-total-actual">€0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Total income</div><div class="budget-card-value green" id="b-total-income">€0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Total paid out</div><div class="budget-card-value" id="b-total-paid">€0</div></div>
       <div class="budget-card"><div class="budget-card-label">Total deposits</div><div class="budget-card-value amber" id="b-total-deposit">€0</div></div>
-      <div class="budget-card"><div class="budget-card-label">Remaining</div><div class="budget-card-value" id="b-remaining">€0</div></div>
+      <div class="budget-card"><div class="budget-card-label" id="b-net-label">Net surplus</div><div class="budget-card-value green" id="b-net">€0</div></div>
     </div>
     <div class="table-wrap table-wrap-scroll" id="budget-wrap">
       <div class="spinner"></div>
@@ -656,41 +664,77 @@ function fmt(n) {
 }
 function fmtSum(n) { return '€' + parseFloat(n||0).toLocaleString('en-GB', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
 function catClass(c) { return 'cat-'+(c||'other'); }
-function catLabel(c) { return ({venue:'Venue',catering:'Catering',flowers:'Flowers',music:'Music',photography:'Photography',transport:'Transport',accommodation:'Accommodation',staffing:'Staffing',decor:'Decor',other:'Other'})[c]||'Other'; }
+function catLabel(c) { return ({venue:'Venue',catering:'Catering',flowers:'Flowers',music:'Music',photography:'Photography',transport:'Transport',accommodation:'Accommodation',staffing:'Staffing',decor:'Decor',other:'Other',room_rental:'Room rental',ticket_sales:'Ticket sales',sponsorship:'Sponsorship',client_payment:'Client payment',other_income:'Other income'})[c]||'Other'; }
 function paidLabel(s) { return ({paid:'Paid',deposit:'Deposit',partial:'Partial',unpaid:'Unpaid'})[s]||'Unpaid'; }
 function paidClass(s) { return ({paid:'paid-yes',deposit:'paid-partial',partial:'paid-partial',unpaid:'paid-no'})[s]||'paid-no'; }
 
 function updateSummary(items) {
-  const t = items.reduce((a,i) => {
+  const exp = items.filter(i => i.item_type !== 'income');
+  const inc = items.filter(i => i.item_type === 'income');
+  const te = exp.reduce((a,i) => {
     a.budget += parseFloat(i.allocated_budget||0);
-    a.quoted += parseFloat(i.quoted_amount||0);
     a.actual += parseFloat(i.actual_amount||0);
     a.paid   += parseFloat(i.paid_amount||0);
     a.deposit+= parseFloat(i.deposit_amount||0);
     return a;
-  }, {budget:0,quoted:0,actual:0,paid:0,deposit:0});
-  document.getElementById('b-total-budget').textContent  = fmtSum(t.budget);
-  document.getElementById('b-total-quoted').textContent  = fmtSum(t.quoted);
-  document.getElementById('b-total-actual').textContent  = fmtSum(t.actual);
-  document.getElementById('b-total-paid').textContent    = fmtSum(t.paid);
-  document.getElementById('b-total-deposit').textContent = fmtSum(t.deposit);
-  const rem = t.budget - t.actual;
-  const remEl = document.getElementById('b-remaining');
-  remEl.textContent = fmtSum(rem);
-  remEl.className = 'budget-card-value ' + (rem < 0 ? 'red' : rem > 0 ? 'green' : '');
-  // footer
+  }, {budget:0,actual:0,paid:0,deposit:0});
+  const ti = inc.reduce((a,i) => {
+    a.actual += parseFloat(i.actual_amount||0);
+    return a;
+  }, {actual:0});
+  const net = ti.actual - te.actual;
+  document.getElementById('b-total-budget').textContent  = fmtSum(te.budget);
+  document.getElementById('b-total-actual').textContent  = fmtSum(te.actual);
+  document.getElementById('b-total-paid').textContent    = fmtSum(te.paid);
+  document.getElementById('b-total-deposit').textContent = fmtSum(te.deposit);
+  document.getElementById('b-total-income').textContent  = fmtSum(ti.actual);
+  const netEl = document.getElementById('b-net');
+  netEl.textContent = fmtSum(Math.abs(net));
+  netEl.className = 'budget-card-value ' + (net < 0 ? 'red' : 'green');
+  document.getElementById('b-net-label').textContent = net >= 0 ? 'Net surplus' : 'Net deficit';
+  // footer - separate expense and income rows
   const footer = document.getElementById('budget-footer');
-  if (footer) footer.innerHTML = `<td colspan="3"><strong>Totals</strong></td><td class="num"><strong>${fmtSum(t.budget)}</strong></td><td class="num"><strong>${fmtSum(t.quoted)}</strong></td><td class="num"><strong>${fmtSum(t.actual)}</strong></td><td class="num"><strong>${fmtSum(t.deposit)}</strong></td><td class="num"><strong>${fmtSum(t.paid)}</strong></td><td colspan="3"></td>`;
+  if (footer) {
+    const expRows = items.filter(i=>i.item_type!=='income');
+    const incRows = items.filter(i=>i.item_type==='income');
+    const expActual = expRows.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+    const incActual = incRows.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+    footer.innerHTML = `
+      <td colspan="4"><strong>Expense total</strong></td>
+      <td class="num"><strong>${fmtSum(te.budget)}</strong></td>
+      <td class="num red"><strong>${fmtSum(expActual)}</strong></td>
+      <td class="num"><strong>${fmtSum(te.deposit)}</strong></td>
+      <td class="num"><strong>${fmtSum(te.paid)}</strong></td>
+      <td colspan="3"></td>`;
+    const footer2 = document.getElementById('budget-footer2');
+    if (footer2) footer2.innerHTML = `
+      <td colspan="4"><strong>Income total</strong></td>
+      <td class="num" colspan="2"><strong class="green">${fmtSum(incActual)}</strong></td>
+      <td colspan="5"></td>`;
+    const footer3 = document.getElementById('budget-footer3');
+    if (footer3) footer3.innerHTML = `
+      <td colspan="4"><strong>${net>=0?'Net surplus':'Net deficit'}</strong></td>
+      <td class="num" colspan="2"><strong class="${net>=0?'green':'red'}">${fmtSum(Math.abs(net))}</strong></td>
+      <td colspan="5"></td>`;
+  }
 }
 
 function makeEditable(td, item, field, type) {
   if (td.classList.contains('editing')) return;
   td.classList.add('editing');
   let input;
-  if (type === 'cat') {
+  if (type === 'itype') {
     input = document.createElement('select');
     input.className = 'inline-select';
-    ['venue','catering','flowers','music','photography','transport','accommodation','staffing','decor','other'].forEach(v => {
+    [['expense','Expense'],['income','Income']].forEach(([v,l]) => {
+      const o = document.createElement('option'); o.value=v; o.textContent=l;
+      if (v===(item[field]||'expense')) o.selected=true; input.appendChild(o);
+    });
+  } else if (type === 'cat') {
+    input = document.createElement('select');
+    input.className = 'inline-select';
+    const cats = item.item_type==='income' ? ['room_rental','ticket_sales','sponsorship','client_payment','other_income'] : ['venue','catering','flowers','music','photography','transport','accommodation','staffing','decor','other'];
+    cats.forEach(v => {
       const o = document.createElement('option'); o.value=v; o.textContent=catLabel(v);
       if (v===item[field]) o.selected=true; input.appendChild(o);
     });
@@ -724,6 +768,11 @@ function makeEditable(td, item, field, type) {
 }
 
 function refreshCell(td, item, field, type) {
+  if (type==='itype') {
+    const isIncome = item[field]==='income';
+    td.innerHTML = `<span class="type-badge ${isIncome?'type-income':'type-expense'}">${isIncome?'Income':'Expense'}</span>`;
+    return;
+  }
   if (type==='cat') { td.innerHTML=`<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`; }
   else if (type==='status') { td.innerHTML=`<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field])}</span>`; }
   else if (type==='num') {
@@ -739,6 +788,7 @@ function buildBudgetRow(item) {
   const tr = document.createElement('tr');
   tr.dataset.id = item.id;
   const cols = [
+    {field:'item_type',type:'itype'},
     {field:'category',type:'cat'},
     {field:'supplier',type:'text'},
     {field:'description',type:'text'},
@@ -772,7 +822,7 @@ function renderBudget(items) {
     // Still show the + row
     const tbl = document.createElement('table');
     tbl.className = 'budget-table';
-    tbl.innerHTML = `<tbody><tr class="add-row" onclick="addBudgetRow()"><td colspan="11">＋ Add line item</td></tr></tbody>`;
+    tbl.innerHTML = `<tbody><tr class="add-row" onclick="addBudgetRow()"><td colspan="12">＋ Add line item</td></tr></tbody>`;
     wrap.appendChild(tbl);
     return;
   }
@@ -781,6 +831,7 @@ function renderBudget(items) {
   tbl.className = 'budget-table';
   tbl.innerHTML = `
     <thead><tr>
+      <th class="sortable" onclick="sortBudget('item_type')">Type <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('category')">Category <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
@@ -796,7 +847,9 @@ function renderBudget(items) {
     <tbody id="budget-tbody"></tbody>
     <tfoot>
       <tr id="budget-footer"></tr>
-      <tr class="add-row" onclick="addBudgetRow()"><td colspan="11">＋ Add line item</td></tr>
+      <tr id="budget-footer2" style="background:#f0f7f4;"></tr>
+      <tr id="budget-footer3" style="background:var(--cream);border-top:2px solid var(--rule);"></tr>
+      <tr class="add-row" onclick="addBudgetRow()"><td colspan="12">＋ Add line item</td></tr>
     </tfoot>`;
   wrap.appendChild(tbl);
   const tbody = document.getElementById('budget-tbody');
@@ -806,7 +859,7 @@ function renderBudget(items) {
 
 async function addBudgetRow() {
   const { data, error } = await sb.from('budget_items').insert([{
-    event_id: eventId, category:'other', supplier:'', description:'',
+    event_id: eventId, item_type:'expense', category:'other', supplier:'', description:'',
     allocated_budget:0, quoted_amount:0, actual_amount:0,
     deposit_amount:0, paid_amount:0, paid_status:'unpaid', notes:''
   }]).select().single();
