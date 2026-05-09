@@ -160,22 +160,22 @@ function renderBudget(items) {
   updateTotals(items);
 
   if (!items.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first item to start tracking.</p><button class="btn-primary" onclick="openAddBudget()">+ Add first item</button></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first item to start tracking.</p><button class="btn-primary" onclick="addBudgetRow()">+ Add first item</button></div>`;
     return;
   }
 
   el.innerHTML = `
     <table class="budget-table">
       <thead><tr>
-        <th>Category</th>
-        <th>Supplier</th>
-        <th>Description</th>
-        <th class="num">Allocated</th>
-        <th class="num">Quoted</th>
-        <th class="num">Actual</th>
-        <th class="num">Deposit</th>
-        <th class="num">Paid</th>
-        <th>Status</th>
+        <th class="sortable" data-field="category" onclick="sortBudget('category')">Category <span class="sort-icon">↕</span></th>
+        <th class="sortable" data-field="supplier" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
+        <th class="sortable" data-field="description" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="allocated_budget" onclick="sortBudget('allocated_budget')">Allocated <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="quoted_amount" onclick="sortBudget('quoted_amount')">Quoted <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="actual_amount" onclick="sortBudget('actual_amount')">Actual <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="deposit_amount" onclick="sortBudget('deposit_amount')">Deposit <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="paid_amount" onclick="sortBudget('paid_amount')">Paid <span class="sort-icon">↕</span></th>
+        <th class="sortable" data-field="paid_status" onclick="sortBudget('paid_status')">Status <span class="sort-icon">↕</span></th>
         <th>Notes</th>
         <th></th>
       </tr></thead>
@@ -225,66 +225,55 @@ function renderBudget(items) {
   updateTotals(items);
 }
 
-function openAddBudget() {
-  editingBudgetId = null;
-  document.getElementById('budget-modal-title').textContent = 'Add budget item';
-  document.getElementById('add-budget-btn').textContent = 'Add item';
-  ['b-category','b-supplier','b-description','b-allocated','b-quoted','b-actual','b-deposit','b-paid-amount','b-notes'].forEach(id => {
-    const el = document.getElementById(id);
-    el.value = el.tagName === 'SELECT' ? (id === 'b-paid-status' ? 'unpaid' : '') : '';
+async function addBudgetRow() {
+  const { data, error } = await sb.from('budget_items').insert([{
+    event_id: eventId,
+    category: 'other',
+    supplier: '', description: '',
+    allocated_budget: 0, quoted_amount: 0,
+    actual_amount: 0, deposit_amount: 0,
+    paid_amount: 0, paid_status: 'unpaid', notes: ''
+  }]).select().single();
+  if (!error && data) {
+    allBudgetItems.push(data);
+    renderBudget(allBudgetItems);
+    // Auto-click the category cell of the new row to start editing
+    setTimeout(() => {
+      const rows = document.querySelectorAll('#budget-tbody tr');
+      if (rows.length) rows[rows.length - 1].querySelector('td').click();
+    }, 50);
+  }
+}
+
+let sortField = null;
+let sortDir = 1;
+
+function sortBudget(field) {
+  if (sortField === field) {
+    sortDir *= -1;
+  } else {
+    sortField = field;
+    sortDir = 1;
+  }
+  const sorted = [...allBudgetItems].sort((a, b) => {
+    const av = a[field] || '';
+    const bv = b[field] || '';
+    if (typeof av === 'number' || !isNaN(parseFloat(av))) {
+      return (parseFloat(av) - parseFloat(bv)) * sortDir;
+    }
+    return av.toString().localeCompare(bv.toString()) * sortDir;
   });
-  document.getElementById('b-paid-status').value = 'unpaid';
-  document.getElementById('budget-modal').classList.add('open');
-}
-
-function closeAddBudget() {
-  document.getElementById('budget-modal').classList.remove('open');
-}
-
-function handleBudgetModalClick(e) {
-  if (e.target === document.getElementById('budget-modal')) closeAddBudget();
+  renderBudget(sorted);
+  // Update sort indicators
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.field === field) th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+  });
 }
 
 
 
-async function saveBudgetItem() {
-  const category = document.getElementById('b-category').value;
-  if (!category) { document.getElementById('b-category').style.borderColor = '#e53e3e'; return; }
-  const btn = document.getElementById('add-budget-btn');
-  btn.textContent = 'Saving...'; btn.disabled = true;
 
-  const payload = {
-    event_id:         eventId,
-    category,
-    supplier:         document.getElementById('b-supplier').value.trim(),
-    description:      document.getElementById('b-description').value.trim(),
-    allocated_budget: parseFloat(document.getElementById('b-allocated').value) || 0,
-    quoted_amount:    parseFloat(document.getElementById('b-quoted').value) || 0,
-    actual_amount:    parseFloat(document.getElementById('b-actual').value) || 0,
-    deposit_amount:   parseFloat(document.getElementById('b-deposit').value) || 0,
-    paid_amount:      parseFloat(document.getElementById('b-paid-amount').value) || 0,
-    paid_status:      document.getElementById('b-paid-status').value,
-    notes:            document.getElementById('b-notes').value.trim(),
-  };
-
-  let error;
-  if (editingBudgetId) {
-    ({ error } = await sb.from('budget_items').update(payload).eq('id', editingBudgetId));
-  } else {
-    ({ error } = await sb.from('budget_items').insert([payload]));
-  }
-
-  btn.textContent = editingBudgetId ? 'Save changes' : 'Add item';
-  btn.disabled = false;
-
-  if (!error) {
-    closeAddBudget();
-    await loadBudget();
-  } else {
-    console.error(error);
-    alert('Error saving — check console for details.');
-  }
-}
 
 async function deleteBudgetItem(id) {
   if (!confirm('Delete this budget item?')) return;
@@ -698,6 +687,16 @@ td.editing { padding: 2px !important; }
   color: var(--ink); outline: none; background: #fff; cursor: pointer;
 }
 table.budget-table td:hover:not(.editing) { background: var(--amber-light) !important; }
+
+th.sortable { cursor:pointer; user-select:none; white-space:nowrap; }
+th.sortable:hover { color:var(--ink); }
+th.sortable .sort-icon { opacity:0.3; font-size:0.7rem; }
+th.sortable.sort-asc .sort-icon::before { content:'↑'; opacity:1; }
+th.sortable.sort-desc .sort-icon::before { content:'↓'; opacity:1; }
+th.sortable.sort-asc .sort-icon,
+th.sortable.sort-desc .sort-icon { opacity:1; color:var(--amber-dark); }
+tr.add-row:hover td { background:var(--amber-light) !important; color:var(--ink); }
+tr.add-row td { transition:background 0.15s; }
 </style>
 </head>
 <body>
@@ -825,9 +824,6 @@ table.budget-table td:hover:not(.editing) { background: var(--amber-light) !impo
   <div class="panel" id="panel-budget">
     <div class="panel-header">
       <div class="panel-title">Budget tracker</div>
-      <div class="right-actions" style="display:flex;gap:8px;align-items:center;">
-        <button class="btn-sm amber" onclick="openAddBudget()">+ Add item</button>
-      </div>
     </div>
 
     <!-- BUDGET SUMMARY CARDS -->
@@ -1599,22 +1595,22 @@ function renderBudget(items) {
   updateTotals(items);
 
   if (!items.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first item to start tracking.</p><button class="btn-primary" onclick="openAddBudget()">+ Add first item</button></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first item to start tracking.</p><button class="btn-primary" onclick="addBudgetRow()">+ Add first item</button></div>`;
     return;
   }
 
   el.innerHTML = `
     <table class="budget-table">
       <thead><tr>
-        <th>Category</th>
-        <th>Supplier</th>
-        <th>Description</th>
-        <th class="num">Allocated</th>
-        <th class="num">Quoted</th>
-        <th class="num">Actual</th>
-        <th class="num">Deposit</th>
-        <th class="num">Paid</th>
-        <th>Status</th>
+        <th class="sortable" data-field="category" onclick="sortBudget('category')">Category <span class="sort-icon">↕</span></th>
+        <th class="sortable" data-field="supplier" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
+        <th class="sortable" data-field="description" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="allocated_budget" onclick="sortBudget('allocated_budget')">Allocated <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="quoted_amount" onclick="sortBudget('quoted_amount')">Quoted <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="actual_amount" onclick="sortBudget('actual_amount')">Actual <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="deposit_amount" onclick="sortBudget('deposit_amount')">Deposit <span class="sort-icon">↕</span></th>
+        <th class="num sortable" data-field="paid_amount" onclick="sortBudget('paid_amount')">Paid <span class="sort-icon">↕</span></th>
+        <th class="sortable" data-field="paid_status" onclick="sortBudget('paid_status')">Status <span class="sort-icon">↕</span></th>
         <th>Notes</th>
         <th></th>
       </tr></thead>
@@ -1664,66 +1660,55 @@ function renderBudget(items) {
   updateTotals(items);
 }
 
-function openAddBudget() {
-  editingBudgetId = null;
-  document.getElementById('budget-modal-title').textContent = 'Add budget item';
-  document.getElementById('add-budget-btn').textContent = 'Add item';
-  ['b-category','b-supplier','b-description','b-allocated','b-quoted','b-actual','b-deposit','b-paid-amount','b-notes'].forEach(id => {
-    const el = document.getElementById(id);
-    el.value = el.tagName === 'SELECT' ? (id === 'b-paid-status' ? 'unpaid' : '') : '';
+async function addBudgetRow() {
+  const { data, error } = await sb.from('budget_items').insert([{
+    event_id: eventId,
+    category: 'other',
+    supplier: '', description: '',
+    allocated_budget: 0, quoted_amount: 0,
+    actual_amount: 0, deposit_amount: 0,
+    paid_amount: 0, paid_status: 'unpaid', notes: ''
+  }]).select().single();
+  if (!error && data) {
+    allBudgetItems.push(data);
+    renderBudget(allBudgetItems);
+    // Auto-click the category cell of the new row to start editing
+    setTimeout(() => {
+      const rows = document.querySelectorAll('#budget-tbody tr');
+      if (rows.length) rows[rows.length - 1].querySelector('td').click();
+    }, 50);
+  }
+}
+
+let sortField = null;
+let sortDir = 1;
+
+function sortBudget(field) {
+  if (sortField === field) {
+    sortDir *= -1;
+  } else {
+    sortField = field;
+    sortDir = 1;
+  }
+  const sorted = [...allBudgetItems].sort((a, b) => {
+    const av = a[field] || '';
+    const bv = b[field] || '';
+    if (typeof av === 'number' || !isNaN(parseFloat(av))) {
+      return (parseFloat(av) - parseFloat(bv)) * sortDir;
+    }
+    return av.toString().localeCompare(bv.toString()) * sortDir;
   });
-  document.getElementById('b-paid-status').value = 'unpaid';
-  document.getElementById('budget-modal').classList.add('open');
-}
-
-function closeAddBudget() {
-  document.getElementById('budget-modal').classList.remove('open');
-}
-
-function handleBudgetModalClick(e) {
-  if (e.target === document.getElementById('budget-modal')) closeAddBudget();
+  renderBudget(sorted);
+  // Update sort indicators
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.field === field) th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+  });
 }
 
 
 
-async function saveBudgetItem() {
-  const category = document.getElementById('b-category').value;
-  if (!category) { document.getElementById('b-category').style.borderColor = '#e53e3e'; return; }
-  const btn = document.getElementById('add-budget-btn');
-  btn.textContent = 'Saving...'; btn.disabled = true;
 
-  const payload = {
-    event_id:         eventId,
-    category,
-    supplier:         document.getElementById('b-supplier').value.trim(),
-    description:      document.getElementById('b-description').value.trim(),
-    allocated_budget: parseFloat(document.getElementById('b-allocated').value) || 0,
-    quoted_amount:    parseFloat(document.getElementById('b-quoted').value) || 0,
-    actual_amount:    parseFloat(document.getElementById('b-actual').value) || 0,
-    deposit_amount:   parseFloat(document.getElementById('b-deposit').value) || 0,
-    paid_amount:      parseFloat(document.getElementById('b-paid-amount').value) || 0,
-    paid_status:      document.getElementById('b-paid-status').value,
-    notes:            document.getElementById('b-notes').value.trim(),
-  };
-
-  let error;
-  if (editingBudgetId) {
-    ({ error } = await sb.from('budget_items').update(payload).eq('id', editingBudgetId));
-  } else {
-    ({ error } = await sb.from('budget_items').insert([payload]));
-  }
-
-  btn.textContent = editingBudgetId ? 'Save changes' : 'Add item';
-  btn.disabled = false;
-
-  if (!error) {
-    closeAddBudget();
-    await loadBudget();
-  } else {
-    console.error(error);
-    alert('Error saving — check console for details.');
-  }
-}
 
 async function deleteBudgetItem(id) {
   if (!confirm('Delete this budget item?')) return;
@@ -1733,11 +1718,6 @@ async function deleteBudgetItem(id) {
 
 </script>
 
-<!-- ADD BUDGET MODAL -->
-<div class="modal-overlay" id="budget-modal" onclick="handleBudgetModalClick(event)">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-header">
-      <div class="modal-title" id="budget-modal-title">Add budget item</div>
       <button class="modal-close" onclick="closeAddBudget()">✕</button>
     </div>
     <div class="field-row">
