@@ -28,7 +28,7 @@ nav{
   position:sticky;top:0;background:rgba(255,255,255,0.96);
   backdrop-filter:blur(8px);z-index:100;
 }
-.logo-img{height:46px;width:auto;}
+.logo-img{height:70px;width:auto;}
 .nav-links{display:flex;align-items:center;gap:2rem;}
 .nav-links a{font-size:0.85rem;color:var(--ink2);text-decoration:none;transition:color 0.2s;}
 .nav-links a:hover{color:var(--ink);}
@@ -264,6 +264,76 @@ footer p{font-size:0.75rem;color:var(--ink3);}
 }
 .feat-submit:hover{opacity:0.8;}
 .feat-thanks{display:none;font-size:0.82rem;color:#2d6a4f;margin-top:0.5rem;}
+
+/* ============ MOBILE RESPONSIVE ============ */
+@media (max-width: 768px) {
+
+  /* NAV */
+  nav{padding:1rem 1.25rem;}
+  .logo-img{height:44px;}
+  .nav-links{display:none;}
+  .nav-cta{font-size:0.78rem;padding:0.55rem 1rem;}
+
+  /* HERO */
+  .hero{grid-template-columns:1fr;min-height:auto;}
+  .hero-left{padding:2.5rem 1.25rem;border-right:none;border-bottom:1px solid var(--rule);}
+  h1{font-size:2.4rem;}
+  .hero-sub{font-size:0.95rem;max-width:100%;}
+  .capture-wrap{max-width:100%;}
+  .capture button{font-size:0.75rem;padding:0.65rem 1rem;}
+  .hero-right{padding:2rem 1.25rem;min-height:360px;}
+  .app-mockup{max-width:100%;}
+
+  /* HOW IT WORKS STRIP */
+  .strip{grid-template-columns:1fr;}
+  .strip-item{border-right:none;border-bottom:1px solid var(--rule);padding:1.75rem 1.25rem;}
+  .strip-item:last-child{border-bottom:none;}
+
+  /* FOR SECTION */
+  .for-section{grid-template-columns:1fr;}
+  .for-left{padding:2.5rem 1.25rem;border-right:none;border-bottom:1px solid var(--rule);}
+  .for-left h2{font-size:2rem;}
+  .for-right{padding:1.5rem 1.25rem;}
+
+  /* FEATURES */
+  .features{padding:2.5rem 1.25rem;}
+  .feat-grid{grid-template-columns:1fr 1fr;gap:10px;}
+  .section-title{font-size:1.8rem;margin-bottom:1.5rem;}
+
+  /* PRICING */
+  .pricing{padding:2.5rem 1.25rem;}
+  .pricing-grid{grid-template-columns:1fr;gap:16px;}
+  .p-card.featured{margin-top:1rem;}
+
+  /* BUILT BY PLANNERS */
+  section[style*="background:var(--amber)"]{padding:2rem 1.25rem !important;}
+  section[style*="background:var(--amber)"] p:first-child{font-size:1.2rem !important;}
+
+  /* SOCIAL PROOF */
+  .social-proof{grid-template-columns:1fr;gap:2rem;padding:2.5rem 1.25rem;}
+  .proof-vdivider{display:none;}
+  .proof-quote{font-size:1.2rem;}
+  .proof-stats{flex-direction:row;gap:1.5rem;}
+
+  /* CTA BAND */
+  .cta-band{flex-direction:column;padding:3rem 1.25rem;gap:2rem;}
+  .cta-band h2{font-size:2.2rem;}
+  .cta-right{min-width:unset;width:100%;}
+
+  /* FOOTER */
+  footer{flex-direction:column;gap:1rem;padding:1.5rem 1.25rem;text-align:center;}
+  .footer-links{justify-content:center;}
+
+  /* FEATURE PICKER */
+  .feature-options{gap:6px;}
+  .feat-opt{font-size:0.73rem;padding:5px 10px;}
+}
+
+@media (max-width: 480px) {
+  h1{font-size:2rem;}
+  .feat-grid{grid-template-columns:1fr;}
+  .proof-stats{flex-direction:column;gap:1rem;}
+}
 </style>
 </head>
 <body>
@@ -312,7 +382,7 @@ footer p{font-size:0.75rem;color:var(--ink3);}
         <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
       </div>
       <div class="mockup-bar">
-        <span class="mockup-title">Villa Mas Solà · Aug 2025</span>
+        <span class="mockup-title">Villa Mas Solà · Aug 2026</span>
         <span class="mockup-pill">● Live</span>
       </div>
       <div class="mockup-body">
@@ -477,7 +547,7 @@ footer p{font-size:0.75rem;color:var(--ink3);}
     <a href="#">Terms</a>
     <a href="mailto:hello@octevent.com">hello@octevent.com</a>
   </div>
-  <p>© 2025 Octevent · octevent.com</p>
+  <p>© 2026 Octevent · octevent.com</p>
 </footer>
 
 <script>
