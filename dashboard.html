@@ -255,6 +255,21 @@ main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
   .page-header{flex-direction:column;align-items:flex-start;gap:0.75rem;}
   .new-event-btn{width:100%;justify-content:center;}
 }
+
+.photo-upload{
+  border:2px dashed var(--rule);border-radius:12px;
+  height:140px;cursor:pointer;overflow:hidden;
+  transition:border-color 0.2s;background:var(--cream);
+}
+.photo-upload:hover{border-color:var(--amber);}
+.photo-upload-inner{width:100%;height:100%;position:relative;}
+.photo-placeholder{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:100%;gap:6px;
+  color:var(--ink3);font-size:0.82rem;
+}
+.photo-placeholder svg{opacity:0.4;}
+.photo-placeholder small{font-size:0.7rem;color:var(--ink3);opacity:0.7;}
 </style>
 </head>
 <body>
@@ -304,6 +319,20 @@ main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
     <div class="field">
       <label>Event name *</label>
       <input type="text" id="new-name" placeholder="e.g. Sarah & Tom's Wedding">
+    </div>
+    <div class="field">
+      <label>Cover photo</label>
+      <div class="photo-upload" id="photo-upload-area" onclick="document.getElementById('new-photo').click()">
+        <div class="photo-upload-inner" id="photo-preview-wrap">
+          <div class="photo-placeholder" id="photo-placeholder">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span>Click to upload photo</span>
+            <small>JPG, PNG — max 5MB</small>
+          </div>
+          <img id="photo-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:10px;" alt="Preview">
+        </div>
+      </div>
+      <input type="file" id="new-photo" accept="image/*" style="display:none" onchange="previewPhoto(event)">
     </div>
     <div class="field-row">
       <div class="field">
@@ -468,6 +497,18 @@ function handleOverlayClick(e) {
   if (e.target === document.getElementById('modal')) closeModal();
 }
 
+function previewPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('photo-preview').src = ev.target.result;
+    document.getElementById('photo-preview').style.display = 'block';
+    document.getElementById('photo-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
 async function handleCreateEvent() {
   const name  = document.getElementById('new-name').value.trim();
   const date  = document.getElementById('new-date').value;
@@ -484,11 +525,27 @@ async function handleCreateEvent() {
 
   btn.textContent = 'Creating...'; btn.disabled = true;
 
+  // Upload cover photo if provided
+  let cover_image = null;
+  const photoFile = document.getElementById('new-photo').files[0];
+  if (photoFile) {
+    const ext = photoFile.name.split('.').pop();
+    const path = `${currentUser.id}/${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadError } = await sb.storage
+      .from('event-covers')
+      .upload(path, photoFile, { cacheControl: '3600', upsert: false });
+    if (!uploadError) {
+      const { data: urlData } = sb.storage.from('event-covers').getPublicUrl(path);
+      cover_image = urlData.publicUrl;
+    }
+  }
+
   const { data, error } = await sb.from('events').insert([{
     name, event_date: date, end_date: document.getElementById('new-end-date').value || null, event_type: type,
     venue, notes, status: 'draft',
     user_id: currentUser.id,
-    guest_count: 0, room_count: 0, rsvp_count: 0
+    guest_count: 0, room_count: 0, rsvp_count: 0,
+    cover_image
   }]).select().single();
 
   if (error) {
