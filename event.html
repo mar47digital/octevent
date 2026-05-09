@@ -376,7 +376,7 @@ tr:hover .row-del{opacity:1;}
     </div>
     <div class="budget-summary">
       <div class="budget-card"><div class="budget-card-label">Allocated budget</div><div class="budget-card-value" id="b-total-budget">€0</div></div>
-      <div class="budget-card"><div class="budget-card-label">Total expenses</div><div class="budget-card-value red" id="b-total-actual">€0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Total expenses</div><div class="budget-card-value" id="b-total-actual">€0</div></div>
       <div class="budget-card"><div class="budget-card-label">Total income</div><div class="budget-card-value green" id="b-total-income">€0</div></div>
       <div class="budget-card"><div class="budget-card-label">Total paid out</div><div class="budget-card-value" id="b-total-paid">€0</div></div>
       <div class="budget-card"><div class="budget-card-label">Total deposits</div><div class="budget-card-value amber" id="b-total-deposit">€0</div></div>
@@ -740,7 +740,9 @@ function updateSummary(items) {
   }, {actual:0});
   const net = ti.actual - te.actual;
   document.getElementById('b-total-budget').textContent  = fmtSum(te.budget);
-  document.getElementById('b-total-actual').textContent  = fmtSum(te.actual);
+  const actualEl = document.getElementById('b-total-actual');
+  actualEl.textContent = fmtSum(te.actual);
+  actualEl.className = 'budget-card-value' + (te.actual > te.budget && te.budget > 0 ? ' red' : '');
   document.getElementById('b-total-paid').textContent    = fmtSum(te.paid);
   document.getElementById('b-total-deposit').textContent = fmtSum(te.deposit);
   document.getElementById('b-total-income').textContent  = fmtSum(ti.actual);
@@ -753,24 +755,44 @@ function updateSummary(items) {
   if (footer) {
     const expRows = items.filter(i=>i.item_type!=='income');
     const incRows = items.filter(i=>i.item_type==='income');
-    const expActual = expRows.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
-    const incActual = incRows.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+    const expAllocated = expRows.reduce((s,i)=>s+parseFloat(i.allocated_budget||0),0);
+    const expQuoted    = expRows.reduce((s,i)=>s+parseFloat(i.quoted_amount||0),0);
+    const expActual    = expRows.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+    const expDeposit   = expRows.reduce((s,i)=>s+parseFloat(i.deposit_amount||0),0);
+    const expPaid      = expRows.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
+    const incAllocated = incRows.reduce((s,i)=>s+parseFloat(i.allocated_budget||0),0);
+    const incQuoted    = incRows.reduce((s,i)=>s+parseFloat(i.quoted_amount||0),0);
+    const incActual    = incRows.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+    const incDeposit   = incRows.reduce((s,i)=>s+parseFloat(i.deposit_amount||0),0);
+    const incPaid      = incRows.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
+    const netAllocated = incAllocated - expAllocated;
+    const netActual    = incActual - expActual;
     footer.innerHTML = `
-      <td colspan="4"><strong>Expense total</strong></td>
-      <td class="num"><strong>${fmtSum(te.budget)}</strong></td>
-      <td class="num red"><strong>${fmtSum(expActual)}</strong></td>
-      <td class="num"><strong>${fmtSum(te.deposit)}</strong></td>
-      <td class="num"><strong>${fmtSum(te.paid)}</strong></td>
+      <td colspan="2" style="color:var(--ink2);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total expenses</td>
+      <td></td><td></td>
+      <td class="num"><strong>${fmtSum(expAllocated)}</strong></td>
+      <td class="num"><strong>${fmtSum(expQuoted)}</strong></td>
+      <td class="num"><strong>${fmtSum(expActual)}</strong></td>
+      <td class="num"><strong>${fmtSum(expDeposit)}</strong></td>
+      <td class="num"><strong>${fmtSum(expPaid)}</strong></td>
       <td colspan="3"></td>`;
     const footer2 = document.getElementById('budget-footer2');
     if (footer2) footer2.innerHTML = `
-      <td colspan="4"><strong>Income total</strong></td>
-      <td class="num" colspan="2"><strong class="green">${fmtSum(incActual)}</strong></td>
-      <td colspan="5"></td>`;
+      <td colspan="2" style="color:#2d6a4f;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total income</td>
+      <td></td><td></td>
+      <td class="num green"><strong>${fmtSum(incAllocated)}</strong></td>
+      <td class="num green"><strong>${fmtSum(incQuoted)}</strong></td>
+      <td class="num green"><strong>${fmtSum(incActual)}</strong></td>
+      <td class="num green"><strong>${fmtSum(incDeposit)}</strong></td>
+      <td class="num green"><strong>${fmtSum(incPaid)}</strong></td>
+      <td colspan="3"></td>`;
     const footer3 = document.getElementById('budget-footer3');
     if (footer3) footer3.innerHTML = `
-      <td colspan="4"><strong>${net>=0?'Net surplus':'Net deficit'}</strong></td>
-      <td class="num" colspan="2"><strong class="${net>=0?'green':'red'}">${fmtSum(Math.abs(net))}</strong></td>
+      <td colspan="2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;" class="${netActual>=0?'':'red'}">${netActual>=0?'Net surplus':'Net deficit'}</td>
+      <td></td><td></td>
+      <td class="num ${netAllocated>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netAllocated))}</strong></td>
+      <td class="num"></td>
+      <td class="num ${netActual>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netActual))}</strong></td>
       <td colspan="5"></td>`;
   }
 }
