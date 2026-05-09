@@ -392,7 +392,13 @@ tr:hover .row-del{opacity:1;}
   <div class="panel" id="panel-budget">
     <div class="panel-header">
       <div class="panel-title">Budget tracker</div>
-      <button class="btn-sm amber mobile-only" onclick="openMobileBudget()">+ Add item</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn-sm" id="sort-reset-btn" onclick="resetSort()" style="display:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v4h4"/></svg>
+          Reset sort
+        </button>
+        <button class="btn-sm amber mobile-only" onclick="openMobileBudget()">+ Add item</button>
+      </div>
     </div>
     <div class="budget-summary">
       <div class="budget-card"><div class="budget-card-label">Allocated budget</div><div class="budget-card-value" id="b-total-budget">€0</div></div>
@@ -730,7 +736,7 @@ async function addGuest() {
 async function loadBudget() {
   const { data } = await sb.from('budget_items').select('*').eq('event_id', eventId).order('created_at', { ascending: true });
   allBudgetItems = data || [];
-  renderBudget(allBudgetItems);
+  applySortAndRender();
 }
 
 function fmt(n) {
@@ -863,6 +869,8 @@ function makeEditable(td, item, field, type) {
     refreshCell(td, item, field, type);
     updateSummary(allBudgetItems);
     await sb.from('budget_items').update({ [field]: val }).eq('id', item.id);
+    // Re-apply sort to keep order consistent
+    if (sortField && sortField !== field) applySortAndRender();
   }
   input.addEventListener('blur', save);
   input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
@@ -1003,7 +1011,7 @@ async function addBudgetRow() {
   }]).select().single();
   if (!error && data) {
     allBudgetItems.push(data);
-    renderBudget(allBudgetItems);
+    applySortAndRender();
     setTimeout(() => {
       const rows = document.querySelectorAll('#budget-tbody tr');
       if (rows.length) rows[rows.length-1].querySelector('td').click();
@@ -1011,23 +1019,45 @@ async function addBudgetRow() {
   }
 }
 
+function resetSort() {
+  sortField = null;
+  sortDir = 1;
+  applySortAndRender();
+}
+
 function sortBudget(field) {
   if (sortField===field) sortDir*=-1; else { sortField=field; sortDir=1; }
-  const sorted = [...allBudgetItems].sort((a,b) => {
-    const av=a[field]||'', bv=b[field]||'';
-    return (!isNaN(parseFloat(av)) ? parseFloat(av)-parseFloat(bv) : av.toString().localeCompare(bv.toString())) * sortDir;
-  });
-  renderBudget(sorted);
-  document.querySelectorAll('th.sortable').forEach(th => {
-    th.classList.remove('sort-asc','sort-desc');
-  });
+  applySortAndRender();
+}
+
+function applySortAndRender() {
+  let items = [...allBudgetItems];
+  if (sortField) {
+    items.sort((a,b) => {
+      const av=a[sortField]||'', bv=b[sortField]||'';
+      return (!isNaN(parseFloat(av)) ? parseFloat(av)-parseFloat(bv) : av.toString().localeCompare(bv.toString())) * sortDir;
+    });
+  }
+  renderBudget(items);
+  // Update sort indicators after render
+  setTimeout(() => {
+    document.querySelectorAll('th.sortable').forEach(th => {
+      th.classList.remove('sort-asc','sort-desc');
+      if (th.getAttribute('onclick') && th.getAttribute('onclick').includes(`'${sortField}'`)) {
+        th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+      }
+    });
+    // Show/hide reset button
+    const resetBtn = document.getElementById('sort-reset-btn');
+    if (resetBtn) resetBtn.style.display = sortField ? 'inline-flex' : 'none';
+  }, 10);
 }
 
 async function deleteBudgetItem(id) {
   if (!confirm('Delete this budget item?')) return;
   await sb.from('budget_items').delete().eq('id', id);
   allBudgetItems = allBudgetItems.filter(i => i.id !== id);
-  renderBudget(allBudgetItems);
+  applySortAndRender();
 }
 
 // ── TABS ──
