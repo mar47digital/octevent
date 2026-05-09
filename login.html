@@ -163,6 +163,24 @@ body{
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 .auth-box{animation:fadeIn 0.4s ease;}
+
+@media (max-width: 768px) {
+  body{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+  .left{padding:2rem 1.25rem;min-height:auto;}
+  .left-content h2{font-size:1.8rem;}
+  .feature-list{display:none;}
+  .left-footer{display:none;}
+  .bg-oct{display:none;}
+  .right{padding:2rem 1.25rem;align-items:flex-start;}
+  .auth-box{max-width:100%;}
+  .auth-title{font-size:1.4rem;}
+}
+@media (max-width: 480px) {
+  .left{padding:1.5rem 1.25rem;}
+  .left-logo img{height:38px;}
+  .left-content h2{font-size:1.5rem;}
+  .left-content p{font-size:0.85rem;}
+}
 </style>
 </head>
 <body>
@@ -299,7 +317,7 @@ function showSuccess(id, msg) {
 async function signInWithGoogle() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.origin + '/dashboard.html' }
+    options: { redirectTo: window.location.origin + '/dashboard' }
   });
   if (error) showError('signin-error', error.message);
 }
@@ -315,7 +333,7 @@ async function signIn() {
     showError('signin-error', error.message);
     btn.textContent = 'Sign in'; btn.disabled = false;
   } else {
-    window.location.href = '/dashboard.html';
+    window.location.href = '/dashboard';
   }
 }
 
@@ -329,7 +347,7 @@ async function signUp() {
   btn.textContent = 'Creating account...'; btn.disabled = true;
   const { error } = await sb.auth.signUp({
     email, password,
-    options: { data: { full_name: name }, emailRedirectTo: window.location.origin + '/dashboard.html' }
+    options: { data: { full_name: name }, emailRedirectTo: window.location.origin + '/dashboard' }
   });
   if (error) {
     showError('signup-error', error.message);
@@ -352,7 +370,7 @@ async function forgotPassword() {
 
 // If already logged in, go straight to dashboard
 sb.auth.getSession().then(({ data: { session } }) => {
-  if (session) window.location.href = '/dashboard.html';
+  if (session) window.location.href = '/dashboard';
 });
 </script>
 </body>

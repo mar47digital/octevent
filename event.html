@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octevent — Event</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --amber:#F5A800;
+  --amber-light:#FFF8E6;
+  --amber-dark:#C98A00;
+  --ink:#18181A;
+  --ink2:#555;
+  --ink3:#999;
+  --cream:#FAFAF7;
+  --rule:#ECEAE4;
+}
+html,body{min-height:100%;background:var(--cream);}
+body{font-family:'DM Sans',sans-serif;color:var(--ink);}
+
+/* NAV */
+nav{
+  background:#fff;border-bottom:1px solid var(--rule);
+  padding:0 2.5rem;height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.nav-left{display:flex;align-items:center;gap:1rem;}
+.nav-logo img{height:36px;width:auto;}
+.nav-breadcrumb{
+  display:flex;align-items:center;gap:8px;
+  font-size:0.82rem;color:var(--ink3);
+}
+.nav-breadcrumb a{color:var(--ink3);text-decoration:none;}
+.nav-breadcrumb a:hover{color:var(--ink);}
+.nav-breadcrumb span{color:var(--ink);font-weight:500;}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--amber);display:flex;align-items:center;
+  justify-content:center;font-size:0.8rem;font-weight:700;color:var(--ink);
+}
+.btn-sm{
+  font-size:0.78rem;font-weight:500;padding:0.5rem 1rem;
+  border-radius:100px;cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:all 0.2s;text-decoration:none;display:inline-flex;
+  align-items:center;gap:6px;border:1.5px solid var(--rule);
+  background:#fff;color:var(--ink2);
+}
+.btn-sm:hover{border-color:var(--ink);color:var(--ink);}
+.btn-sm.amber{background:var(--amber);border-color:var(--amber);color:var(--ink);font-weight:600;}
+.btn-sm.amber:hover{background:var(--amber-dark);border-color:var(--amber-dark);color:#fff;}
+
+/* EVENT HEADER */
+.event-header{
+  background:#fff;border-bottom:1px solid var(--rule);
+  padding:1.75rem 2.5rem;
+}
+.event-header-top{
+  display:flex;align-items:flex-start;
+  justify-content:space-between;gap:1rem;margin-bottom:1.25rem;
+}
+.event-title{font-family:'Nunito',sans-serif;font-size:2rem;font-weight:800;line-height:1.1;}
+.event-meta{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:0.4rem;}
+.event-meta-item{
+  display:flex;align-items:center;gap:6px;
+  font-size:0.8rem;color:var(--ink3);
+}
+.event-meta-item svg{width:13px;height:13px;}
+.event-status{
+  font-size:0.65rem;font-weight:700;letter-spacing:0.06em;
+  text-transform:uppercase;padding:4px 12px;border-radius:100px;
+}
+.status-draft{background:var(--rule);color:var(--ink3);}
+.status-upcoming{background:var(--amber-light);color:var(--amber-dark);}
+.status-live{background:#f0f7f4;color:#2d6a4f;}
+.status-past{background:var(--rule);color:var(--ink3);}
+.event-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:12px;overflow:hidden;
+}
+.event-stat{
+  background:#fff;padding:0.85rem 1rem;text-align:center;
+}
+.event-stat-n{
+  font-family:'Nunito',sans-serif;font-size:1.5rem;
+  font-weight:800;line-height:1;color:var(--ink);
+}
+.event-stat-l{font-size:0.65rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+
+/* TABS */
+.tabs-bar{
+  background:#fff;border-bottom:1px solid var(--rule);
+  padding:0 2.5rem;display:flex;gap:0;
+  overflow-x:auto;
+}
+.tab{
+  padding:1rem 1.25rem;font-size:0.85rem;font-weight:500;
+  color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-1px;white-space:nowrap;transition:all 0.2s;
+  background:none;border-top:none;border-left:none;border-right:none;
+  font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;
+}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--ink);border-bottom-color:var(--amber);}
+.tab-icon{font-size:0.95rem;}
+
+/* MAIN CONTENT */
+main{max-width:1100px;margin:0 auto;padding:2rem 2.5rem;}
+
+/* TAB PANELS */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* OVERVIEW PANEL */
+.overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.overview-card{
+  background:#fff;border:1px solid var(--rule);
+  border-radius:16px;padding:1.5rem;
+}
+.overview-card h3{
+  font-family:'Nunito',sans-serif;font-size:1rem;
+  font-weight:800;margin-bottom:1rem;
+  display:flex;align-items:center;gap:8px;
+}
+.overview-card h3 span{font-size:1.1rem;}
+.detail-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0.6rem 0;border-bottom:1px solid var(--rule);font-size:0.83rem;
+}
+.detail-row:last-child{border-bottom:none;}
+.detail-label{color:var(--ink3);font-weight:400;}
+.detail-value{color:var(--ink);font-weight:500;text-align:right;}
+.quick-actions{display:flex;flex-direction:column;gap:8px;margin-top:0.5rem;}
+.quick-action{
+  display:flex;align-items:center;gap:10px;padding:0.75rem;
+  border:1px solid var(--rule);border-radius:10px;cursor:pointer;
+  transition:all 0.2s;font-size:0.83rem;font-weight:500;
+  background:#fff;font-family:'DM Sans',sans-serif;color:var(--ink);
+  text-align:left;
+}
+.quick-action:hover{border-color:var(--amber);background:var(--amber-light);}
+.quick-action-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--cream);display:flex;align-items:center;
+  justify-content:center;font-size:0.9rem;flex-shrink:0;
+}
+
+/* GUEST LIST PANEL */
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.5rem;
+}
+.panel-title{font-family:'Nunito',sans-serif;font-size:1.3rem;font-weight:800;}
+.search-bar{
+  display:flex;align-items:center;gap:10px;
+  background:#fff;border:1.5px solid var(--rule);
+  border-radius:100px;padding:0.5rem 1rem;
+  font-size:0.85rem;color:var(--ink3);
+  transition:border-color 0.2s;
+}
+.search-bar:focus-within{border-color:var(--amber);}
+.search-bar input{
+  border:none;outline:none;font-family:'DM Sans',sans-serif;
+  font-size:0.85rem;color:var(--ink);background:transparent;width:200px;
+}
+.search-bar svg{width:14px;height:14px;flex-shrink:0;}
+.table-wrap{background:#fff;border:1px solid var(--rule);border-radius:16px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead{background:var(--cream);}
+th{
+  padding:0.75rem 1rem;text-align:left;font-size:0.72rem;
+  font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--ink3);border-bottom:1px solid var(--rule);
+}
+td{
+  padding:0.85rem 1rem;font-size:0.83rem;
+  border-bottom:1px solid var(--rule);vertical-align:middle;
+}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--cream);}
+.guest-name{font-weight:500;color:var(--ink);}
+.guest-email{font-size:0.75rem;color:var(--ink3);}
+.rsvp-badge{
+  font-size:0.65rem;font-weight:700;padding:3px 10px;
+  border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;
+}
+.rsvp-confirmed{background:#f0f7f4;color:#2d6a4f;}
+.rsvp-pending{background:var(--amber-light);color:var(--amber-dark);}
+.rsvp-declined{background:#fdf0f0;color:#9b2c2c;}
+
+/* EMPTY STATE */
+.empty-state{
+  text-align:center;padding:4rem 2rem;
+  background:#fff;border:1px solid var(--rule);border-radius:16px;
+}
+.empty-icon{font-size:2.5rem;margin-bottom:0.75rem;opacity:0.4;}
+.empty-state h3{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:0.4rem;}
+.empty-state p{font-size:0.85rem;color:var(--ink3);margin-bottom:1.25rem;font-weight:300;}
+
+/* COMING SOON */
+.coming-soon{
+  background:#fff;border:1px solid var(--rule);border-radius:16px;
+  padding:4rem 2rem;text-align:center;
+}
+.coming-soon-icon{font-size:2.5rem;margin-bottom:1rem;}
+.coming-soon h3{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:0.5rem;}
+.coming-soon p{font-size:0.85rem;color:var(--ink3);font-weight:300;}
+.coming-badge{
+  display:inline-block;margin-top:1rem;font-size:0.7rem;font-weight:600;
+  letter-spacing:0.08em;text-transform:uppercase;
+  background:var(--amber-light);color:var(--amber-dark);
+  padding:5px 14px;border-radius:100px;
+}
+
+/* ADD GUEST MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  z-index:200;display:flex;align-items:center;
+  justify-content:center;padding:1.5rem;
+  opacity:0;pointer-events:none;transition:opacity 0.2s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{
+  background:#fff;border-radius:20px;
+  width:100%;max-width:480px;padding:2rem;
+  transform:translateY(20px);transition:transform 0.2s;
+}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+.modal-title{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
+.modal-close{
+  width:30px;height:30px;border-radius:50%;background:var(--cream);
+  border:none;cursor:pointer;font-size:1rem;display:flex;
+  align-items:center;justify-content:center;
+}
+.modal-close:hover{background:var(--rule);}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:0.78rem;font-weight:500;color:var(--ink2);margin-bottom:0.4rem;}
+.field input,.field select{
+  width:100%;padding:0.8rem 1rem;border:1.5px solid var(--rule);
+  border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.88rem;
+  color:var(--ink);outline:none;transition:border-color 0.2s;background:#fff;
+}
+.field input:focus,.field select:focus{border-color:var(--amber);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:1.5rem;}
+.btn-cancel{
+  padding:0.7rem 1.25rem;border-radius:100px;border:1.5px solid var(--rule);
+  background:#fff;color:var(--ink2);font-family:'DM Sans',sans-serif;
+  font-size:0.83rem;font-weight:500;cursor:pointer;
+}
+.btn-primary{
+  padding:0.7rem 1.5rem;border-radius:100px;background:var(--amber);
+  color:var(--ink);border:none;font-family:'DM Sans',sans-serif;
+  font-size:0.83rem;font-weight:600;cursor:pointer;transition:all 0.2s;
+}
+.btn-primary:hover{background:var(--amber-dark);color:#fff;}
+.btn-primary:disabled{opacity:0.6;cursor:not-allowed;}
+
+/* LOADING */
+.spinner{
+  width:28px;height:28px;border:3px solid var(--rule);
+  border-top-color:var(--amber);border-radius:50%;
+  animation:spin 0.7s linear infinite;margin:3rem auto;display:block;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ============ MOBILE ============ */
+@media (max-width: 768px) {
+  nav{padding:0 1rem;height:56px;}
+  .nav-logo img{height:28px;}
+  .nav-breadcrumb{display:none;}
+  .btn-sm span{display:none;}
+  .event-header{padding:1.25rem 1rem;}
+  .event-title{font-size:1.4rem;}
+  .event-meta{gap:0.6rem;}
+  .event-stats{grid-template-columns:repeat(2,1fr);}
+  .tabs-bar{padding:0 1rem;}
+  .tab{padding:0.85rem 0.75rem;font-size:0.78rem;}
+  main{padding:1.25rem 1rem;}
+  .overview-grid{grid-template-columns:1fr;}
+  .panel-header{flex-direction:column;align-items:flex-start;gap:0.75rem;}
+  .search-bar input{width:140px;}
+  .panel-header .right-actions{width:100%;display:flex;gap:8px;}
+  .panel-header .btn-sm{flex:1;justify-content:center;}
+  table{font-size:0.78rem;}
+  th,td{padding:0.6rem 0.75rem;}
+  .modal{padding:1.25rem;}
+  .field-row{grid-template-columns:1fr;}
+  .modal-overlay{padding:0.75rem;}
+  .event-header-top{flex-direction:column;}
+  .event-header-top .right-actions{display:flex;gap:8px;width:100%;}
+  .event-header-top .btn-sm{flex:1;justify-content:center;}
+}
+@media (max-width: 480px) {
+  .tab-icon{display:none;}
+  .tab{padding:0.75rem 0.6rem;font-size:0.72rem;}
+  .event-stat-n{font-size:1.2rem;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <a href="/dashboard" class="nav-logo"><img src="octevent-logo.png" alt="Octevent"></a>
+    <div class="nav-breadcrumb">
+      <a href="/dashboard">My Events</a>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span id="nav-event-name">Loading...</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-avatar" id="user-avatar">?</div>
+    <a href="/dashboard" class="btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span>All events</span>
+    </a>
+  </div>
+</nav>
+
+<!-- EVENT HEADER -->
+<div class="event-header">
+  <div class="event-header-top">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="event-title" id="event-title">Loading...</div>
+        <span class="event-status status-draft" id="event-status">Draft</span>
+      </div>
+      <div class="event-meta" id="event-meta"></div>
+    </div>
+    <div class="right-actions" style="display:flex;gap:8px;flex-shrink:0;">
+      <button class="btn-sm" onclick="shareEvent()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+        <span>Share</span>
+      </button>
+      <button class="btn-sm amber" onclick="showTab('settings')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+  </div>
+  <div class="event-stats">
+    <div class="event-stat"><div class="event-stat-n" id="stat-guests">0</div><div class="event-stat-l">Guests</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-rsvp">0</div><div class="event-stat-l">RSVPs</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-rooms">0</div><div class="event-stat-l">Rooms</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-budget">€0</div><div class="event-stat-l">Budget</div></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-bar">
+  <button class="tab active" onclick="showTab('overview')"><span class="tab-icon">🏠</span>Overview</button>
+  <button class="tab" onclick="showTab('guests')"><span class="tab-icon">👥</span>Guests</button>
+  <button class="tab" onclick="showTab('rooms')"><span class="tab-icon">🛏</span>Rooms</button>
+  <button class="tab" onclick="showTab('budget')"><span class="tab-icon">💰</span>Budget</button>
+  <button class="tab" onclick="showTab('runsheet')"><span class="tab-icon">📅</span>Run sheet</button>
+  <button class="tab" onclick="showTab('tableplan')"><span class="tab-icon">🪑</span>Table plan</button>
+  <button class="tab" onclick="showTab('settings')"><span class="tab-icon">⚙️</span>Settings</button>
+</div>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+    <div class="overview-grid">
+      <div class="overview-card">
+        <h3><span>📋</span>Event details</h3>
+        <div id="overview-details">
+          <div class="spinner"></div>
+        </div>
+      </div>
+      <div class="overview-card">
+        <h3><span>⚡</span>Quick actions</h3>
+        <div class="quick-actions">
+          <button class="quick-action" onclick="showTab('guests');openAddGuest()">
+            <div class="quick-action-icon">👤</div>Add a guest
+          </button>
+          <button class="quick-action" onclick="showTab('rooms')">
+            <div class="quick-action-icon">🛏</div>Add a room
+          </button>
+          <button class="quick-action" onclick="showTab('budget')">
+            <div class="quick-action-icon">💰</div>Log an expense
+          </button>
+          <button class="quick-action" onclick="showTab('runsheet')">
+            <div class="quick-action-icon">📅</div>Build run sheet
+          </button>
+          <button class="quick-action" onclick="shareEvent()">
+            <div class="quick-action-icon">🔗</div>Share event page with guests
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUESTS -->
+  <div class="panel" id="panel-guests">
+    <div class="panel-header">
+      <div class="panel-title">Guest list</div>
+      <div class="right-actions" style="display:flex;gap:8px;align-items:center;">
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="guest-search" placeholder="Search guests..." oninput="filterGuests()">
+        </div>
+        <button class="btn-sm amber" onclick="openAddGuest()">+ Add guest</button>
+      </div>
+    </div>
+    <div id="guests-content">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- ROOMS -->
+  <div class="panel" id="panel-rooms">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">🛏</div>
+      <h3>Room management</h3>
+      <p>Upload rooms with photos, set pricing and let guests reserve their own room.</p>
+      <div class="coming-badge">Coming soon — Pro feature</div>
+    </div>
+  </div>
+
+  <!-- BUDGET -->
+  <div class="panel" id="panel-budget">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">💰</div>
+      <h3>Budget tracker</h3>
+      <p>Track every expense, supplier cost and payment in one place.</p>
+      <div class="coming-badge">Coming soon</div>
+    </div>
+  </div>
+
+  <!-- RUN SHEET -->
+  <div class="panel" id="panel-runsheet">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">📅</div>
+      <h3>Run sheet</h3>
+      <p>Build a minute-by-minute timeline for the day and share it with your team.</p>
+      <div class="coming-badge">Coming soon</div>
+    </div>
+  </div>
+
+  <!-- TABLE PLAN -->
+  <div class="panel" id="panel-tableplan">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">🪑</div>
+      <h3>Table plan</h3>
+      <p>Drag and drop guests to seats. Share with your client for approval.</p>
+      <div class="coming-badge">Coming soon — Pro feature</div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="panel-settings">
+    <div class="overview-card" style="max-width:560px;">
+      <h3><span>⚙️</span>Event settings</h3>
+      <div class="field" style="margin-top:0.5rem;">
+        <label>Event name</label>
+        <input type="text" id="settings-name" placeholder="Event name">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Event date</label>
+          <input type="date" id="settings-date">
+        </div>
+        <div class="field">
+          <label>Event type</label>
+          <select id="settings-type">
+            <option value="wedding">Wedding</option>
+            <option value="corporate">Corporate</option>
+            <option value="retreat">Retreat</option>
+            <option value="party">Private party</option>
+            <option value="villa">Villa event</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Venue / Location</label>
+        <input type="text" id="settings-venue" placeholder="Venue name or location">
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <input type="text" id="settings-notes" placeholder="Any notes...">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:1rem;">
+        <button class="btn-primary" id="settings-save-btn" onclick="saveSettings()">Save changes</button>
+        <button class="btn-cancel" style="color:#c0392b;border-color:#fdf0f0;" onclick="confirmDelete()">Delete event</button>
+      </div>
+      <div id="settings-msg" style="display:none;font-size:0.82rem;margin-top:0.75rem;"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ADD GUEST MODAL -->
+<div class="modal-overlay" id="guest-modal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add guest</div>
+      <button class="modal-close" onclick="closeAddGuest()">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>First name *</label>
+        <input type="text" id="g-first" placeholder="First name">
+      </div>
+      <div class="field">
+        <label>Last name</label>
+        <input type="text" id="g-last" placeholder="Last name">
+      </div>
+    </div>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="g-email" placeholder="guest@email.com">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>RSVP status</label>
+        <select id="g-rsvp">
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="declined">Declined</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Dietary requirements</label>
+        <input type="text" id="g-dietary" placeholder="e.g. Vegetarian">
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <input type="text" id="g-notes" placeholder="Any notes about this guest">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddGuest()">Cancel</button>
+      <button class="btn-primary" id="add-guest-btn" onclick="addGuest()">Add guest</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://esjmzvhxbwcpslutprel.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzam16dmh4YndjcHNsdXRwcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzcxNjAsImV4cCI6MjA5Mzc1MzE2MH0.fsr1_P_ZB68SaiK00GPXvJLQUePM4eLght_CaAYOeF0';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const params  = new URLSearchParams(window.location.search);
+const eventId = params.get('id');
+let currentEvent = null;
+let allGuests = [];
+
+// Auth + load
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (!session) { window.location.href = '/login'; return; }
+  const name = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+  document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+  if (!eventId) { window.location.href = '/dashboard'; return; }
+  loadEvent();
+  loadGuests();
+});
+
+async function loadEvent() {
+  const { data, error } = await sb.from('events').select('*').eq('id', eventId).single();
+  if (error || !data) { window.location.href = '/dashboard'; return; }
+  currentEvent = data;
+  renderEventHeader(data);
+  renderOverview(data);
+  populateSettings(data);
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+}
+
+function getStatus(ev) {
+  if (ev.status === 'draft') return 'draft';
+  const diff = (new Date(ev.event_date) - new Date()) / 86400000;
+  if (diff < -1) return 'past';
+  if (diff <= 1) return 'live';
+  return 'upcoming';
+}
+
+function renderEventHeader(ev) {
+  document.title = `${ev.name} — Octevent`;
+  document.getElementById('nav-event-name').textContent = ev.name;
+  document.getElementById('event-title').textContent = ev.name;
+  const status = getStatus(ev);
+  const statusEl = document.getElementById('event-status');
+  statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+  statusEl.className = `event-status status-${status}`;
+  const meta = [];
+  if (ev.event_date) meta.push(`<div class="event-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${formatDate(ev.event_date)}</div>`);
+  if (ev.venue) meta.push(`<div class="event-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>${ev.venue}</div>`);
+  if (ev.event_type) meta.push(`<div class="event-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${ev.event_type.charAt(0).toUpperCase()+ev.event_type.slice(1)}</div>`);
+  document.getElementById('event-meta').innerHTML = meta.join('');
+  document.getElementById('stat-guests').textContent = ev.guest_count || 0;
+  document.getElementById('stat-rsvp').textContent = ev.rsvp_count || 0;
+  document.getElementById('stat-rooms').textContent = ev.room_count || 0;
+  document.getElementById('stat-budget').textContent = ev.budget ? `€${ev.budget}` : '€0';
+}
+
+function renderOverview(ev) {
+  document.getElementById('overview-details').innerHTML = `
+    <div class="detail-row"><span class="detail-label">Event name</span><span class="detail-value">${ev.name}</span></div>
+    <div class="detail-row"><span class="detail-label">Date</span><span class="detail-value">${formatDate(ev.event_date)}</span></div>
+    <div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">${ev.event_type || '—'}</span></div>
+    <div class="detail-row"><span class="detail-label">Venue</span><span class="detail-value">${ev.venue || '—'}</span></div>
+    <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${getStatus(ev)}</span></div>
+    <div class="detail-row"><span class="detail-label">Notes</span><span class="detail-value">${ev.notes || '—'}</span></div>
+  `;
+}
+
+function populateSettings(ev) {
+  document.getElementById('settings-name').value = ev.name || '';
+  document.getElementById('settings-date').value = ev.event_date || '';
+  document.getElementById('settings-type').value = ev.event_type || 'other';
+  document.getElementById('settings-venue').value = ev.venue || '';
+  document.getElementById('settings-notes').value = ev.notes || '';
+}
+
+async function saveSettings() {
+  const btn = document.getElementById('settings-save-btn');
+  const msg = document.getElementById('settings-msg');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  const updates = {
+    name: document.getElementById('settings-name').value.trim(),
+    event_date: document.getElementById('settings-date').value,
+    event_type: document.getElementById('settings-type').value,
+    venue: document.getElementById('settings-venue').value.trim(),
+    notes: document.getElementById('settings-notes').value.trim(),
+  };
+  const { error } = await sb.from('events').update(updates).eq('id', eventId);
+  btn.textContent = 'Save changes'; btn.disabled = false;
+  if (error) {
+    msg.textContent = 'Error saving — please try again.';
+    msg.style.color = '#c0392b'; msg.style.display = 'block';
+  } else {
+    msg.textContent = '✓ Saved successfully';
+    msg.style.color = '#2d6a4f'; msg.style.display = 'block';
+    Object.assign(currentEvent, updates);
+    renderEventHeader(currentEvent);
+    renderOverview(currentEvent);
+    setTimeout(() => msg.style.display = 'none', 2500);
+  }
+}
+
+async function confirmDelete() {
+  if (!confirm(`Are you sure you want to delete "${currentEvent.name}"? This cannot be undone.`)) return;
+  await sb.from('events').delete().eq('id', eventId);
+  window.location.href = '/dashboard';
+}
+
+// GUESTS
+async function loadGuests() {
+  const { data } = await sb.from('guests').select('*').eq('event_id', eventId).order('created_at', { ascending: true });
+  allGuests = data || [];
+  renderGuests(allGuests);
+}
+
+function renderGuests(guests) {
+  const el = document.getElementById('guests-content');
+  if (!guests.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><h3>No guests yet</h3><p>Add your first guest to get started.</p><button class="btn-primary" onclick="openAddGuest()">+ Add first guest</button></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Name</th><th>Email</th><th>RSVP</th><th>Dietary</th><th>Notes</th>
+        </tr></thead>
+        <tbody>${guests.map(g => `
+          <tr>
+            <td><div class="guest-name">${g.first_name} ${g.last_name || ''}</div></td>
+            <td><div class="guest-email">${g.email || '—'}</div></td>
+            <td><span class="rsvp-badge rsvp-${g.rsvp_status || 'pending'}">${g.rsvp_status || 'pending'}</span></td>
+            <td>${g.dietary || '—'}</td>
+            <td>${g.notes || '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function filterGuests() {
+  const q = document.getElementById('guest-search').value.toLowerCase();
+  renderGuests(allGuests.filter(g =>
+    `${g.first_name} ${g.last_name} ${g.email}`.toLowerCase().includes(q)
+  ));
+}
+
+function openAddGuest() {
+  document.getElementById('guest-modal').classList.add('open');
+  setTimeout(() => document.getElementById('g-first').focus(), 100);
+}
+function closeAddGuest() { document.getElementById('guest-modal').classList.remove('open'); }
+function handleModalClick(e) { if (e.target === document.getElementById('guest-modal')) closeAddGuest(); }
+
+async function addGuest() {
+  const first = document.getElementById('g-first').value.trim();
+  if (!first) { document.getElementById('g-first').style.borderColor = '#e53e3e'; return; }
+  const btn = document.getElementById('add-guest-btn');
+  btn.textContent = 'Adding...'; btn.disabled = true;
+  const { error } = await sb.from('guests').insert([{
+    event_id: eventId,
+    first_name: first,
+    last_name: document.getElementById('g-last').value.trim(),
+    email: document.getElementById('g-email').value.trim(),
+    rsvp_status: document.getElementById('g-rsvp').value,
+    dietary: document.getElementById('g-dietary').value.trim(),
+    notes: document.getElementById('g-notes').value.trim(),
+  }]);
+  btn.textContent = 'Add guest'; btn.disabled = false;
+  if (!error) {
+    closeAddGuest();
+    ['g-first','g-last','g-email','g-dietary','g-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('g-rsvp').value = 'pending';
+    await loadGuests();
+    const count = allGuests.length;
+    await sb.from('events').update({ guest_count: count }).eq('id', eventId);
+    document.getElementById('stat-guests').textContent = count;
+  }
+}
+
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  const tabs = document.querySelectorAll('.tab');
+  const tabMap = ['overview','guests','rooms','budget','runsheet','tableplan','settings'];
+  const idx = tabMap.indexOf(name);
+  if (idx > -1) tabs[idx].classList.add('active');
+}
+
+function shareEvent() {
+  const url = `${window.location.origin}/event-guest.html?id=${eventId}`;
+  if (navigator.share) {
+    navigator.share({ title: currentEvent?.name, url });
+  } else {
+    navigator.clipboard.writeText(url);
+    alert('Link copied to clipboard!');
+  }
+}
+</script>
+</body>
+</html>
