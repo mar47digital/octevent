@@ -690,7 +690,9 @@ async function saveSettings() {
   const btn = document.getElementById('settings-save-btn');
   const msg = document.getElementById('settings-msg');
   btn.textContent = 'Saving...'; btn.disabled = true;
+
   // Upload new photo if selected
+  let cover_image = null;
   const photoFile = document.getElementById('settings-photo-input').files[0];
   if (photoFile) {
     const { data: { session } } = await sb.auth.getSession();
@@ -701,10 +703,10 @@ async function saveSettings() {
       .upload(path, photoFile, { cacheControl: '3600', upsert: false });
     if (!uploadError) {
       const { data: urlData } = sb.storage.from('event-covers').getPublicUrl(path);
-      updates_cover = urlData.publicUrl;
+      cover_image = urlData.publicUrl;
     }
   }
-  let updates_cover = null;
+
   const updates = {
     name: document.getElementById('settings-name').value.trim(),
     event_date: document.getElementById('settings-date').value,
@@ -712,7 +714,7 @@ async function saveSettings() {
     event_type: document.getElementById('settings-type').value,
     venue: document.getElementById('settings-venue').value.trim(),
     notes: document.getElementById('settings-notes').value.trim(),
-    ...(updates_cover && { cover_image: updates_cover })
+    ...(cover_image && { cover_image })
   };
   const { error } = await sb.from('events').update(updates).eq('id', eventId);
   btn.textContent = 'Save changes'; btn.disabled = false;
