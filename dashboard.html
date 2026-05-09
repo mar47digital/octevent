@@ -301,7 +301,7 @@ main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
     <button class="filter-tab" onclick="filterEvents('upcoming',this)">Upcoming</button>
     <button class="filter-tab" onclick="filterEvents('live',this)">Live</button>
     <button class="filter-tab" onclick="filterEvents('past',this)">Past</button>
-    <button class="filter-tab" onclick="filterEvents('draft',this)">Drafts</button>
+    
   </div>
 
   <div class="events-grid" id="events-grid">
@@ -565,7 +565,7 @@ async function handleCreateEvent() {
 
   const { data, error } = await sb.from('events').insert([{
     name, event_date: date, end_date: document.getElementById('new-end-date').value || null, event_type: type,
-    venue, notes, status: 'draft',
+    venue, notes,
     user_id: currentUser.id,
     guest_count: 0, room_count: 0, rsvp_count: 0,
     cover_image

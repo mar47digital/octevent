@@ -619,7 +619,7 @@ function formatDate(d) {
 }
 
 function getStatus(ev) {
-  if (ev.status === 'draft') return 'draft';
+  if (!ev.event_date) return 'upcoming';
   const diff = (new Date(ev.event_date) - new Date()) / 86400000;
   if (diff < -1) return 'past';
   if (diff <= 1) return 'live';
