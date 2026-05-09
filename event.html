@@ -6,7 +6,56 @@
 <title>Octevent — Event</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ── MOBILE BUDGET MODAL ──
+const expenseCats = ['venue','catering','flowers','music','photography','transport','accommodation','staffing','decor','other'];
+const incomeCats  = ['room_rental','ticket_sales','sponsorship','client_payment','other_income'];
+
+function openMobileBudget() {
+  updateMobileCats();
+  ['mb-supplier','mb-description','mb-allocated','mb-quoted','mb-actual','mb-deposit','mb-paid-amount','mb-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mb-type').value = 'expense';
+  document.getElementById('mb-paid-status').value = 'unpaid';
+  updateMobileCats();
+  document.getElementById('mobile-budget-modal').classList.add('open');
+}
+
+function closeMobileBudget() {
+  document.getElementById('mobile-budget-modal').classList.remove('open');
+}
+
+function updateMobileCats() {
+  const isIncome = document.getElementById('mb-type').value === 'income';
+  const cats = isIncome ? incomeCats : expenseCats;
+  const sel = document.getElementById('mb-category');
+  sel.innerHTML = cats.map(c => `<option value="${c}">${catLabel(c)}</option>`).join('');
+}
+
+async function saveMobileBudget() {
+  const btn = document.getElementById('mb-save-btn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  const { error } = await sb.from('budget_items').insert([{
+    event_id: eventId,
+    item_type:        document.getElementById('mb-type').value,
+    category:         document.getElementById('mb-category').value,
+    supplier:         document.getElementById('mb-supplier').value.trim(),
+    description:      document.getElementById('mb-description').value.trim(),
+    allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
+    quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
+    actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
+    deposit_amount:   parseFloat(document.getElementById('mb-deposit').value)||0,
+    paid_amount:      parseFloat(document.getElementById('mb-paid-amount').value)||0,
+    paid_status:      document.getElementById('mb-paid-status').value,
+    notes:            document.getElementById('mb-notes').value.trim(),
+  }]);
+  btn.textContent = 'Add item'; btn.disabled = false;
+  if (!error) {
+    closeMobileBudget();
+    await loadBudget();
+  }
+}
+
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -220,6 +269,12 @@ tr:hover .row-del{opacity:1;}
   .tab{padding:0.75rem 0.6rem;font-size:0.72rem;}
   .event-stat-n{font-size:1.2rem;}
 }
+
+.mobile-only{display:none;}
+@media(max-width:768px){
+  .mobile-only{display:inline-flex;}
+  .budget-summary{grid-template-columns:repeat(2,1fr);}
+}
 </style>
 </head>
 <body>
@@ -317,6 +372,7 @@ tr:hover .row-del{opacity:1;}
   <div class="panel" id="panel-budget">
     <div class="panel-header">
       <div class="panel-title">Budget tracker</div>
+      <button class="btn-sm amber mobile-only" onclick="openMobileBudget()">+ Add item</button>
     </div>
     <div class="budget-summary">
       <div class="budget-card"><div class="budget-card-label">Allocated budget</div><div class="budget-card-value" id="b-total-budget">€0</div></div>
@@ -778,7 +834,7 @@ function refreshCell(td, item, field, type) {
   else if (type==='num') {
     td.innerHTML = fmt(item[field]);
     let cls = 'num';
-    if (field==='actual_amount' && parseFloat(item[field])>parseFloat(item.allocated_budget||0)) cls+=' red';
+    if (field==='actual_amount' && parseFloat(item[field])>parseFloat(item.allocated_budget||0) && item.item_type!=='income') cls+=' red';
     if (field==='paid_amount' && item.paid_status==='paid') cls+=' green';
     td.className = cls;
   } else { td.textContent = item[field]||'—'; }
@@ -910,6 +966,107 @@ function shareEvent() {
   if (navigator.share) navigator.share({ title: currentEvent?.name, url });
   else { navigator.clipboard.writeText(url); alert('Link copied to clipboard!'); }
 }
+
+// ── MOBILE BUDGET MODAL ──
+const expenseCats = ['venue','catering','flowers','music','photography','transport','accommodation','staffing','decor','other'];
+const incomeCats  = ['room_rental','ticket_sales','sponsorship','client_payment','other_income'];
+
+function openMobileBudget() {
+  updateMobileCats();
+  ['mb-supplier','mb-description','mb-allocated','mb-quoted','mb-actual','mb-deposit','mb-paid-amount','mb-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mb-type').value = 'expense';
+  document.getElementById('mb-paid-status').value = 'unpaid';
+  updateMobileCats();
+  document.getElementById('mobile-budget-modal').classList.add('open');
+}
+
+function closeMobileBudget() {
+  document.getElementById('mobile-budget-modal').classList.remove('open');
+}
+
+function updateMobileCats() {
+  const isIncome = document.getElementById('mb-type').value === 'income';
+  const cats = isIncome ? incomeCats : expenseCats;
+  const sel = document.getElementById('mb-category');
+  sel.innerHTML = cats.map(c => `<option value="${c}">${catLabel(c)}</option>`).join('');
+}
+
+async function saveMobileBudget() {
+  const btn = document.getElementById('mb-save-btn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  const { error } = await sb.from('budget_items').insert([{
+    event_id: eventId,
+    item_type:        document.getElementById('mb-type').value,
+    category:         document.getElementById('mb-category').value,
+    supplier:         document.getElementById('mb-supplier').value.trim(),
+    description:      document.getElementById('mb-description').value.trim(),
+    allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
+    quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
+    actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
+    deposit_amount:   parseFloat(document.getElementById('mb-deposit').value)||0,
+    paid_amount:      parseFloat(document.getElementById('mb-paid-amount').value)||0,
+    paid_status:      document.getElementById('mb-paid-status').value,
+    notes:            document.getElementById('mb-notes').value.trim(),
+  }]);
+  btn.textContent = 'Add item'; btn.disabled = false;
+  if (!error) {
+    closeMobileBudget();
+    await loadBudget();
+  }
+}
+
 </script>
+
+<!-- MOBILE BUDGET MODAL -->
+<div class="modal-overlay" id="mobile-budget-modal" onclick="if(event.target===this)closeMobileBudget()">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">Add budget item</div>
+      <button class="modal-close" onclick="closeMobileBudget()">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Type</label>
+        <select id="mb-type" onchange="updateMobileCats()">
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="mb-category"></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Supplier</label><input type="text" id="mb-supplier" placeholder="Supplier name"></div>
+      <div class="field"><label>Description</label><input type="text" id="mb-description" placeholder="What is this for?"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Allocated (€)</label><input type="number" id="mb-allocated" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="field"><label>Quoted (€)</label><input type="number" id="mb-quoted" placeholder="0.00" min="0" step="0.01"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Actual (€)</label><input type="number" id="mb-actual" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="field"><label>Deposit paid (€)</label><input type="number" id="mb-deposit" placeholder="0.00" min="0" step="0.01"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Amount paid (€)</label><input type="number" id="mb-paid-amount" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="field">
+        <label>Payment status</label>
+        <select id="mb-paid-status">
+          <option value="unpaid">Unpaid</option>
+          <option value="deposit">Deposit paid</option>
+          <option value="partial">Partially paid</option>
+          <option value="paid">Fully paid</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Notes</label><input type="text" id="mb-notes" placeholder="Any additional notes"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeMobileBudget()">Cancel</button>
+      <button class="btn-primary" id="mb-save-btn" onclick="saveMobileBudget()">Add item</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
