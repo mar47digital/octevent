@@ -461,6 +461,13 @@ function buildChecklistRow(item) {
 function refreshClCell(td, item, field, type) {
   if (type==='cl-stage') { td.innerHTML=`<span class="stage-badge ${stageClass(item[field])}">${stageLabel(item[field])}</span>`; }
   else if (type==='cl-status') { td.innerHTML=`<span class="cl-status-badge ${clStatusClass(item[field])}">${clStatusLabel(item[field])}</span>`; }
+  else if (type==='computed-remaining') {
+    if (item.item_type === 'income') { td.textContent = '—'; td.className='num'; return; }
+    const remaining = parseFloat(item.actual_amount||0) - parseFloat(item.paid_amount||0);
+    if (remaining <= 0) { td.innerHTML = '<span style="color:#2d6a4f;font-weight:600;">✓ Clear</span>'; td.className='num'; }
+    else { td.innerHTML = `<span style="color:#c0392b;font-weight:700;">${fmt(remaining)}</span>`; td.className='num red'; }
+    return;
+  }
   else if (type==='date') { td.textContent = item[field] ? new Date(item[field]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
   else { td.innerHTML = field==='task' ? `<span class="task-name">${item[field]||'—'}</span>` : (item[field]||'—'); }
 }
@@ -2538,17 +2545,16 @@ function updateSummary(items) {
       <td colspan="2" style="color:var(--ink2);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total expenses</td>
       <td></td><td></td>
       <td class="num"><strong>${fmtSum(expAllocated)}</strong></td>
-      <td class="num"><strong>${fmtSum(expQuoted)}</strong></td>
       <td class="num"><strong>${fmtSum(expActual)}</strong></td>
       <td class="num"><strong>${fmtSum(expDeposit)}</strong></td>
       <td class="num"><strong>${fmtSum(expPaid)}</strong></td>
-      <td colspan="4"></td>`;
+      <td class="num red"><strong>${fmtSum(expActual - expPaid)}</strong></td>
+      <td colspan="3"></td>`;
     const footer2 = document.getElementById('budget-footer2');
     if (footer2) footer2.innerHTML = `
       <td colspan="2" style="color:#2d6a4f;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total income</td>
       <td></td><td></td>
       <td class="num green"><strong>${fmtSum(incAllocated)}</strong></td>
-      <td class="num green"><strong>${fmtSum(incQuoted)}</strong></td>
       <td class="num green"><strong>${fmtSum(incActual)}</strong></td>
       <td class="num green"><strong>${fmtSum(incDeposit)}</strong></td>
       <td class="num green"><strong>${fmtSum(incPaid)}</strong></td>
@@ -2558,7 +2564,6 @@ function updateSummary(items) {
       <td colspan="2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;" class="${netActual>=0?'':'red'}">${netActual>=0?'Net surplus':'Outstanding balance'}</td>
       <td></td><td></td>
       <td class="num ${netAllocated>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netAllocated))}</strong></td>
-      <td class="num"></td>
       <td class="num ${netActual>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netActual))}</strong></td>
       <td colspan="5"></td>`;
   }
@@ -2622,6 +2627,13 @@ function refreshCell(td, item, field, type) {
   }
   if (type==='cat') { td.innerHTML=`<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`; }
   else if (type==='status') { td.innerHTML=`<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field])}</span>`; }
+  else if (type==='computed-remaining') {
+    if (item.item_type === 'income') { td.textContent = '—'; td.className='num'; return; }
+    const remaining = parseFloat(item.actual_amount||0) - parseFloat(item.paid_amount||0);
+    if (remaining <= 0) { td.innerHTML = '<span style="color:#2d6a4f;font-weight:600;">✓ Clear</span>'; td.className='num'; }
+    else { td.innerHTML = `<span style="color:#c0392b;font-weight:700;">${fmt(remaining)}</span>`; td.className='num red'; }
+    return;
+  }
   else if (type==='date') { td.textContent = item[field] ? new Date(item[field]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
   else if (type==='num') {
     td.innerHTML = fmt(item[field]);
@@ -2641,10 +2653,10 @@ function buildBudgetRow(item) {
     {field:'supplier',type:'text'},
     {field:'description',type:'text'},
     {field:'allocated_budget',type:'num'},
-    {field:'quoted_amount',type:'num'},
     {field:'actual_amount',type:'num'},
     {field:'deposit_amount',type:'num'},
     {field:'paid_amount',type:'num'},
+    {field:'_remaining',type:'computed-remaining'},
     {field:'next_payment_date',type:'date'},
     {field:'paid_status',type:'auto-status'},
     {field:'notes',type:'text'},
@@ -2653,8 +2665,10 @@ function buildBudgetRow(item) {
     const td = document.createElement('td');
     if (type==='num') td.className='num';
     refreshCell(td, item, field, type);
-    td.title='Click to edit'; td.style.cursor='pointer';
-    td.addEventListener('click', () => makeEditable(td, item, field, type));
+    if (type !== 'computed-remaining') {
+      td.title='Click to edit'; td.style.cursor='pointer';
+      td.addEventListener('click', () => makeEditable(td, item, field, type));
+    } else { td.style.cursor='default'; }
     tr.appendChild(td);
   });
   const del = document.createElement('td');
@@ -2685,10 +2699,10 @@ function renderBudget(items) {
       <th class="sortable" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('allocated_budget')">Allocated <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('quoted_amount')">Quote <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('actual_amount')">Final <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('deposit_amount')">Refundable deposit <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('paid_amount')">Paid <span class="sort-icon">↕</span></th>
+      <th class="num">Remaining</th>
       <th class="sortable" onclick="sortBudget('next_payment_date')">Next payment <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('paid_status')">Status <span class="sort-icon">↕</span></th>
       <th>Notes</th>
@@ -3278,6 +3292,13 @@ function buildChecklistRow(item) {
 function refreshClCell(td, item, field, type) {
   if (type==='cl-stage') { td.innerHTML=`<span class="stage-badge ${stageClass(item[field])}">${stageLabel(item[field])}</span>`; }
   else if (type==='cl-status') { td.innerHTML=`<span class="cl-status-badge ${clStatusClass(item[field])}">${clStatusLabel(item[field])}</span>`; }
+  else if (type==='computed-remaining') {
+    if (item.item_type === 'income') { td.textContent = '—'; td.className='num'; return; }
+    const remaining = parseFloat(item.actual_amount||0) - parseFloat(item.paid_amount||0);
+    if (remaining <= 0) { td.innerHTML = '<span style="color:#2d6a4f;font-weight:600;">✓ Clear</span>'; td.className='num'; }
+    else { td.innerHTML = `<span style="color:#c0392b;font-weight:700;">${fmt(remaining)}</span>`; td.className='num red'; }
+    return;
+  }
   else if (type==='date') { td.textContent = item[field] ? new Date(item[field]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
   else { td.innerHTML = field==='task' ? `<span class="task-name">${item[field]||'—'}</span>` : (item[field]||'—'); }
 }
