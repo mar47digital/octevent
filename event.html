@@ -73,35 +73,175 @@ function stageClass(s) { return 'stage-'+(s||'planning'); }
 function clStatusLabel(s) { return ({not_started:'Not started',in_progress:'In progress',done:'Done',blocked:'Blocked'})[s]||'Not started'; }
 function clStatusClass(s) { return 'cl-'+(s||'not_started'); }
 
+const T = (stage,category,task) => ({stage,category,task,status:'not_started',who:'',deadline:'',reminder:''});
+
 const PRIVATE_PARTY_TEMPLATE = [
-  {stage:'planning',category:'Venue',task:'Research and shortlist venues',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Venue',task:'Visit top venue choices',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Venue',task:'Confirm venue and sign contract',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Budget',task:'Set overall event budget',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Guests',task:'Create guest list',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Catering & Drinks',task:'Research catering options',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Entertainment',task:'Research entertainment options',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Guests',task:'Send invitations',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Catering & Drinks',task:'Book catering supplier',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Catering & Drinks',task:'Arrange drinks / bar',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Entertainment',task:'Book DJ / band / entertainment',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Decor & Styling',task:'Book florist / decorator',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Photography',task:'Book photographer / videographer',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Transport',task:'Arrange guest transport if needed',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Guests',task:'Chase RSVPs',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Guests',task:'Collect dietary requirements',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Catering & Drinks',task:'Confirm final guest numbers with caterer',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Venue',task:'Final walkthrough of venue',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Decor & Styling',task:'Confirm decor setup time with venue',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'On the day',task:'Create run sheet for the day',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'on_the_day',category:'Venue',task:'Oversee venue setup',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'on_the_day',category:'Catering & Drinks',task:'Brief catering team',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'on_the_day',category:'Entertainment',task:'Brief entertainment / DJ',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'on_the_day',category:'Guests',task:'Welcome guests on arrival',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'post_event',category:'Venue',task:'Settle final venue invoice',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'post_event',category:'Catering & Drinks',task:'Settle catering invoice',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'post_event',category:'Guests',task:'Send thank you messages',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'post_event',category:'General',task:'Gather feedback from client',status:'not_started',who:'',deadline:'',reminder:''},
+  T('planning','Budget','Set overall event budget'),
+  T('planning','Venue','Research and shortlist venues'),
+  T('planning','Venue','Visit top venue choices'),
+  T('planning','Venue','Confirm venue and sign contract'),
+  T('planning','Guests','Create initial guest list'),
+  T('planning','Catering & Drinks','Research catering options'),
+  T('planning','Entertainment','Research entertainment options'),
+  T('booking','Guests','Send invitations'),
+  T('booking','Catering & Drinks','Book catering supplier'),
+  T('booking','Catering & Drinks','Arrange drinks / bar'),
+  T('booking','Entertainment','Book DJ / band / entertainment'),
+  T('booking','Decor & Styling','Book florist / decorator'),
+  T('booking','Photography','Book photographer / videographer'),
+  T('booking','Transport','Arrange guest transport if needed'),
+  T('confirmed','Guests','Chase outstanding RSVPs'),
+  T('confirmed','Guests','Collect dietary requirements'),
+  T('confirmed','Catering & Drinks','Confirm final numbers with caterer'),
+  T('confirmed','Venue','Final walkthrough of venue'),
+  T('confirmed','Decor & Styling','Confirm decor setup time with venue'),
+  T('confirmed','General','Create run sheet for the day'),
+  T('on_the_day','Venue','Oversee venue setup'),
+  T('on_the_day','Catering & Drinks','Brief catering team'),
+  T('on_the_day','Entertainment','Brief DJ / entertainment'),
+  T('on_the_day','Guests','Welcome guests on arrival'),
+  T('post_event','Venue','Settle final venue invoice'),
+  T('post_event','Catering & Drinks','Settle catering invoice'),
+  T('post_event','Guests','Send thank you messages'),
+  T('post_event','General','Gather feedback from client'),
+];
+
+const WEDDING_TEMPLATE = [
+  T('planning','Budget','Set overall wedding budget'),
+  T('planning','Venue','Research and visit wedding venues'),
+  T('planning','Venue','Book ceremony and reception venue'),
+  T('planning','Guests','Draft initial guest list'),
+  T('planning','Catering','Research wedding caterers'),
+  T('planning','Flowers & Decor','Research florists'),
+  T('planning','Music','Research bands / DJs'),
+  T('planning','Photography','Research photographers and videographers'),
+  T('planning','Attire','Begin wedding dress / suit search'),
+  T('planning','Stationery','Design save the dates'),
+  T('booking','Catering','Book wedding caterer'),
+  T('booking','Music','Book band / DJ / ceremony musician'),
+  T('booking','Photography','Book photographer and videographer'),
+  T('booking','Flowers & Decor','Book florist'),
+  T('booking','Attire','Order wedding dress / suits'),
+  T('booking','Transport','Book wedding cars / transport'),
+  T('booking','Accommodation','Arrange accommodation for wedding party'),
+  T('booking','Stationery','Send formal invitations'),
+  T('booking','Honeymoon','Book honeymoon'),
+  T('booking','Cake','Book wedding cake maker'),
+  T('booking','Hair & Makeup','Book hair and makeup artists'),
+  T('confirmed','Guests','Chase outstanding RSVPs'),
+  T('confirmed','Guests','Collect dietary requirements'),
+  T('confirmed','Catering','Confirm final guest numbers with caterer'),
+  T('confirmed','Venue','Final venue walkthrough'),
+  T('confirmed','Stationery','Create seating plan'),
+  T('confirmed','General','Create detailed run sheet'),
+  T('confirmed','Attire','Final dress / suit fittings'),
+  T('confirmed','Flowers & Decor','Confirm floral arrangements'),
+  T('confirmed','Music','Confirm ceremony and reception music'),
+  T('on_the_day','Venue','Oversee venue and decor setup'),
+  T('on_the_day','Photography','Brief photographer on key shots'),
+  T('on_the_day','Catering','Brief catering team'),
+  T('on_the_day','Music','Brief band / DJ on schedule'),
+  T('on_the_day','General','Coordinate wedding party'),
+  T('on_the_day','General','Welcome guests'),
+  T('post_event','Venue','Settle all outstanding invoices'),
+  T('post_event','Guests','Send thank you cards'),
+  T('post_event','General','Return hired items'),
+  T('post_event','General','Send client feedback questionnaire'),
+];
+
+const CORPORATE_TEMPLATE = [
+  T('planning','Budget','Set event budget and get approval'),
+  T('planning','Objectives','Define event objectives and KPIs'),
+  T('planning','Venue','Research and shortlist venues'),
+  T('planning','Venue','Book venue and sign contract'),
+  T('planning','Speakers','Identify and invite keynote speakers'),
+  T('planning','Catering','Research catering options'),
+  T('planning','AV & Tech','Identify AV and tech requirements'),
+  T('planning','Marketing','Create event marketing plan'),
+  T('booking','Catering','Book catering supplier'),
+  T('booking','AV & Tech','Book AV company and equipment'),
+  T('booking','Photography','Book event photographer'),
+  T('booking','Transport','Arrange transport for speakers / VIPs'),
+  T('booking','Accommodation','Book hotel rooms for speakers / VIPs'),
+  T('booking','Marketing','Launch event registration / ticketing'),
+  T('booking','Speakers','Confirm speaker topics and requirements'),
+  T('booking','Branding','Order printed materials and branding'),
+  T('confirmed','Attendees','Send joining instructions to attendees'),
+  T('confirmed','Speakers','Send final briefing to speakers'),
+  T('confirmed','Catering','Confirm final numbers with caterer'),
+  T('confirmed','Venue','Final venue walkthrough'),
+  T('confirmed','AV & Tech','Tech rehearsal with AV team'),
+  T('confirmed','General','Finalise run of show'),
+  T('confirmed','Staff','Brief event staff and volunteers'),
+  T('on_the_day','Venue','Oversee venue setup and branding'),
+  T('on_the_day','Registration','Manage attendee registration desk'),
+  T('on_the_day','Speakers','Welcome and brief speakers on arrival'),
+  T('on_the_day','AV & Tech','Monitor AV throughout event'),
+  T('on_the_day','Catering','Oversee catering service'),
+  T('post_event','Finance','Settle all supplier invoices'),
+  T('post_event','Attendees','Send post-event survey'),
+  T('post_event','Marketing','Share event highlights / photos'),
+  T('post_event','General','Review against KPIs and write report'),
+];
+
+const RETREAT_TEMPLATE = [
+  T('planning','Budget','Set retreat budget'),
+  T('planning','Venue','Research retreat venues / villas'),
+  T('planning','Venue','Book venue and accommodation'),
+  T('planning','Guests','Confirm participant list'),
+  T('planning','Programme','Design retreat programme and schedule'),
+  T('planning','Facilitators','Research and invite facilitators / coaches'),
+  T('planning','Catering','Plan meals — dietary requirements'),
+  T('booking','Facilitators','Book facilitators / coaches'),
+  T('booking','Catering','Book catering or meal delivery'),
+  T('booking','Activities','Book activities and excursions'),
+  T('booking','Transport','Arrange group transport'),
+  T('booking','Wellbeing','Book spa / massage / wellbeing sessions'),
+  T('booking','Photography','Book retreat photographer'),
+  T('confirmed','Guests','Send pre-retreat information pack'),
+  T('confirmed','Guests','Collect dietary requirements and health notes'),
+  T('confirmed','Venue','Final venue walkthrough'),
+  T('confirmed','Programme','Finalise daily schedule'),
+  T('confirmed','Catering','Confirm meal plan with catering'),
+  T('confirmed','Facilitators','Send final briefing to facilitators'),
+  T('on_the_day','Venue','Oversee arrival setup'),
+  T('on_the_day','Guests','Welcome guests and room allocation'),
+  T('on_the_day','Programme','Run daily schedule'),
+  T('on_the_day','Catering','Oversee meal service'),
+  T('on_the_day','Wellbeing','Coordinate wellbeing sessions'),
+  T('post_event','Finance','Settle all supplier invoices'),
+  T('post_event','Guests','Send thank you and follow-up resources'),
+  T('post_event','General','Gather feedback from participants'),
+  T('post_event','General','Write retreat summary report'),
+];
+
+const GROUP_HOLIDAY_TEMPLATE = [
+  T('planning','Budget','Set group budget and agree cost sharing'),
+  T('planning','Destination','Research and agree destination'),
+  T('planning','Accommodation','Research accommodation options'),
+  T('planning','Accommodation','Book accommodation / villa'),
+  T('planning','Guests','Confirm final guest list'),
+  T('planning','Travel','Research flights / travel options'),
+  T('booking','Travel','Book group flights or transport'),
+  T('booking','Accommodation','Pay accommodation deposit'),
+  T('booking','Activities','Research and book group activities'),
+  T('booking','Transfers','Book airport transfers'),
+  T('booking','Travel Insurance','Arrange travel insurance'),
+  T('booking','Dining','Research and book group restaurants'),
+  T('confirmed','Guests','Share travel details with all guests'),
+  T('confirmed','Guests','Collect passport details if needed'),
+  T('confirmed','Guests','Collect dietary requirements'),
+  T('confirmed','Accommodation','Confirm room allocation'),
+  T('confirmed','Activities','Confirm all activity bookings'),
+  T('confirmed','General','Create group WhatsApp / communication channel'),
+  T('confirmed','General','Share final itinerary with group'),
+  T('on_the_day','Travel','Coordinate group travel and check-in'),
+  T('on_the_day','Accommodation','Oversee arrival and room check-in'),
+  T('on_the_day','Activities','Coordinate daily activities'),
+  T('on_the_day','Dining','Manage group restaurant bookings'),
+  T('post_event','Finance','Settle any outstanding shared costs'),
+  T('post_event','Guests','Share photos with group'),
+  T('post_event','General','Start planning the next one!'),
 ];
 
 async function loadChecklist() {
@@ -181,17 +321,37 @@ function renderChecklist(items) {
   if (!items.length) {
     wrap.innerHTML = `
       <div class="checklist-start">
-        <div class="checklist-start-title">How would you like to start?</div>
-        <div class="checklist-start-grid">
+        <div class="checklist-start-title">Choose a template or start from scratch</div>
+        <div class="checklist-start-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="checklist-start-card" onclick="loadTemplate('private_party')">
+            <div class="checklist-start-icon">🎉</div>
+            <div class="checklist-start-name">Private party</div>
+            <div class="checklist-start-desc">28 tasks ready to go</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('wedding')">
+            <div class="checklist-start-icon">💍</div>
+            <div class="checklist-start-name">Wedding</div>
+            <div class="checklist-start-desc">40 tasks from planning to post-event</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('corporate')">
+            <div class="checklist-start-icon">💼</div>
+            <div class="checklist-start-name">Corporate event</div>
+            <div class="checklist-start-desc">32 tasks for professional events</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('retreat')">
+            <div class="checklist-start-icon">🌿</div>
+            <div class="checklist-start-name">Retreat</div>
+            <div class="checklist-start-desc">28 tasks for retreats and wellness events</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('group_holiday')">
+            <div class="checklist-start-icon">✈️</div>
+            <div class="checklist-start-name">Group holiday</div>
+            <div class="checklist-start-desc">26 tasks for group trips and villa holidays</div>
+          </div>
           <div class="checklist-start-card" onclick="addChecklistRow()">
             <div class="checklist-start-icon">✏️</div>
             <div class="checklist-start-name">Start from scratch</div>
-            <div class="checklist-start-desc">Add tasks one by one, your own way</div>
-          </div>
-          <div class="checklist-start-card" onclick="openTemplateModal()">
-            <div class="checklist-start-icon">📋</div>
-            <div class="checklist-start-name">Use a template</div>
-            <div class="checklist-start-desc">Load a ready-made checklist for your event type</div>
+            <div class="checklist-start-desc">Add your own tasks one by one</div>
           </div>
         </div>
       </div>`;
@@ -204,11 +364,11 @@ function renderChecklist(items) {
       <th data-field="stage" onclick="sortChecklist('stage')">Stage <span class="sort-icon">↕</span></th>
       <th data-field="category" onclick="sortChecklist('category')">Category <span class="sort-icon">↕</span></th>
       <th data-field="task" onclick="sortChecklist('task')">Task <span class="sort-icon">↕</span></th>
+      <th style="width:40px;text-align:center;">Done</th>
       <th data-field="status" onclick="sortChecklist('status')">Status <span class="sort-icon">↕</span></th>
       <th data-field="who" onclick="sortChecklist('who')">Who <span class="sort-icon">↕</span></th>
       <th data-field="deadline" onclick="sortChecklist('deadline')">Deadline <span class="sort-icon">↕</span></th>
       <th data-field="reminder" onclick="sortChecklist('reminder')">Reminder <span class="sort-icon">↕</span></th>
-      <th style="width:40px;text-align:center;">Done</th>
       <th></th>
     </tr></thead>
     <tbody id="checklist-tbody"></tbody>
@@ -248,20 +408,12 @@ function buildChecklistRow(item) {
     {field:'stage',type:'cl-stage'},
     {field:'category',type:'text'},
     {field:'task',type:'text'},
-    {field:'status',type:'cl-status'},
     {field:'who',type:'text'},
     {field:'deadline',type:'date'},
     {field:'reminder',type:'date'},
   ];
 
-  clCols.forEach(({field,type}) => {
-    const td = document.createElement('td');
-    refreshClCell(td, item, field, type);
-    td.addEventListener('click', () => makeClEditable(td, item, field, type));
-    tr.appendChild(td);
-  });
-
-  // Checkbox at the end
+  // Done checkbox before status
   const checkTd = document.createElement('td');
   checkTd.style.cursor = 'default';
   checkTd.style.textAlign = 'center';
@@ -271,6 +423,19 @@ function buildChecklistRow(item) {
   check.onclick = (e) => { e.stopPropagation(); toggleDone(item.id, item.status, tr, check); };
   checkTd.appendChild(check);
   tr.appendChild(checkTd);
+
+  // Status after checkbox
+  const statusTd = document.createElement('td');
+  refreshClCell(statusTd, item, 'status', 'cl-status');
+  statusTd.addEventListener('click', () => makeClEditable(statusTd, item, 'status', 'cl-status'));
+  tr.appendChild(statusTd);
+
+  clCols.forEach(({field,type}) => {
+    const td = document.createElement('td');
+    refreshClCell(td, item, field, type);
+    td.addEventListener('click', () => makeClEditable(td, item, field, type));
+    tr.appendChild(td);
+  });
 
   const del = document.createElement('td');
   del.innerHTML = `<button class="row-del" onclick="deleteChecklistItem('${item.id}')">Delete</button>`;
@@ -366,6 +531,10 @@ async function loadTemplate(type) {
   if (!confirm('This will add template tasks to your existing checklist. Continue?')) return;
   let templates = [];
   if (type==='private_party') templates = PRIVATE_PARTY_TEMPLATE;
+  if (type==='wedding') templates = WEDDING_TEMPLATE;
+  if (type==='corporate') templates = CORPORATE_TEMPLATE;
+  if (type==='retreat') templates = RETREAT_TEMPLATE;
+  if (type==='group_holiday') templates = GROUP_HOLIDAY_TEMPLATE;
   if (!templates.length) return;
   const rows = templates.map(t => ({ ...t, event_id: eventId }));
   const { data, error } = await sb.from('checklist_items').insert(rows).select();
@@ -2697,35 +2866,175 @@ function stageClass(s) { return 'stage-'+(s||'planning'); }
 function clStatusLabel(s) { return ({not_started:'Not started',in_progress:'In progress',done:'Done',blocked:'Blocked'})[s]||'Not started'; }
 function clStatusClass(s) { return 'cl-'+(s||'not_started'); }
 
+const T = (stage,category,task) => ({stage,category,task,status:'not_started',who:'',deadline:'',reminder:''});
+
 const PRIVATE_PARTY_TEMPLATE = [
-  {stage:'planning',category:'Venue',task:'Research and shortlist venues',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Venue',task:'Visit top venue choices',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Venue',task:'Confirm venue and sign contract',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Budget',task:'Set overall event budget',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Guests',task:'Create guest list',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Catering & Drinks',task:'Research catering options',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'planning',category:'Entertainment',task:'Research entertainment options',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Guests',task:'Send invitations',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Catering & Drinks',task:'Book catering supplier',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Catering & Drinks',task:'Arrange drinks / bar',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Entertainment',task:'Book DJ / band / entertainment',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Decor & Styling',task:'Book florist / decorator',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Photography',task:'Book photographer / videographer',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'booking',category:'Transport',task:'Arrange guest transport if needed',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Guests',task:'Chase RSVPs',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Guests',task:'Collect dietary requirements',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Catering & Drinks',task:'Confirm final guest numbers with caterer',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Venue',task:'Final walkthrough of venue',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'Decor & Styling',task:'Confirm decor setup time with venue',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'confirmed',category:'On the day',task:'Create run sheet for the day',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'on_the_day',category:'Venue',task:'Oversee venue setup',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'on_the_day',category:'Catering & Drinks',task:'Brief catering team',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'on_the_day',category:'Entertainment',task:'Brief entertainment / DJ',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'on_the_day',category:'Guests',task:'Welcome guests on arrival',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'post_event',category:'Venue',task:'Settle final venue invoice',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'post_event',category:'Catering & Drinks',task:'Settle catering invoice',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'post_event',category:'Guests',task:'Send thank you messages',status:'not_started',who:'',deadline:'',reminder:''},
-  {stage:'post_event',category:'General',task:'Gather feedback from client',status:'not_started',who:'',deadline:'',reminder:''},
+  T('planning','Budget','Set overall event budget'),
+  T('planning','Venue','Research and shortlist venues'),
+  T('planning','Venue','Visit top venue choices'),
+  T('planning','Venue','Confirm venue and sign contract'),
+  T('planning','Guests','Create initial guest list'),
+  T('planning','Catering & Drinks','Research catering options'),
+  T('planning','Entertainment','Research entertainment options'),
+  T('booking','Guests','Send invitations'),
+  T('booking','Catering & Drinks','Book catering supplier'),
+  T('booking','Catering & Drinks','Arrange drinks / bar'),
+  T('booking','Entertainment','Book DJ / band / entertainment'),
+  T('booking','Decor & Styling','Book florist / decorator'),
+  T('booking','Photography','Book photographer / videographer'),
+  T('booking','Transport','Arrange guest transport if needed'),
+  T('confirmed','Guests','Chase outstanding RSVPs'),
+  T('confirmed','Guests','Collect dietary requirements'),
+  T('confirmed','Catering & Drinks','Confirm final numbers with caterer'),
+  T('confirmed','Venue','Final walkthrough of venue'),
+  T('confirmed','Decor & Styling','Confirm decor setup time with venue'),
+  T('confirmed','General','Create run sheet for the day'),
+  T('on_the_day','Venue','Oversee venue setup'),
+  T('on_the_day','Catering & Drinks','Brief catering team'),
+  T('on_the_day','Entertainment','Brief DJ / entertainment'),
+  T('on_the_day','Guests','Welcome guests on arrival'),
+  T('post_event','Venue','Settle final venue invoice'),
+  T('post_event','Catering & Drinks','Settle catering invoice'),
+  T('post_event','Guests','Send thank you messages'),
+  T('post_event','General','Gather feedback from client'),
+];
+
+const WEDDING_TEMPLATE = [
+  T('planning','Budget','Set overall wedding budget'),
+  T('planning','Venue','Research and visit wedding venues'),
+  T('planning','Venue','Book ceremony and reception venue'),
+  T('planning','Guests','Draft initial guest list'),
+  T('planning','Catering','Research wedding caterers'),
+  T('planning','Flowers & Decor','Research florists'),
+  T('planning','Music','Research bands / DJs'),
+  T('planning','Photography','Research photographers and videographers'),
+  T('planning','Attire','Begin wedding dress / suit search'),
+  T('planning','Stationery','Design save the dates'),
+  T('booking','Catering','Book wedding caterer'),
+  T('booking','Music','Book band / DJ / ceremony musician'),
+  T('booking','Photography','Book photographer and videographer'),
+  T('booking','Flowers & Decor','Book florist'),
+  T('booking','Attire','Order wedding dress / suits'),
+  T('booking','Transport','Book wedding cars / transport'),
+  T('booking','Accommodation','Arrange accommodation for wedding party'),
+  T('booking','Stationery','Send formal invitations'),
+  T('booking','Honeymoon','Book honeymoon'),
+  T('booking','Cake','Book wedding cake maker'),
+  T('booking','Hair & Makeup','Book hair and makeup artists'),
+  T('confirmed','Guests','Chase outstanding RSVPs'),
+  T('confirmed','Guests','Collect dietary requirements'),
+  T('confirmed','Catering','Confirm final guest numbers with caterer'),
+  T('confirmed','Venue','Final venue walkthrough'),
+  T('confirmed','Stationery','Create seating plan'),
+  T('confirmed','General','Create detailed run sheet'),
+  T('confirmed','Attire','Final dress / suit fittings'),
+  T('confirmed','Flowers & Decor','Confirm floral arrangements'),
+  T('confirmed','Music','Confirm ceremony and reception music'),
+  T('on_the_day','Venue','Oversee venue and decor setup'),
+  T('on_the_day','Photography','Brief photographer on key shots'),
+  T('on_the_day','Catering','Brief catering team'),
+  T('on_the_day','Music','Brief band / DJ on schedule'),
+  T('on_the_day','General','Coordinate wedding party'),
+  T('on_the_day','General','Welcome guests'),
+  T('post_event','Venue','Settle all outstanding invoices'),
+  T('post_event','Guests','Send thank you cards'),
+  T('post_event','General','Return hired items'),
+  T('post_event','General','Send client feedback questionnaire'),
+];
+
+const CORPORATE_TEMPLATE = [
+  T('planning','Budget','Set event budget and get approval'),
+  T('planning','Objectives','Define event objectives and KPIs'),
+  T('planning','Venue','Research and shortlist venues'),
+  T('planning','Venue','Book venue and sign contract'),
+  T('planning','Speakers','Identify and invite keynote speakers'),
+  T('planning','Catering','Research catering options'),
+  T('planning','AV & Tech','Identify AV and tech requirements'),
+  T('planning','Marketing','Create event marketing plan'),
+  T('booking','Catering','Book catering supplier'),
+  T('booking','AV & Tech','Book AV company and equipment'),
+  T('booking','Photography','Book event photographer'),
+  T('booking','Transport','Arrange transport for speakers / VIPs'),
+  T('booking','Accommodation','Book hotel rooms for speakers / VIPs'),
+  T('booking','Marketing','Launch event registration / ticketing'),
+  T('booking','Speakers','Confirm speaker topics and requirements'),
+  T('booking','Branding','Order printed materials and branding'),
+  T('confirmed','Attendees','Send joining instructions to attendees'),
+  T('confirmed','Speakers','Send final briefing to speakers'),
+  T('confirmed','Catering','Confirm final numbers with caterer'),
+  T('confirmed','Venue','Final venue walkthrough'),
+  T('confirmed','AV & Tech','Tech rehearsal with AV team'),
+  T('confirmed','General','Finalise run of show'),
+  T('confirmed','Staff','Brief event staff and volunteers'),
+  T('on_the_day','Venue','Oversee venue setup and branding'),
+  T('on_the_day','Registration','Manage attendee registration desk'),
+  T('on_the_day','Speakers','Welcome and brief speakers on arrival'),
+  T('on_the_day','AV & Tech','Monitor AV throughout event'),
+  T('on_the_day','Catering','Oversee catering service'),
+  T('post_event','Finance','Settle all supplier invoices'),
+  T('post_event','Attendees','Send post-event survey'),
+  T('post_event','Marketing','Share event highlights / photos'),
+  T('post_event','General','Review against KPIs and write report'),
+];
+
+const RETREAT_TEMPLATE = [
+  T('planning','Budget','Set retreat budget'),
+  T('planning','Venue','Research retreat venues / villas'),
+  T('planning','Venue','Book venue and accommodation'),
+  T('planning','Guests','Confirm participant list'),
+  T('planning','Programme','Design retreat programme and schedule'),
+  T('planning','Facilitators','Research and invite facilitators / coaches'),
+  T('planning','Catering','Plan meals — dietary requirements'),
+  T('booking','Facilitators','Book facilitators / coaches'),
+  T('booking','Catering','Book catering or meal delivery'),
+  T('booking','Activities','Book activities and excursions'),
+  T('booking','Transport','Arrange group transport'),
+  T('booking','Wellbeing','Book spa / massage / wellbeing sessions'),
+  T('booking','Photography','Book retreat photographer'),
+  T('confirmed','Guests','Send pre-retreat information pack'),
+  T('confirmed','Guests','Collect dietary requirements and health notes'),
+  T('confirmed','Venue','Final venue walkthrough'),
+  T('confirmed','Programme','Finalise daily schedule'),
+  T('confirmed','Catering','Confirm meal plan with catering'),
+  T('confirmed','Facilitators','Send final briefing to facilitators'),
+  T('on_the_day','Venue','Oversee arrival setup'),
+  T('on_the_day','Guests','Welcome guests and room allocation'),
+  T('on_the_day','Programme','Run daily schedule'),
+  T('on_the_day','Catering','Oversee meal service'),
+  T('on_the_day','Wellbeing','Coordinate wellbeing sessions'),
+  T('post_event','Finance','Settle all supplier invoices'),
+  T('post_event','Guests','Send thank you and follow-up resources'),
+  T('post_event','General','Gather feedback from participants'),
+  T('post_event','General','Write retreat summary report'),
+];
+
+const GROUP_HOLIDAY_TEMPLATE = [
+  T('planning','Budget','Set group budget and agree cost sharing'),
+  T('planning','Destination','Research and agree destination'),
+  T('planning','Accommodation','Research accommodation options'),
+  T('planning','Accommodation','Book accommodation / villa'),
+  T('planning','Guests','Confirm final guest list'),
+  T('planning','Travel','Research flights / travel options'),
+  T('booking','Travel','Book group flights or transport'),
+  T('booking','Accommodation','Pay accommodation deposit'),
+  T('booking','Activities','Research and book group activities'),
+  T('booking','Transfers','Book airport transfers'),
+  T('booking','Travel Insurance','Arrange travel insurance'),
+  T('booking','Dining','Research and book group restaurants'),
+  T('confirmed','Guests','Share travel details with all guests'),
+  T('confirmed','Guests','Collect passport details if needed'),
+  T('confirmed','Guests','Collect dietary requirements'),
+  T('confirmed','Accommodation','Confirm room allocation'),
+  T('confirmed','Activities','Confirm all activity bookings'),
+  T('confirmed','General','Create group WhatsApp / communication channel'),
+  T('confirmed','General','Share final itinerary with group'),
+  T('on_the_day','Travel','Coordinate group travel and check-in'),
+  T('on_the_day','Accommodation','Oversee arrival and room check-in'),
+  T('on_the_day','Activities','Coordinate daily activities'),
+  T('on_the_day','Dining','Manage group restaurant bookings'),
+  T('post_event','Finance','Settle any outstanding shared costs'),
+  T('post_event','Guests','Share photos with group'),
+  T('post_event','General','Start planning the next one!'),
 ];
 
 async function loadChecklist() {
@@ -2805,17 +3114,37 @@ function renderChecklist(items) {
   if (!items.length) {
     wrap.innerHTML = `
       <div class="checklist-start">
-        <div class="checklist-start-title">How would you like to start?</div>
-        <div class="checklist-start-grid">
+        <div class="checklist-start-title">Choose a template or start from scratch</div>
+        <div class="checklist-start-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="checklist-start-card" onclick="loadTemplate('private_party')">
+            <div class="checklist-start-icon">🎉</div>
+            <div class="checklist-start-name">Private party</div>
+            <div class="checklist-start-desc">28 tasks ready to go</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('wedding')">
+            <div class="checklist-start-icon">💍</div>
+            <div class="checklist-start-name">Wedding</div>
+            <div class="checklist-start-desc">40 tasks from planning to post-event</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('corporate')">
+            <div class="checklist-start-icon">💼</div>
+            <div class="checklist-start-name">Corporate event</div>
+            <div class="checklist-start-desc">32 tasks for professional events</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('retreat')">
+            <div class="checklist-start-icon">🌿</div>
+            <div class="checklist-start-name">Retreat</div>
+            <div class="checklist-start-desc">28 tasks for retreats and wellness events</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('group_holiday')">
+            <div class="checklist-start-icon">✈️</div>
+            <div class="checklist-start-name">Group holiday</div>
+            <div class="checklist-start-desc">26 tasks for group trips and villa holidays</div>
+          </div>
           <div class="checklist-start-card" onclick="addChecklistRow()">
             <div class="checklist-start-icon">✏️</div>
             <div class="checklist-start-name">Start from scratch</div>
-            <div class="checklist-start-desc">Add tasks one by one, your own way</div>
-          </div>
-          <div class="checklist-start-card" onclick="openTemplateModal()">
-            <div class="checklist-start-icon">📋</div>
-            <div class="checklist-start-name">Use a template</div>
-            <div class="checklist-start-desc">Load a ready-made checklist for your event type</div>
+            <div class="checklist-start-desc">Add your own tasks one by one</div>
           </div>
         </div>
       </div>`;
@@ -2828,11 +3157,11 @@ function renderChecklist(items) {
       <th data-field="stage" onclick="sortChecklist('stage')">Stage <span class="sort-icon">↕</span></th>
       <th data-field="category" onclick="sortChecklist('category')">Category <span class="sort-icon">↕</span></th>
       <th data-field="task" onclick="sortChecklist('task')">Task <span class="sort-icon">↕</span></th>
+      <th style="width:40px;text-align:center;">Done</th>
       <th data-field="status" onclick="sortChecklist('status')">Status <span class="sort-icon">↕</span></th>
       <th data-field="who" onclick="sortChecklist('who')">Who <span class="sort-icon">↕</span></th>
       <th data-field="deadline" onclick="sortChecklist('deadline')">Deadline <span class="sort-icon">↕</span></th>
       <th data-field="reminder" onclick="sortChecklist('reminder')">Reminder <span class="sort-icon">↕</span></th>
-      <th style="width:40px;text-align:center;">Done</th>
       <th></th>
     </tr></thead>
     <tbody id="checklist-tbody"></tbody>
@@ -2872,20 +3201,12 @@ function buildChecklistRow(item) {
     {field:'stage',type:'cl-stage'},
     {field:'category',type:'text'},
     {field:'task',type:'text'},
-    {field:'status',type:'cl-status'},
     {field:'who',type:'text'},
     {field:'deadline',type:'date'},
     {field:'reminder',type:'date'},
   ];
 
-  clCols.forEach(({field,type}) => {
-    const td = document.createElement('td');
-    refreshClCell(td, item, field, type);
-    td.addEventListener('click', () => makeClEditable(td, item, field, type));
-    tr.appendChild(td);
-  });
-
-  // Checkbox at the end
+  // Done checkbox before status
   const checkTd = document.createElement('td');
   checkTd.style.cursor = 'default';
   checkTd.style.textAlign = 'center';
@@ -2895,6 +3216,19 @@ function buildChecklistRow(item) {
   check.onclick = (e) => { e.stopPropagation(); toggleDone(item.id, item.status, tr, check); };
   checkTd.appendChild(check);
   tr.appendChild(checkTd);
+
+  // Status after checkbox
+  const statusTd = document.createElement('td');
+  refreshClCell(statusTd, item, 'status', 'cl-status');
+  statusTd.addEventListener('click', () => makeClEditable(statusTd, item, 'status', 'cl-status'));
+  tr.appendChild(statusTd);
+
+  clCols.forEach(({field,type}) => {
+    const td = document.createElement('td');
+    refreshClCell(td, item, field, type);
+    td.addEventListener('click', () => makeClEditable(td, item, field, type));
+    tr.appendChild(td);
+  });
 
   const del = document.createElement('td');
   del.innerHTML = `<button class="row-del" onclick="deleteChecklistItem('${item.id}')">Delete</button>`;
@@ -2990,6 +3324,10 @@ async function loadTemplate(type) {
   if (!confirm('This will add template tasks to your existing checklist. Continue?')) return;
   let templates = [];
   if (type==='private_party') templates = PRIVATE_PARTY_TEMPLATE;
+  if (type==='wedding') templates = WEDDING_TEMPLATE;
+  if (type==='corporate') templates = CORPORATE_TEMPLATE;
+  if (type==='retreat') templates = RETREAT_TEMPLATE;
+  if (type==='group_holiday') templates = GROUP_HOLIDAY_TEMPLATE;
   if (!templates.length) return;
   const rows = templates.map(t => ({ ...t, event_id: eventId }));
   const { data, error } = await sb.from('checklist_items').insert(rows).select();
@@ -3924,26 +4262,36 @@ async function renderOverviewDashboard() {
       <button class="modal-close" onclick="closeTemplateModal()">✕</button>
     </div>
     <p style="font-size:0.83rem;color:var(--ink3);margin-bottom:1.25rem;font-weight:300;">Tasks will be added to your existing checklist. You can edit or delete any of them.</p>
-    <div class="template-grid">
+    <div class="template-grid" style="grid-template-columns:repeat(3,1fr);">
       <div class="template-card" onclick="loadTemplate('private_party')">
         <div class="template-card-icon">🎉</div>
         <div class="template-card-name">Private party</div>
         <div class="template-card-count">28 tasks</div>
       </div>
-      <div class="template-card" style="opacity:0.4;cursor:not-allowed;">
+      <div class="template-card" onclick="loadTemplate('wedding')">
         <div class="template-card-icon">💍</div>
         <div class="template-card-name">Wedding</div>
-        <div class="template-card-count">Coming soon</div>
+        <div class="template-card-count">40 tasks</div>
       </div>
-      <div class="template-card" style="opacity:0.4;cursor:not-allowed;">
+      <div class="template-card" onclick="loadTemplate('corporate')">
         <div class="template-card-icon">💼</div>
         <div class="template-card-name">Corporate event</div>
-        <div class="template-card-count">Coming soon</div>
+        <div class="template-card-count">32 tasks</div>
       </div>
-      <div class="template-card" style="opacity:0.4;cursor:not-allowed;">
+      <div class="template-card" onclick="loadTemplate('retreat')">
         <div class="template-card-icon">🌿</div>
         <div class="template-card-name">Retreat</div>
-        <div class="template-card-count">Coming soon</div>
+        <div class="template-card-count">28 tasks</div>
+      </div>
+      <div class="template-card" onclick="loadTemplate('group_holiday')">
+        <div class="template-card-icon">✈️</div>
+        <div class="template-card-name">Group holiday</div>
+        <div class="template-card-count">26 tasks</div>
+      </div>
+      <div class="template-card" onclick="addChecklistRow();closeTemplateModal()">
+        <div class="template-card-icon">✏️</div>
+        <div class="template-card-name">Start from scratch</div>
+        <div class="template-card-count">Add tasks one by one</div>
       </div>
     </div>
     <div style="margin-top:1.25rem;text-align:center;">
