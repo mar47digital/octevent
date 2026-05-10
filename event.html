@@ -2549,12 +2549,18 @@ function updateSummary(items) {
       <td class="num green"><strong>${fmtSum(incPaid)}</strong></td>
       <td class="num ${incRem>0?'red':'green'}"><strong>${fmtSum(incRem)}</strong></td>
       <td colspan="3"></td>`;
+    const netPaid = incPaid - expPaid;
+    const netRem  = incRem - expRem;
     const footer3 = document.getElementById('budget-footer3');
     if (footer3) footer3.innerHTML = `
       <td colspan="4"><strong class="${netActual>=0?'':'red'}">${netActual>=0?'✓ Net surplus':'⚠ Outstanding balance'}</strong></td>
-      <td colspan="5"></td>
-      <td class="num ${netActual>=0?'green':'red'}" colspan="2"><strong style="font-size:1rem;">${fmtSum(Math.abs(netActual))}</strong></td>
-      <td colspan="5"></td>`;
+      <td colspan="4"></td>
+      <td class="num ${netAllocated>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netAllocated))}</strong></td>
+      <td class="num ${netActual>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netActual))}</strong></td>
+      <td class="num"></td>
+      <td class="num ${netPaid>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netPaid))}</strong></td>
+      <td class="num ${netRem>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netRem))}</strong></td>
+      <td colspan="3"></td>`;
   }
 }
 
@@ -2646,8 +2652,8 @@ function buildBudgetRow(item) {
     {field:'notes',type:'text'},
   ];
   cols.forEach(({field,type}) => {
+    const td = document.createElement('td');
     if (type==='calc' || type==='remaining') {
-      const td = document.createElement('td');
       refreshCell(td, item, field, type);
       tr.appendChild(td);
       return;
