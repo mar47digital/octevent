@@ -45,7 +45,6 @@ async function saveMobileBudget() {
     supplier:         document.getElementById('mb-supplier').value.trim(),
     description:      document.getElementById('mb-description').value.trim(),
     allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
-    quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
     deposit_amount:   parseFloat(document.getElementById('mb-deposit').value)||0,
     paid_amount:      parseFloat(document.getElementById('mb-paid-amount').value)||0,
@@ -2634,7 +2633,11 @@ function refreshCell(td, item, field, type) {
     td.textContent = val>0 ? fmt(val) : '—'; td.className='num'; td.style.cursor='default';
     td.title = hrs>0 ? `${qty} × ${hrs}h × ${fmt(cpp)} = ${fmt(val)}` : qty>0 ? `${qty} × ${fmt(cpp)} = ${fmt(val)}` : '';
   } else if (type==='remaining') {
-    const rem = parseFloat(item.actual_amount||0) - parseFloat(item.paid_amount||0);
+    const actual = parseFloat(item.actual_amount)||0;
+    const paid   = parseFloat(item.paid_amount)||0;
+    const rem    = actual - paid;
+    if (item.item_type==='income') { td.textContent='—'; td.className='num'; td.style.cursor='default'; return; }
+    if (actual === 0 && paid === 0) { td.textContent='—'; td.className='num'; td.style.cursor='default'; return; }
     if (rem<=0) { td.innerHTML='<span style="color:#2d6a4f;font-weight:600;">✓ Clear</span>'; }
     else { td.innerHTML=`<span style="color:#c0392b;font-weight:700;">${fmt(rem)}</span>`; }
     td.className='num'; td.style.cursor='default';
@@ -2784,7 +2787,7 @@ function renderBudget(items) {
 async function addBudgetRow() {
   const { data, error } = await sb.from('budget_items').insert([{
     event_id: eventId, item_type:'expense', category:'other', supplier:'', description:'',
-    allocated_budget:0, quoted_amount:0, actual_amount:0,
+    allocated_budget:0, actual_amount:0,
     quantity:0, hours:0, cost_pp:0, deposit_amount:0, paid_amount:0, next_payment_date:null, notes:''
   }]).select().single();
   if (!error && data) {
@@ -2899,7 +2902,6 @@ async function saveMobileBudget() {
     supplier:         document.getElementById('mb-supplier').value.trim(),
     description:      document.getElementById('mb-description').value.trim(),
     allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
-    quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
     deposit_amount:   parseFloat(document.getElementById('mb-deposit').value)||0,
     paid_amount:      parseFloat(document.getElementById('mb-paid-amount').value)||0,
