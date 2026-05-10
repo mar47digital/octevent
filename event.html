@@ -44,6 +44,8 @@ async function saveMobileBudget() {
     category:         document.getElementById('mb-category').value,
     supplier:         document.getElementById('mb-supplier').value.trim(),
     description:      document.getElementById('mb-description').value.trim(),
+    cost_pp:          parseFloat(document.getElementById('mb-cost-pp').value)||0,
+    quantity:         parseFloat(document.getElementById('mb-qty').value)||0,
     allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
     quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
@@ -1529,6 +1531,7 @@ tr:hover td{background:var(--cream);}
 .budget-card-value.amber{color:var(--amber-dark);}
 .budget-card-value.red{color:#c0392b;}
 table.budget-table{width:100%;border-collapse:collapse;}
+table.budget-table th.thin,table.budget-table td.thin{width:60px;min-width:50px;max-width:70px;}
 table.budget-table thead{background:var(--cream);position:sticky;top:0;}
 table.budget-table th{padding:0.7rem 0.85rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--rule);white-space:nowrap;}
 table.budget-table th.num{text-align:right;}
@@ -2598,12 +2601,12 @@ function makeEditable(td, item, field, type) {
   } else {
     input = document.createElement('input');
     input.className = 'inline-input';
-    input.type = type==='num' ? 'number' : 'text';
+    input.type = type==='num' ? 'number' : type==='date' ? 'date' : 'text';
     input.value = item[field]||'';
     if (type==='num') { input.step='0.01'; input.min='0'; }
   }
   td.innerHTML = ''; td.appendChild(input); input.focus();
-  if (input.select) input.select();
+  if (input.type !== 'date' && input.select) input.select();
 
   async function save() {
     const val = type==='num' ? (parseFloat(input.value)||0) : input.value.trim();
@@ -2652,13 +2655,14 @@ function buildBudgetRow(item) {
     {field:'category',type:'cat'},
     {field:'supplier',type:'text'},
     {field:'description',type:'text'},
+    {field:'cost_pp',type:'num'},
+    {field:'quantity',type:'num'},
     {field:'allocated_budget',type:'num'},
     {field:'actual_amount',type:'num'},
     {field:'deposit_amount',type:'num'},
     {field:'paid_amount',type:'num'},
     {field:'_remaining',type:'computed-remaining'},
     {field:'next_payment_date',type:'date'},
-    {field:'paid_status',type:'auto-status'},
     {field:'notes',type:'text'},
   ];
   cols.forEach(({field,type}) => {
@@ -2698,13 +2702,14 @@ function renderBudget(items) {
       <th class="sortable" onclick="sortBudget('category')">Category <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('cost_pp')">Cost pp <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('quantity')">Qty <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('allocated_budget')">Allocated <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('actual_amount')">Final <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('deposit_amount')">Refundable deposit <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('paid_amount')">Paid <span class="sort-icon">↕</span></th>
       <th class="num">Remaining</th>
       <th class="sortable" onclick="sortBudget('next_payment_date')">Next payment <span class="sort-icon">↕</span></th>
-      <th class="sortable" onclick="sortBudget('paid_status')">Status <span class="sort-icon">↕</span></th>
       <th>Notes</th>
       <th></th>
     </tr></thead>
@@ -2761,7 +2766,7 @@ function renderBudget(items) {
 async function addBudgetRow() {
   const { data, error } = await sb.from('budget_items').insert([{
     event_id: eventId, item_type:'expense', category:'other', supplier:'', description:'',
-    allocated_budget:0, quoted_amount:0, actual_amount:0,
+    cost_pp:0, quantity:0, allocated_budget:0, quoted_amount:0, actual_amount:0,
     deposit_amount:0, paid_amount:0, next_payment_date:null, paid_status:'unpaid', notes:''
   }]).select().single();
   if (!error && data) {
@@ -2875,6 +2880,8 @@ async function saveMobileBudget() {
     category:         document.getElementById('mb-category').value,
     supplier:         document.getElementById('mb-supplier').value.trim(),
     description:      document.getElementById('mb-description').value.trim(),
+    cost_pp:          parseFloat(document.getElementById('mb-cost-pp').value)||0,
+    quantity:         parseFloat(document.getElementById('mb-qty').value)||0,
     allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
     quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
@@ -4287,6 +4294,10 @@ async function renderOverviewDashboard() {
     <div class="field-row">
       <div class="field"><label>Supplier</label><input type="text" id="mb-supplier" placeholder="Supplier name"></div>
       <div class="field"><label>Description</label><input type="text" id="mb-description" placeholder="What is this for?"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Cost per person (€)</label><input type="number" id="mb-cost-pp" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="field"><label>Quantity</label><input type="number" id="mb-qty" placeholder="0" min="0" step="1"></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Allocated (€)</label><input type="number" id="mb-allocated" placeholder="0.00" min="0" step="0.01"></div>
