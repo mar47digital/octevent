@@ -2036,7 +2036,11 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
   <!-- BUDGET -->
   <div class="panel" id="panel-budget">
     <div class="panel-header">
-      <div class="panel-title">Budget tracker</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="panel-title">Budget tracker</div>
+        <button class="btn-sm" onclick="addBudgetRow('expense')">＋ Expense</button>
+        <button class="btn-sm" onclick="addBudgetRow('income')">＋ Income</button>
+      </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn-sm" id="sort-reset-btn" onclick="resetSort()" style="display:none;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v4h4"/></svg>
@@ -2796,9 +2800,9 @@ function renderBudget(items) {
     </div>`).join('');
 }
 
-async function addBudgetRow() {
+async function addBudgetRow(type) {
   const { data, error } = await sb.from('budget_items').insert([{
-    event_id: eventId, item_type:'expense', category:'other', supplier:'', description:'',
+    event_id: eventId, item_type: type||'expense', category:'other', supplier:'', description:'',
     allocated_budget:0, actual_amount:0,
     quantity:0, hours:0, cost_pp:0, deposit_amount:0, paid_amount:0, next_payment_date:null, notes:''
   }]).select().single();
