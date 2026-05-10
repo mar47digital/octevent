@@ -322,36 +322,36 @@ function renderChecklist(items) {
     wrap.innerHTML = `
       <div class="checklist-start">
         <div class="checklist-start-title">Choose a template or start from scratch</div>
-        <div class="checklist-start-grid" style="grid-template-columns:repeat(3,1fr);">
-          <div class="checklist-start-card" onclick="loadTemplate('private_party')">
-            <div class="checklist-start-icon">🎉</div>
-            <div class="checklist-start-name">Private party</div>
-            <div class="checklist-start-desc">28 tasks ready to go</div>
+        <div class="checklist-start-row">
+          <div class="checklist-start-card" onclick="addChecklistRow()">
+            <div class="checklist-start-icon">✏️</div>
+            <div class="checklist-start-name">From scratch</div>
+            <div class="checklist-start-desc">Build your own</div>
           </div>
           <div class="checklist-start-card" onclick="loadTemplate('wedding')">
             <div class="checklist-start-icon">💍</div>
             <div class="checklist-start-name">Wedding</div>
-            <div class="checklist-start-desc">40 tasks from planning to post-event</div>
+            <div class="checklist-start-desc">40 tasks</div>
           </div>
           <div class="checklist-start-card" onclick="loadTemplate('corporate')">
             <div class="checklist-start-icon">💼</div>
-            <div class="checklist-start-name">Corporate event</div>
-            <div class="checklist-start-desc">32 tasks for professional events</div>
+            <div class="checklist-start-name">Corporate</div>
+            <div class="checklist-start-desc">32 tasks</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('private_party')">
+            <div class="checklist-start-icon">🎉</div>
+            <div class="checklist-start-name">Private party</div>
+            <div class="checklist-start-desc">28 tasks</div>
           </div>
           <div class="checklist-start-card" onclick="loadTemplate('retreat')">
             <div class="checklist-start-icon">🌿</div>
             <div class="checklist-start-name">Retreat</div>
-            <div class="checklist-start-desc">28 tasks for retreats and wellness events</div>
+            <div class="checklist-start-desc">28 tasks</div>
           </div>
           <div class="checklist-start-card" onclick="loadTemplate('group_holiday')">
             <div class="checklist-start-icon">✈️</div>
             <div class="checklist-start-name">Group holiday</div>
-            <div class="checklist-start-desc">26 tasks for group trips and villa holidays</div>
-          </div>
-          <div class="checklist-start-card" onclick="addChecklistRow()">
-            <div class="checklist-start-icon">✏️</div>
-            <div class="checklist-start-name">Start from scratch</div>
-            <div class="checklist-start-desc">Add your own tasks one by one</div>
+            <div class="checklist-start-desc">26 tasks</div>
           </div>
         </div>
       </div>`;
@@ -1716,6 +1716,8 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 .checklist-start{padding:3rem 2rem;background:#fff;border:1px solid var(--rule);border-radius:16px;text-align:center;}
 .checklist-start-title{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:1.5rem;color:var(--ink);}
 .checklist-start-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:500px;margin:0 auto;}
+.checklist-start-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;}
+.checklist-start-row .checklist-start-card{flex:0 0 140px;min-width:130px;}
 .checklist-start-card{border:2px solid var(--rule);border-radius:16px;padding:2rem 1.5rem;cursor:pointer;transition:all 0.2s;background:#fff;}
 .checklist-start-card:hover{border-color:var(--amber);background:var(--amber-light);transform:translateY(-2px);}
 .checklist-start-icon{font-size:2rem;margin-bottom:0.75rem;}
@@ -3127,36 +3129,36 @@ function renderChecklist(items) {
     wrap.innerHTML = `
       <div class="checklist-start">
         <div class="checklist-start-title">Choose a template or start from scratch</div>
-        <div class="checklist-start-grid" style="grid-template-columns:repeat(3,1fr);">
-          <div class="checklist-start-card" onclick="loadTemplate('private_party')">
-            <div class="checklist-start-icon">🎉</div>
-            <div class="checklist-start-name">Private party</div>
-            <div class="checklist-start-desc">28 tasks ready to go</div>
+        <div class="checklist-start-row">
+          <div class="checklist-start-card" onclick="addChecklistRow()">
+            <div class="checklist-start-icon">✏️</div>
+            <div class="checklist-start-name">From scratch</div>
+            <div class="checklist-start-desc">Build your own</div>
           </div>
           <div class="checklist-start-card" onclick="loadTemplate('wedding')">
             <div class="checklist-start-icon">💍</div>
             <div class="checklist-start-name">Wedding</div>
-            <div class="checklist-start-desc">40 tasks from planning to post-event</div>
+            <div class="checklist-start-desc">40 tasks</div>
           </div>
           <div class="checklist-start-card" onclick="loadTemplate('corporate')">
             <div class="checklist-start-icon">💼</div>
-            <div class="checklist-start-name">Corporate event</div>
-            <div class="checklist-start-desc">32 tasks for professional events</div>
+            <div class="checklist-start-name">Corporate</div>
+            <div class="checklist-start-desc">32 tasks</div>
+          </div>
+          <div class="checklist-start-card" onclick="loadTemplate('private_party')">
+            <div class="checklist-start-icon">🎉</div>
+            <div class="checklist-start-name">Private party</div>
+            <div class="checklist-start-desc">28 tasks</div>
           </div>
           <div class="checklist-start-card" onclick="loadTemplate('retreat')">
             <div class="checklist-start-icon">🌿</div>
             <div class="checklist-start-name">Retreat</div>
-            <div class="checklist-start-desc">28 tasks for retreats and wellness events</div>
+            <div class="checklist-start-desc">28 tasks</div>
           </div>
           <div class="checklist-start-card" onclick="loadTemplate('group_holiday')">
             <div class="checklist-start-icon">✈️</div>
             <div class="checklist-start-name">Group holiday</div>
-            <div class="checklist-start-desc">26 tasks for group trips and villa holidays</div>
-          </div>
-          <div class="checklist-start-card" onclick="addChecklistRow()">
-            <div class="checklist-start-icon">✏️</div>
-            <div class="checklist-start-name">Start from scratch</div>
-            <div class="checklist-start-desc">Add your own tasks one by one</div>
+            <div class="checklist-start-desc">26 tasks</div>
           </div>
         </div>
       </div>`;
