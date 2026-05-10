@@ -1091,7 +1091,30 @@ function printTablePlan() {
       .empty{color:#ccc;font-size:0.82rem;font-style:italic;}
       .seats{font-size:0.72rem;color:#999;margin-bottom:0.5rem;}
       @media print{body{padding:1rem;}.tables-grid{grid-template-columns:repeat(3,1fr);}}
-    </style></head><body>
+    
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.ov-card{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.4rem;cursor:pointer;transition:all 0.2s;}
+.ov-card:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,0.06);}
+.ov-card-label{font-size:0.7rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;font-weight:500;display:flex;align-items:center;gap:6px;}
+.ov-card-value{font-family:'Nunito',sans-serif;font-size:2rem;font-weight:800;color:var(--ink);line-height:1;}
+.ov-card-sub{font-size:0.75rem;color:var(--ink3);font-weight:300;}
+.ov-progress{height:6px;background:var(--rule);border-radius:100px;overflow:hidden;margin-top:4px;}
+.ov-progress-fill{height:100%;background:var(--amber);border-radius:100px;transition:width 0.5s ease;}
+.ov-progress-fill.green{background:#2d6a4f;}
+.ov-section-title{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin:0.5rem 0 0.75rem;color:var(--ink);}
+.ov-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.quick-action{display:flex;align-items:center;gap:10px;padding:0.75rem;border:1px solid var(--rule);border-radius:10px;cursor:pointer;transition:all 0.2s;font-size:0.83rem;font-weight:500;background:#fff;font-family:'DM Sans',sans-serif;color:var(--ink);text-align:left;}
+.quick-action:hover{border-color:var(--amber);background:var(--amber-light);}
+.quick-action-icon{width:32px;height:32px;border-radius:8px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;}
+@media(max-width:768px){
+  .ov-grid{grid-template-columns:repeat(2,1fr);}
+  .ov-quick{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:480px){
+  .ov-grid{grid-template-columns:1fr 1fr;}
+  .ov-quick{grid-template-columns:1fr 1fr;}
+}
+</style></head><body>
     <h1>${currentEvent?.name||'Event'} — Table Plan</h1>
     <div class="subtitle">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
     <div class="tables-grid">
@@ -1113,6 +1136,106 @@ function printTablePlan() {
   win.document.write(html);
   win.document.close();
   win.print();
+}
+
+
+async function renderOverviewDashboard() {
+  const el = document.getElementById('overview-dashboard');
+  if (!el) return;
+
+  // Load all data needed
+  const [gData, clData, rsData, bdData] = await Promise.all([
+    sb.from('guests').select('*').eq('event_id', eventId),
+    sb.from('checklist_items').select('*').eq('event_id', eventId),
+    sb.from('runsheet_items').select('*').eq('event_id', eventId),
+    sb.from('budget_items').select('*').eq('event_id', eventId),
+  ]);
+
+  const guests     = gData.data || [];
+  const checklist  = clData.data || [];
+  const runsheet   = rsData.data || [];
+  const budget     = bdData.data || [];
+
+  // Guests
+  const totalGuests    = guests.length;
+  const confirmedGuests= guests.filter(g=>g.rsvp_status==='confirmed').length;
+  const guestPct       = totalGuests ? Math.round(confirmedGuests/totalGuests*100) : 0;
+
+  // Checklist
+  const totalCl  = checklist.length;
+  const doneCl   = checklist.filter(i=>i.status==='done').length;
+  const clPct    = totalCl ? Math.round(doneCl/totalCl*100) : 0;
+
+  // Run sheet
+  const totalRs  = runsheet.length;
+  const doneRs   = runsheet.filter(i=>i.done).length;
+  const rsPct    = totalRs ? Math.round(doneRs/totalRs*100) : 0;
+
+  // Budget
+  const expenses  = budget.filter(i=>i.item_type!=='income');
+  const totalActual = expenses.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+  const totalPaid   = expenses.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
+  const budgetPct   = totalActual ? Math.round(totalPaid/totalActual*100) : 0;
+  const totalIncome = budget.filter(i=>i.item_type==='income').reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+
+  // Table plan
+  const totalSeats    = tpTables.reduce((s,t)=>s+(t.capacity||0),0);
+  const assignedSeats = tpTables.reduce((s,t)=>s+(t.guests||[]).length,0);
+  const seatsPct      = totalSeats ? Math.round(assignedSeats/totalSeats*100) : 0;
+
+  // Rooms
+  const totalRooms = currentEvent?.room_count || 0;
+
+  const fmt = n => '€'+parseFloat(n||0).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});
+
+  el.innerHTML = `
+    <div class="ov-grid">
+      <div class="ov-card" onclick="showTab('guests')">
+        <div class="ov-card-label">👥 Guests attending</div>
+        <div class="ov-card-value">${confirmedGuests}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalGuests}</span></div>
+        <div class="ov-card-sub">${guestPct}% confirmed</div>
+        <div class="ov-progress"><div class="ov-progress-fill green" style="width:${guestPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="showTab('checklist')">
+        <div class="ov-card-label">✅ Checklist</div>
+        <div class="ov-card-value">${doneCl}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalCl}</span></div>
+        <div class="ov-card-sub">${clPct}% complete</div>
+        <div class="ov-progress"><div class="ov-progress-fill" style="width:${clPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="showTab('budget')">
+        <div class="ov-card-label">💰 Budget paid</div>
+        <div class="ov-card-value">${fmt(totalPaid)}</div>
+        <div class="ov-card-sub">${budgetPct}% of ${fmt(totalActual)} actual</div>
+        <div class="ov-progress"><div class="ov-progress-fill" style="width:${Math.min(budgetPct,100)}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="showTab('budget')">
+        <div class="ov-card-label">📈 Income received</div>
+        <div class="ov-card-value">${fmt(totalIncome)}</div>
+        <div class="ov-card-sub">Total income logged</div>
+      </div>
+      <div class="ov-card" onclick="showTab('runsheet')">
+        <div class="ov-card-label">📅 Run sheet</div>
+        <div class="ov-card-value">${doneRs}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalRs}</span></div>
+        <div class="ov-card-sub">${rsPct}% complete</div>
+        <div class="ov-progress"><div class="ov-progress-fill green" style="width:${rsPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="showTab('tableplan')">
+        <div class="ov-card-label">🪑 Seats assigned</div>
+        <div class="ov-card-value">${assignedSeats}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalSeats||'—'}</span></div>
+        <div class="ov-card-sub">${totalSeats ? seatsPct+'% filled' : 'No tables set up yet'}</div>
+        ${totalSeats ? `<div class="ov-progress"><div class="ov-progress-fill" style="width:${seatsPct}%"></div></div>` : ''}
+      </div>
+    </div>
+
+    <div class="ov-section-title">⚡ Quick actions</div>
+    <div class="ov-quick">
+      <button class="quick-action" onclick="showTab('guests');openAddGuest()"><div class="quick-action-icon">👤</div>Add a guest</button>
+      <button class="quick-action" onclick="showTab('checklist')"><div class="quick-action-icon">✅</div>View checklist</button>
+      <button class="quick-action" onclick="showTab('budget');addBudgetRow()"><div class="quick-action-icon">💰</div>Log an expense</button>
+      <button class="quick-action" onclick="showTab('runsheet');addRunsheetRow()"><div class="quick-action-icon">📅</div>Add run sheet item</button>
+      <button class="quick-action" onclick="showTab('tableplan')"><div class="quick-action-icon">🪑</div>Table plan</button>
+      <button class="quick-action" onclick="shareEvent()"><div class="quick-action-icon">🔗</div>Share with guests</button>
+    </div>`;
 }
 
 </script>
@@ -1579,6 +1702,29 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
   .tableplan-desktop{display:none;}
   .tableplan-mobile{display:block;}
 }
+
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.ov-card{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.4rem;cursor:pointer;transition:all 0.2s;}
+.ov-card:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,0.06);}
+.ov-card-label{font-size:0.7rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;font-weight:500;display:flex;align-items:center;gap:6px;}
+.ov-card-value{font-family:'Nunito',sans-serif;font-size:2rem;font-weight:800;color:var(--ink);line-height:1;}
+.ov-card-sub{font-size:0.75rem;color:var(--ink3);font-weight:300;}
+.ov-progress{height:6px;background:var(--rule);border-radius:100px;overflow:hidden;margin-top:4px;}
+.ov-progress-fill{height:100%;background:var(--amber);border-radius:100px;transition:width 0.5s ease;}
+.ov-progress-fill.green{background:#2d6a4f;}
+.ov-section-title{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin:0.5rem 0 0.75rem;color:var(--ink);}
+.ov-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.quick-action{display:flex;align-items:center;gap:10px;padding:0.75rem;border:1px solid var(--rule);border-radius:10px;cursor:pointer;transition:all 0.2s;font-size:0.83rem;font-weight:500;background:#fff;font-family:'DM Sans',sans-serif;color:var(--ink);text-align:left;}
+.quick-action:hover{border-color:var(--amber);background:var(--amber-light);}
+.quick-action-icon{width:32px;height:32px;border-radius:8px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;}
+@media(max-width:768px){
+  .ov-grid{grid-template-columns:repeat(2,1fr);}
+  .ov-quick{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:480px){
+  .ov-grid{grid-template-columns:1fr 1fr;}
+  .ov-quick{grid-template-columns:1fr 1fr;}
+}
 </style>
 </head>
 <body>
@@ -1643,22 +1789,7 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
 
   <!-- OVERVIEW -->
   <div class="panel active" id="panel-overview">
-    <div class="overview-grid">
-      <div class="overview-card">
-        <h3><span>📋</span>Event details</h3>
-        <div id="overview-details"><div class="spinner"></div></div>
-      </div>
-      <div class="overview-card">
-        <h3><span>⚡</span>Quick actions</h3>
-        <div class="quick-actions">
-          <button class="quick-action" onclick="showTab('guests');openAddGuest()"><div class="quick-action-icon">👤</div>Add a guest</button>
-          <button class="quick-action" onclick="showTab('rooms')"><div class="quick-action-icon">🛏</div>Add a room</button>
-          <button class="quick-action" onclick="showTab('budget');addBudgetRow()"><div class="quick-action-icon">💰</div>Log an expense</button>
-          <button class="quick-action" onclick="showTab('runsheet')"><div class="quick-action-icon">📅</div>Build run sheet</button>
-          <button class="quick-action" onclick="shareEvent()"><div class="quick-action-icon">🔗</div>Share event page with guests</button>
-        </div>
-      </div>
-    </div>
+    <div id="overview-dashboard"><div class="spinner"></div></div>
   </div>
 
   <!-- CHECKLIST -->
@@ -1775,10 +1906,16 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
   <!-- TABLE PLAN -->
   <div class="panel" id="panel-tableplan">
     <div class="panel-header">
-      <div class="panel-title">Table plan</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="panel-title">Table plan</div>
         <button class="btn-sm" onclick="addTable('round')">+ Round table</button>
         <button class="btn-sm" onclick="addTable('rect')">+ Rectangular table</button>
+        <button class="btn-sm amber" onclick="saveTablePlan()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save
+        </button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn-sm" onclick="exportTablePlanCSV()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export CSV
@@ -1786,10 +1923,6 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
         <button class="btn-sm" onclick="printTablePlan()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Print
-        </button>
-        <button class="btn-sm amber" onclick="saveTablePlan()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          Save plan
         </button>
       </div>
     </div>
@@ -1930,8 +2063,8 @@ async function loadEvent() {
   if (error || !data) { window.location.href = '/dashboard'; return; }
   currentEvent = data;
   renderEventHeader(data);
-  renderOverview(data);
   populateSettings(data);
+  renderOverviewDashboard();
 }
 
 function formatDate(d) {
@@ -1980,18 +2113,7 @@ function renderEventHeader(ev) {
   document.getElementById('stat-budget').textContent = ev.budget ? `€${ev.budget}` : '€0';
 }
 
-function renderOverview(ev) {
-  const dateStr = ev.end_date && ev.end_date !== ev.event_date
-    ? `${formatDate(ev.event_date)} — ${formatDate(ev.end_date)}`
-    : formatDate(ev.event_date);
-  document.getElementById('overview-details').innerHTML = `
-    <div class="detail-row"><span class="detail-label">Event name</span><span class="detail-value">${ev.name}</span></div>
-    <div class="detail-row"><span class="detail-label">Dates</span><span class="detail-value">${dateStr}</span></div>
-    <div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">${ev.event_type || '—'}</span></div>
-    <div class="detail-row"><span class="detail-label">Venue</span><span class="detail-value">${ev.venue || '—'}</span></div>
-    <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${getStatus(ev)}</span></div>
-    <div class="detail-row"><span class="detail-label">Notes</span><span class="detail-value">${ev.notes || '—'}</span></div>`;
-}
+
 
 function populateSettings(ev) {
   if (ev.cover_image) {
@@ -2494,6 +2616,7 @@ function showTab(name) {
   const tabMap = ['overview','checklist','budget','guests','rooms','runsheet','tableplan','settings'];
   const idx = tabMap.indexOf(name);
   if (idx>-1) document.querySelectorAll('.tab')[idx].classList.add('active');
+  if (name==='overview') renderOverviewDashboard();
   if (name==='budget') loadBudget();
   if (name==='checklist') loadChecklist();
   if (name==='runsheet') loadRunsheet();
@@ -3592,7 +3715,30 @@ function printTablePlan() {
       .empty{color:#ccc;font-size:0.82rem;font-style:italic;}
       .seats{font-size:0.72rem;color:#999;margin-bottom:0.5rem;}
       @media print{body{padding:1rem;}.tables-grid{grid-template-columns:repeat(3,1fr);}}
-    </style></head><body>
+    
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.ov-card{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.4rem;cursor:pointer;transition:all 0.2s;}
+.ov-card:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,0.06);}
+.ov-card-label{font-size:0.7rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;font-weight:500;display:flex;align-items:center;gap:6px;}
+.ov-card-value{font-family:'Nunito',sans-serif;font-size:2rem;font-weight:800;color:var(--ink);line-height:1;}
+.ov-card-sub{font-size:0.75rem;color:var(--ink3);font-weight:300;}
+.ov-progress{height:6px;background:var(--rule);border-radius:100px;overflow:hidden;margin-top:4px;}
+.ov-progress-fill{height:100%;background:var(--amber);border-radius:100px;transition:width 0.5s ease;}
+.ov-progress-fill.green{background:#2d6a4f;}
+.ov-section-title{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin:0.5rem 0 0.75rem;color:var(--ink);}
+.ov-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.quick-action{display:flex;align-items:center;gap:10px;padding:0.75rem;border:1px solid var(--rule);border-radius:10px;cursor:pointer;transition:all 0.2s;font-size:0.83rem;font-weight:500;background:#fff;font-family:'DM Sans',sans-serif;color:var(--ink);text-align:left;}
+.quick-action:hover{border-color:var(--amber);background:var(--amber-light);}
+.quick-action-icon{width:32px;height:32px;border-radius:8px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;}
+@media(max-width:768px){
+  .ov-grid{grid-template-columns:repeat(2,1fr);}
+  .ov-quick{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:480px){
+  .ov-grid{grid-template-columns:1fr 1fr;}
+  .ov-quick{grid-template-columns:1fr 1fr;}
+}
+</style></head><body>
     <h1>${currentEvent?.name||'Event'} — Table Plan</h1>
     <div class="subtitle">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
     <div class="tables-grid">
@@ -3614,6 +3760,106 @@ function printTablePlan() {
   win.document.write(html);
   win.document.close();
   win.print();
+}
+
+
+async function renderOverviewDashboard() {
+  const el = document.getElementById('overview-dashboard');
+  if (!el) return;
+
+  // Load all data needed
+  const [gData, clData, rsData, bdData] = await Promise.all([
+    sb.from('guests').select('*').eq('event_id', eventId),
+    sb.from('checklist_items').select('*').eq('event_id', eventId),
+    sb.from('runsheet_items').select('*').eq('event_id', eventId),
+    sb.from('budget_items').select('*').eq('event_id', eventId),
+  ]);
+
+  const guests     = gData.data || [];
+  const checklist  = clData.data || [];
+  const runsheet   = rsData.data || [];
+  const budget     = bdData.data || [];
+
+  // Guests
+  const totalGuests    = guests.length;
+  const confirmedGuests= guests.filter(g=>g.rsvp_status==='confirmed').length;
+  const guestPct       = totalGuests ? Math.round(confirmedGuests/totalGuests*100) : 0;
+
+  // Checklist
+  const totalCl  = checklist.length;
+  const doneCl   = checklist.filter(i=>i.status==='done').length;
+  const clPct    = totalCl ? Math.round(doneCl/totalCl*100) : 0;
+
+  // Run sheet
+  const totalRs  = runsheet.length;
+  const doneRs   = runsheet.filter(i=>i.done).length;
+  const rsPct    = totalRs ? Math.round(doneRs/totalRs*100) : 0;
+
+  // Budget
+  const expenses  = budget.filter(i=>i.item_type!=='income');
+  const totalActual = expenses.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+  const totalPaid   = expenses.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
+  const budgetPct   = totalActual ? Math.round(totalPaid/totalActual*100) : 0;
+  const totalIncome = budget.filter(i=>i.item_type==='income').reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+
+  // Table plan
+  const totalSeats    = tpTables.reduce((s,t)=>s+(t.capacity||0),0);
+  const assignedSeats = tpTables.reduce((s,t)=>s+(t.guests||[]).length,0);
+  const seatsPct      = totalSeats ? Math.round(assignedSeats/totalSeats*100) : 0;
+
+  // Rooms
+  const totalRooms = currentEvent?.room_count || 0;
+
+  const fmt = n => '€'+parseFloat(n||0).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});
+
+  el.innerHTML = `
+    <div class="ov-grid">
+      <div class="ov-card" onclick="showTab('guests')">
+        <div class="ov-card-label">👥 Guests attending</div>
+        <div class="ov-card-value">${confirmedGuests}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalGuests}</span></div>
+        <div class="ov-card-sub">${guestPct}% confirmed</div>
+        <div class="ov-progress"><div class="ov-progress-fill green" style="width:${guestPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="showTab('checklist')">
+        <div class="ov-card-label">✅ Checklist</div>
+        <div class="ov-card-value">${doneCl}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalCl}</span></div>
+        <div class="ov-card-sub">${clPct}% complete</div>
+        <div class="ov-progress"><div class="ov-progress-fill" style="width:${clPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="showTab('budget')">
+        <div class="ov-card-label">💰 Budget paid</div>
+        <div class="ov-card-value">${fmt(totalPaid)}</div>
+        <div class="ov-card-sub">${budgetPct}% of ${fmt(totalActual)} actual</div>
+        <div class="ov-progress"><div class="ov-progress-fill" style="width:${Math.min(budgetPct,100)}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="showTab('budget')">
+        <div class="ov-card-label">📈 Income received</div>
+        <div class="ov-card-value">${fmt(totalIncome)}</div>
+        <div class="ov-card-sub">Total income logged</div>
+      </div>
+      <div class="ov-card" onclick="showTab('runsheet')">
+        <div class="ov-card-label">📅 Run sheet</div>
+        <div class="ov-card-value">${doneRs}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalRs}</span></div>
+        <div class="ov-card-sub">${rsPct}% complete</div>
+        <div class="ov-progress"><div class="ov-progress-fill green" style="width:${rsPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="showTab('tableplan')">
+        <div class="ov-card-label">🪑 Seats assigned</div>
+        <div class="ov-card-value">${assignedSeats}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalSeats||'—'}</span></div>
+        <div class="ov-card-sub">${totalSeats ? seatsPct+'% filled' : 'No tables set up yet'}</div>
+        ${totalSeats ? `<div class="ov-progress"><div class="ov-progress-fill" style="width:${seatsPct}%"></div></div>` : ''}
+      </div>
+    </div>
+
+    <div class="ov-section-title">⚡ Quick actions</div>
+    <div class="ov-quick">
+      <button class="quick-action" onclick="showTab('guests');openAddGuest()"><div class="quick-action-icon">👤</div>Add a guest</button>
+      <button class="quick-action" onclick="showTab('checklist')"><div class="quick-action-icon">✅</div>View checklist</button>
+      <button class="quick-action" onclick="showTab('budget');addBudgetRow()"><div class="quick-action-icon">💰</div>Log an expense</button>
+      <button class="quick-action" onclick="showTab('runsheet');addRunsheetRow()"><div class="quick-action-icon">📅</div>Add run sheet item</button>
+      <button class="quick-action" onclick="showTab('tableplan')"><div class="quick-action-icon">🪑</div>Table plan</button>
+      <button class="quick-action" onclick="shareEvent()"><div class="quick-action-icon">🔗</div>Share with guests</button>
+    </div>`;
 }
 
 </script>
