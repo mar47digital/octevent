@@ -383,6 +383,302 @@ async function saveMobileChecklist() {
   if (!error) { closeMobileChecklist(); await loadChecklist(); }
 }
 
+
+// ── RUN SHEET ──
+let allRunsheetItems = [];
+let rsHideDone = false;
+let rsSortField = 'date';
+let rsSortDir = 1;
+
+async function loadRunsheet() {
+  const { data } = await sb.from('runsheet_items').select('*')
+    .eq('event_id', eventId).order('date', { ascending: true });
+  allRunsheetItems = data || [];
+  applyRsSortAndRender();
+}
+
+function applyRsSortAndRender() {
+  let items = [...allRunsheetItems];
+  if (rsSortField) {
+    items.sort((a,b) => {
+      const av = a[rsSortField]||'', bv = b[rsSortField]||'';
+      return av.toString().localeCompare(bv.toString()) * rsSortDir;
+    });
+  }
+  // Update progress
+  const total = allRunsheetItems.length;
+  const done = allRunsheetItems.filter(i=>i.done).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const prog = document.getElementById('rs-progress');
+  if (prog && total > 0) {
+    prog.style.display = 'block';
+    document.getElementById('rs-progress-text').textContent = `${done} of ${total} done`;
+    document.getElementById('rs-progress-pct').textContent = `${pct}%`;
+    document.getElementById('rs-progress-fill').style.width = pct+'%';
+  }
+  // Filter if hiding done
+  if (rsHideDone) items = items.filter(i => !i.done);
+  renderRunsheet(items);
+  setTimeout(() => {
+    document.querySelectorAll('table.runsheet-table th').forEach(th => {
+      th.classList.remove('sort-asc','sort-desc');
+      if (th.dataset.field === rsSortField) th.classList.add(rsSortDir===1?'sort-asc':'sort-desc');
+    });
+    const resetBtn = document.getElementById('rs-sort-reset');
+    if (resetBtn) resetBtn.style.display = rsSortField !== 'date' ? 'inline-flex' : 'none';
+  }, 10);
+}
+
+function toggleHideDone() {
+  rsHideDone = !rsHideDone;
+  const btn = document.getElementById('rs-hide-toggle');
+  if (btn) {
+    btn.innerHTML = rsHideDone
+      ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Show all`
+      : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg> Hide completed`;
+    btn.style.background = rsHideDone ? 'var(--amber-light)' : '';
+    btn.style.borderColor = rsHideDone ? 'var(--amber)' : '';
+    btn.style.color = rsHideDone ? 'var(--amber-dark)' : '';
+  }
+  applyRsSortAndRender();
+}
+
+function sortRunsheet(field) {
+  if (rsSortField===field) rsSortDir*=-1; else { rsSortField=field; rsSortDir=1; }
+  applyRsSortAndRender();
+}
+
+function resetRunsheetSort() {
+  rsSortField = 'date';
+  rsSortDir = 1;
+  applyRsSortAndRender();
+}
+
+function calcHours(start, finish) {
+  if (!start || !finish) return '—';
+  const [sh,sm] = start.split(':').map(Number);
+  const [fh,fm] = finish.split(':').map(Number);
+  const diff = (fh*60+fm) - (sh*60+sm);
+  if (diff <= 0) return '—';
+  const h = Math.floor(diff/60);
+  const m = diff%60;
+  return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function fmtTime(t) {
+  if (!t) return '—';
+  const [h,m] = t.split(':');
+  const hr = parseInt(h);
+  return `${hr%12||12}:${m} ${hr<12?'am':'pm'}`;
+}
+
+function renderRunsheet(items) {
+  const wrap = document.getElementById('runsheet-wrap');
+
+  if (!items.length) {
+    wrap.innerHTML = `
+      <div class="checklist-start">
+        <div class="checklist-start-title">Build your run sheet</div>
+        <div class="checklist-start-grid" style="grid-template-columns:1fr;">
+          <div class="checklist-start-card" onclick="addRunsheetRow()">
+            <div class="checklist-start-icon">📅</div>
+            <div class="checklist-start-name">Add first item</div>
+            <div class="checklist-start-desc">Build your timeline item by item</div>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('runsheet-mobile-cards').innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = '';
+  const tbl = document.createElement('table');
+  tbl.className = 'runsheet-table';
+  tbl.innerHTML = `<thead><tr>
+    <th data-field="date" onclick="sortRunsheet('date')">Date <span class="sort-icon">↕</span></th>
+    <th data-field="start_time" onclick="sortRunsheet('start_time')">Start <span class="sort-icon">↕</span></th>
+    <th data-field="finish_time" onclick="sortRunsheet('finish_time')">Finish <span class="sort-icon">↕</span></th>
+    <th>Hours</th>
+    <th data-field="action" onclick="sortRunsheet('action')">Action <span class="sort-icon">↕</span></th>
+    <th data-field="who" onclick="sortRunsheet('who')">Who <span class="sort-icon">↕</span></th>
+    <th data-field="where" onclick="sortRunsheet('where')">Where <span class="sort-icon">↕</span></th>
+    <th data-field="notes" onclick="sortRunsheet('notes')">Notes <span class="sort-icon">↕</span></th>
+    <th style="text-align:center;width:48px;">Done</th>
+    <th></th>
+  </tr></thead>
+  <tbody id="runsheet-tbody"></tbody>
+  <tfoot><tr class="add-row" onclick="addRunsheetRow()"><td colspan="10">＋ Add item</td></tr></tfoot>`;
+  wrap.appendChild(tbl);
+
+  const tbody = document.getElementById('runsheet-tbody');
+  items.forEach(item => tbody.appendChild(buildRunsheetRow(item)));
+
+  // Mobile cards
+  const cards = document.getElementById('runsheet-mobile-cards');
+  cards.innerHTML = items.map(item => `
+    <div class="runsheet-card ${item.done?'done':''}">
+      <div class="runsheet-card-header">
+        <div class="rs-done-check ${item.done?'checked':''}" onclick="toggleRsDone('${item.id}',${item.done})"></div>
+        <div class="runsheet-card-time">${fmtTime(item.start_time)}${item.finish_time?' → '+fmtTime(item.finish_time):''}</div>
+        <div class="runsheet-card-action">${item.action||'—'}</div>
+      </div>
+      <div class="runsheet-card-meta">
+        ${item.date?'📅 '+fmtDate(item.date):''}
+        ${item.who?'👤 '+item.who:''}
+        ${item.where?'📍 '+item.where:''}
+        ${calcHours(item.start_time,item.finish_time)!=='—'?'⏱ '+calcHours(item.start_time,item.finish_time):''}
+      </div>
+      ${item.notes?`<div style="font-size:0.78rem;color:var(--ink3);margin-top:0.4rem;">${item.notes}</div>`:''}
+      <div class="runsheet-card-footer">
+        <span></span>
+        <button class="row-del" style="opacity:1;" onclick="deleteRunsheetItem('${item.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function buildRunsheetRow(item) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = item.id;
+  if (item.done) tr.classList.add('rs-done');
+
+  const rsCols = [
+    {field:'date',type:'date'},
+    {field:'start_time',type:'time'},
+    {field:'finish_time',type:'time'},
+    {field:'_hours',type:'computed'},
+    {field:'action',type:'text'},
+    {field:'who',type:'text'},
+    {field:'where',type:'text'},
+    {field:'notes',type:'text'},
+  ];
+
+  rsCols.forEach(({field,type}) => {
+    const td = document.createElement('td');
+    if (type==='computed') {
+      td.className='rs-hours';
+      td.textContent = calcHours(item.start_time, item.finish_time);
+      td.style.cursor='default';
+    } else {
+      refreshRsCell(td, item, field, type);
+      td.addEventListener('click', () => makeRsEditable(td, item, field, type));
+    }
+    tr.appendChild(td);
+  });
+
+  // Done checkbox
+  const checkTd = document.createElement('td');
+  checkTd.style.textAlign='center';checkTd.style.cursor='default';
+  const check = document.createElement('div');
+  check.className = 'rs-done-check'+(item.done?' checked':'');
+  check.style.margin='0 auto';
+  check.onclick = (e) => { e.stopPropagation(); toggleRsDone(item.id, item.done); };
+  checkTd.appendChild(check);
+  tr.appendChild(checkTd);
+
+  const del = document.createElement('td');
+  del.innerHTML = `<button class="row-del" onclick="deleteRunsheetItem('${item.id}')">Delete</button>`;
+  tr.appendChild(del);
+  return tr;
+}
+
+function refreshRsCell(td, item, field, type) {
+  if (type==='date') { td.innerHTML=`<span class="rs-time">${fmtDate(item[field])}</span>`; }
+  else if (type==='time') { td.innerHTML=`<span class="rs-time">${fmtTime(item[field])}</span>`; }
+  else { td.innerHTML = field==='action'?`<span class="rs-action">${item[field]||'—'}</span>`:(item[field]||'—'); }
+}
+
+function makeRsEditable(td, item, field, type) {
+  if (td.classList.contains('editing')) return;
+  td.classList.add('editing');
+  const input = document.createElement('input');
+  input.className = 'inline-input';
+  input.type = type==='date' ? 'date' : type==='time' ? 'time' : 'text';
+  input.value = item[field]||'';
+  td.innerHTML=''; td.appendChild(input); input.focus();
+
+  async function save() {
+    const val = input.value.trim();
+    item[field] = val;
+    td.classList.remove('editing');
+    refreshRsCell(td, item, field, type);
+    // Update hours cell if time changed
+    if (type==='time') {
+      const row = td.closest('tr');
+      if (row) {
+        const hoursCells = row.querySelectorAll('td');
+        if (hoursCells[3]) hoursCells[3].textContent = calcHours(item.start_time, item.finish_time);
+      }
+    }
+    await sb.from('runsheet_items').update({ [field]: val||null }).eq('id', item.id);
+  }
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
+}
+
+async function toggleRsDone(id, current) {
+  const newVal = !current;
+  const item = allRunsheetItems.find(i=>i.id===id);
+  if (item) item.done = newVal;
+  await sb.from('runsheet_items').update({ done: newVal }).eq('id', id);
+  applyRsSortAndRender();
+}
+
+async function addRunsheetRow() {
+  // Default date to event date if available
+  const defaultDate = currentEvent?.event_date || null;
+  const { data, error } = await sb.from('runsheet_items').insert([{
+    event_id: eventId,
+    date: defaultDate,
+    start_time: null, finish_time: null,
+    action: '', who: '', where: '', notes: '', done: false
+  }]).select().single();
+  if (!error && data) {
+    allRunsheetItems.push(data);
+    applyRsSortAndRender();
+    setTimeout(() => {
+      const rows = document.querySelectorAll('#runsheet-tbody tr');
+      if (rows.length) rows[rows.length-1].querySelector('td').click();
+    }, 60);
+  }
+}
+
+async function deleteRunsheetItem(id) {
+  if (!confirm('Delete this item?')) return;
+  await sb.from('runsheet_items').delete().eq('id', id);
+  allRunsheetItems = allRunsheetItems.filter(i=>i.id!==id);
+  applyRsSortAndRender();
+}
+
+// MOBILE RUNSHEET MODAL
+function openMobileRunsheet() {
+  document.getElementById('mobile-runsheet-modal').classList.add('open');
+}
+function closeMobileRunsheet() {
+  document.getElementById('mobile-runsheet-modal').classList.remove('open');
+}
+async function saveMobileRunsheet() {
+  const btn = document.getElementById('mrs-save-btn');
+  btn.textContent='Saving...'; btn.disabled=true;
+  const { error } = await sb.from('runsheet_items').insert([{
+    event_id: eventId,
+    date:        document.getElementById('mrs-date').value || null,
+    start_time:  document.getElementById('mrs-start').value || null,
+    finish_time: document.getElementById('mrs-finish').value || null,
+    action:      document.getElementById('mrs-action').value.trim(),
+    who:         document.getElementById('mrs-who').value.trim(),
+    where:       document.getElementById('mrs-where').value.trim(),
+    notes:       document.getElementById('mrs-notes').value.trim(),
+    done: false
+  }]);
+  btn.textContent='Add item'; btn.disabled=false;
+  if (!error) { closeMobileRunsheet(); await loadRunsheet(); }
+}
+
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -599,7 +895,7 @@ tr:hover .row-del{opacity:1;}
 }
 
 .mobile-only{display:none;}
-@media(max-width:768px){
+@media(max-width:1024px){
   .mobile-only{display:inline-flex;}
   .budget-summary{grid-template-columns:repeat(2,1fr);}
 }
@@ -672,7 +968,7 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 .template-card-name{font-size:0.88rem;font-weight:600;}
 .template-card-count{font-size:0.75rem;color:var(--ink3);margin-top:2px;}
 
-@media(max-width:768px){
+@media(max-width:1024px){
   .checklist-cards{display:flex;}
   #checklist-wrap{display:none;}
 }
@@ -740,6 +1036,42 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
   .event-stats{grid-column:1/3;grid-row:2;grid-template-columns:1fr 1fr;}
   .event-lower-row:not(.has-cover) .event-stats{grid-template-columns:1fr 1fr;grid-row:1;}
   .event-title-row{flex-direction:column;}
+}
+
+/* RUN SHEET */
+table.runsheet-table{width:100%;border-collapse:collapse;}
+table.runsheet-table thead{background:var(--cream);}
+table.runsheet-table th{padding:0.7rem 0.85rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--rule);white-space:nowrap;cursor:pointer;user-select:none;}
+table.runsheet-table th:hover{color:var(--ink);}
+table.runsheet-table th .sort-icon{opacity:0.3;font-size:0.7rem;margin-left:3px;}
+table.runsheet-table th.sort-asc .sort-icon,table.runsheet-table th.sort-desc .sort-icon{opacity:1;color:var(--amber-dark);}
+table.runsheet-table td{padding:0.75rem 0.85rem;font-size:0.82rem;border-bottom:1px solid var(--rule);vertical-align:middle;cursor:pointer;}
+table.runsheet-table tr:last-child td{border-bottom:none;}
+table.runsheet-table tr:hover td{background:var(--amber-light);}
+table.runsheet-table tr.rs-done td{opacity:0.45;}
+table.runsheet-table tr.rs-done .rs-action{text-decoration:line-through;}
+table.runsheet-table tr.add-row td{cursor:pointer;color:var(--ink3);font-size:0.82rem;border-top:2px solid var(--rule);}
+table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var(--ink);}
+.rs-time{font-family:'Nunito',sans-serif;font-weight:700;font-size:0.85rem;color:var(--ink);white-space:nowrap;}
+.rs-hours{font-family:'Nunito',sans-serif;font-weight:600;font-size:0.82rem;color:var(--ink3);}
+.rs-action{font-weight:500;}
+.rs-done-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--rule);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;margin:0 auto;}
+.rs-done-check.checked{background:var(--amber);border-color:var(--amber);}
+.rs-done-check.checked::after{content:'✓';font-size:11px;color:var(--ink);font-weight:700;}
+
+/* RUN SHEET MOBILE CARDS */
+.runsheet-cards{display:none;flex-direction:column;gap:8px;margin-top:0.5rem;}
+.runsheet-card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:1rem;}
+.runsheet-card.done{opacity:0.5;}
+.runsheet-card-header{display:flex;align-items:center;gap:10px;margin-bottom:0.5rem;}
+.runsheet-card-time{font-family:'Nunito',sans-serif;font-weight:700;font-size:0.95rem;color:var(--amber-dark);}
+.runsheet-card-action{font-weight:600;font-size:0.9rem;flex:1;}
+.runsheet-card-meta{font-size:0.78rem;color:var(--ink3);display:flex;gap:1rem;flex-wrap:wrap;}
+.runsheet-card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:0.6rem;}
+
+@media(max-width:1024px){
+  .runsheet-cards{display:flex;}
+  #runsheet-wrap{display:none;}
 }
 </style>
 </head>
@@ -905,7 +1237,29 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 
   <!-- RUN SHEET -->
   <div class="panel" id="panel-runsheet">
-    <div class="coming-soon"><div class="coming-soon-icon">📅</div><h3>Run sheet</h3><p>Build a minute-by-minute timeline for the day and share it with your team.</p><div class="coming-badge">Coming soon</div></div>
+    <div class="panel-header">
+      <div class="panel-title">Run sheet</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-sm" id="rs-hide-toggle" onclick="toggleHideDone()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>
+          Hide completed
+        </button>
+        <button class="btn-sm" id="rs-sort-reset" onclick="resetRunsheetSort()" style="display:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v4h4"/></svg>
+          Reset sort
+        </button>
+        <button class="btn-sm amber" onclick="addRunsheetRow()" id="rs-add-btn">+ Add item</button>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div class="checklist-progress" id="rs-progress" style="display:none;margin-bottom:1rem;">
+      <div class="progress-label"><span id="rs-progress-text">0 of 0 done</span><span id="rs-progress-pct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="rs-progress-fill"></div></div>
+    </div>
+    <div class="table-wrap" id="runsheet-wrap">
+      <div class="spinner"></div>
+    </div>
+    <div class="runsheet-cards" id="runsheet-mobile-cards"></div>
   </div>
 
   <!-- TABLE PLAN -->
@@ -1570,6 +1924,7 @@ function showTab(name) {
   if (idx>-1) document.querySelectorAll('.tab')[idx].classList.add('active');
   if (name==='budget') loadBudget();
   if (name==='checklist') loadChecklist();
+  if (name==='runsheet') loadRunsheet();
   if (name==='settings') setTimeout(() => initDragDrop('settings-photo-area','settings-photo-input','settings-photo-preview','settings-photo-placeholder'), 100);
 }
 
@@ -1956,6 +2311,302 @@ async function saveMobileChecklist() {
   if (!error) { closeMobileChecklist(); await loadChecklist(); }
 }
 
+
+// ── RUN SHEET ──
+let allRunsheetItems = [];
+let rsHideDone = false;
+let rsSortField = 'date';
+let rsSortDir = 1;
+
+async function loadRunsheet() {
+  const { data } = await sb.from('runsheet_items').select('*')
+    .eq('event_id', eventId).order('date', { ascending: true });
+  allRunsheetItems = data || [];
+  applyRsSortAndRender();
+}
+
+function applyRsSortAndRender() {
+  let items = [...allRunsheetItems];
+  if (rsSortField) {
+    items.sort((a,b) => {
+      const av = a[rsSortField]||'', bv = b[rsSortField]||'';
+      return av.toString().localeCompare(bv.toString()) * rsSortDir;
+    });
+  }
+  // Update progress
+  const total = allRunsheetItems.length;
+  const done = allRunsheetItems.filter(i=>i.done).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const prog = document.getElementById('rs-progress');
+  if (prog && total > 0) {
+    prog.style.display = 'block';
+    document.getElementById('rs-progress-text').textContent = `${done} of ${total} done`;
+    document.getElementById('rs-progress-pct').textContent = `${pct}%`;
+    document.getElementById('rs-progress-fill').style.width = pct+'%';
+  }
+  // Filter if hiding done
+  if (rsHideDone) items = items.filter(i => !i.done);
+  renderRunsheet(items);
+  setTimeout(() => {
+    document.querySelectorAll('table.runsheet-table th').forEach(th => {
+      th.classList.remove('sort-asc','sort-desc');
+      if (th.dataset.field === rsSortField) th.classList.add(rsSortDir===1?'sort-asc':'sort-desc');
+    });
+    const resetBtn = document.getElementById('rs-sort-reset');
+    if (resetBtn) resetBtn.style.display = rsSortField !== 'date' ? 'inline-flex' : 'none';
+  }, 10);
+}
+
+function toggleHideDone() {
+  rsHideDone = !rsHideDone;
+  const btn = document.getElementById('rs-hide-toggle');
+  if (btn) {
+    btn.innerHTML = rsHideDone
+      ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Show all`
+      : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg> Hide completed`;
+    btn.style.background = rsHideDone ? 'var(--amber-light)' : '';
+    btn.style.borderColor = rsHideDone ? 'var(--amber)' : '';
+    btn.style.color = rsHideDone ? 'var(--amber-dark)' : '';
+  }
+  applyRsSortAndRender();
+}
+
+function sortRunsheet(field) {
+  if (rsSortField===field) rsSortDir*=-1; else { rsSortField=field; rsSortDir=1; }
+  applyRsSortAndRender();
+}
+
+function resetRunsheetSort() {
+  rsSortField = 'date';
+  rsSortDir = 1;
+  applyRsSortAndRender();
+}
+
+function calcHours(start, finish) {
+  if (!start || !finish) return '—';
+  const [sh,sm] = start.split(':').map(Number);
+  const [fh,fm] = finish.split(':').map(Number);
+  const diff = (fh*60+fm) - (sh*60+sm);
+  if (diff <= 0) return '—';
+  const h = Math.floor(diff/60);
+  const m = diff%60;
+  return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function fmtTime(t) {
+  if (!t) return '—';
+  const [h,m] = t.split(':');
+  const hr = parseInt(h);
+  return `${hr%12||12}:${m} ${hr<12?'am':'pm'}`;
+}
+
+function renderRunsheet(items) {
+  const wrap = document.getElementById('runsheet-wrap');
+
+  if (!items.length) {
+    wrap.innerHTML = `
+      <div class="checklist-start">
+        <div class="checklist-start-title">Build your run sheet</div>
+        <div class="checklist-start-grid" style="grid-template-columns:1fr;">
+          <div class="checklist-start-card" onclick="addRunsheetRow()">
+            <div class="checklist-start-icon">📅</div>
+            <div class="checklist-start-name">Add first item</div>
+            <div class="checklist-start-desc">Build your timeline item by item</div>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('runsheet-mobile-cards').innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = '';
+  const tbl = document.createElement('table');
+  tbl.className = 'runsheet-table';
+  tbl.innerHTML = `<thead><tr>
+    <th data-field="date" onclick="sortRunsheet('date')">Date <span class="sort-icon">↕</span></th>
+    <th data-field="start_time" onclick="sortRunsheet('start_time')">Start <span class="sort-icon">↕</span></th>
+    <th data-field="finish_time" onclick="sortRunsheet('finish_time')">Finish <span class="sort-icon">↕</span></th>
+    <th>Hours</th>
+    <th data-field="action" onclick="sortRunsheet('action')">Action <span class="sort-icon">↕</span></th>
+    <th data-field="who" onclick="sortRunsheet('who')">Who <span class="sort-icon">↕</span></th>
+    <th data-field="where" onclick="sortRunsheet('where')">Where <span class="sort-icon">↕</span></th>
+    <th data-field="notes" onclick="sortRunsheet('notes')">Notes <span class="sort-icon">↕</span></th>
+    <th style="text-align:center;width:48px;">Done</th>
+    <th></th>
+  </tr></thead>
+  <tbody id="runsheet-tbody"></tbody>
+  <tfoot><tr class="add-row" onclick="addRunsheetRow()"><td colspan="10">＋ Add item</td></tr></tfoot>`;
+  wrap.appendChild(tbl);
+
+  const tbody = document.getElementById('runsheet-tbody');
+  items.forEach(item => tbody.appendChild(buildRunsheetRow(item)));
+
+  // Mobile cards
+  const cards = document.getElementById('runsheet-mobile-cards');
+  cards.innerHTML = items.map(item => `
+    <div class="runsheet-card ${item.done?'done':''}">
+      <div class="runsheet-card-header">
+        <div class="rs-done-check ${item.done?'checked':''}" onclick="toggleRsDone('${item.id}',${item.done})"></div>
+        <div class="runsheet-card-time">${fmtTime(item.start_time)}${item.finish_time?' → '+fmtTime(item.finish_time):''}</div>
+        <div class="runsheet-card-action">${item.action||'—'}</div>
+      </div>
+      <div class="runsheet-card-meta">
+        ${item.date?'📅 '+fmtDate(item.date):''}
+        ${item.who?'👤 '+item.who:''}
+        ${item.where?'📍 '+item.where:''}
+        ${calcHours(item.start_time,item.finish_time)!=='—'?'⏱ '+calcHours(item.start_time,item.finish_time):''}
+      </div>
+      ${item.notes?`<div style="font-size:0.78rem;color:var(--ink3);margin-top:0.4rem;">${item.notes}</div>`:''}
+      <div class="runsheet-card-footer">
+        <span></span>
+        <button class="row-del" style="opacity:1;" onclick="deleteRunsheetItem('${item.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function buildRunsheetRow(item) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = item.id;
+  if (item.done) tr.classList.add('rs-done');
+
+  const rsCols = [
+    {field:'date',type:'date'},
+    {field:'start_time',type:'time'},
+    {field:'finish_time',type:'time'},
+    {field:'_hours',type:'computed'},
+    {field:'action',type:'text'},
+    {field:'who',type:'text'},
+    {field:'where',type:'text'},
+    {field:'notes',type:'text'},
+  ];
+
+  rsCols.forEach(({field,type}) => {
+    const td = document.createElement('td');
+    if (type==='computed') {
+      td.className='rs-hours';
+      td.textContent = calcHours(item.start_time, item.finish_time);
+      td.style.cursor='default';
+    } else {
+      refreshRsCell(td, item, field, type);
+      td.addEventListener('click', () => makeRsEditable(td, item, field, type));
+    }
+    tr.appendChild(td);
+  });
+
+  // Done checkbox
+  const checkTd = document.createElement('td');
+  checkTd.style.textAlign='center';checkTd.style.cursor='default';
+  const check = document.createElement('div');
+  check.className = 'rs-done-check'+(item.done?' checked':'');
+  check.style.margin='0 auto';
+  check.onclick = (e) => { e.stopPropagation(); toggleRsDone(item.id, item.done); };
+  checkTd.appendChild(check);
+  tr.appendChild(checkTd);
+
+  const del = document.createElement('td');
+  del.innerHTML = `<button class="row-del" onclick="deleteRunsheetItem('${item.id}')">Delete</button>`;
+  tr.appendChild(del);
+  return tr;
+}
+
+function refreshRsCell(td, item, field, type) {
+  if (type==='date') { td.innerHTML=`<span class="rs-time">${fmtDate(item[field])}</span>`; }
+  else if (type==='time') { td.innerHTML=`<span class="rs-time">${fmtTime(item[field])}</span>`; }
+  else { td.innerHTML = field==='action'?`<span class="rs-action">${item[field]||'—'}</span>`:(item[field]||'—'); }
+}
+
+function makeRsEditable(td, item, field, type) {
+  if (td.classList.contains('editing')) return;
+  td.classList.add('editing');
+  const input = document.createElement('input');
+  input.className = 'inline-input';
+  input.type = type==='date' ? 'date' : type==='time' ? 'time' : 'text';
+  input.value = item[field]||'';
+  td.innerHTML=''; td.appendChild(input); input.focus();
+
+  async function save() {
+    const val = input.value.trim();
+    item[field] = val;
+    td.classList.remove('editing');
+    refreshRsCell(td, item, field, type);
+    // Update hours cell if time changed
+    if (type==='time') {
+      const row = td.closest('tr');
+      if (row) {
+        const hoursCells = row.querySelectorAll('td');
+        if (hoursCells[3]) hoursCells[3].textContent = calcHours(item.start_time, item.finish_time);
+      }
+    }
+    await sb.from('runsheet_items').update({ [field]: val||null }).eq('id', item.id);
+  }
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
+}
+
+async function toggleRsDone(id, current) {
+  const newVal = !current;
+  const item = allRunsheetItems.find(i=>i.id===id);
+  if (item) item.done = newVal;
+  await sb.from('runsheet_items').update({ done: newVal }).eq('id', id);
+  applyRsSortAndRender();
+}
+
+async function addRunsheetRow() {
+  // Default date to event date if available
+  const defaultDate = currentEvent?.event_date || null;
+  const { data, error } = await sb.from('runsheet_items').insert([{
+    event_id: eventId,
+    date: defaultDate,
+    start_time: null, finish_time: null,
+    action: '', who: '', where: '', notes: '', done: false
+  }]).select().single();
+  if (!error && data) {
+    allRunsheetItems.push(data);
+    applyRsSortAndRender();
+    setTimeout(() => {
+      const rows = document.querySelectorAll('#runsheet-tbody tr');
+      if (rows.length) rows[rows.length-1].querySelector('td').click();
+    }, 60);
+  }
+}
+
+async function deleteRunsheetItem(id) {
+  if (!confirm('Delete this item?')) return;
+  await sb.from('runsheet_items').delete().eq('id', id);
+  allRunsheetItems = allRunsheetItems.filter(i=>i.id!==id);
+  applyRsSortAndRender();
+}
+
+// MOBILE RUNSHEET MODAL
+function openMobileRunsheet() {
+  document.getElementById('mobile-runsheet-modal').classList.add('open');
+}
+function closeMobileRunsheet() {
+  document.getElementById('mobile-runsheet-modal').classList.remove('open');
+}
+async function saveMobileRunsheet() {
+  const btn = document.getElementById('mrs-save-btn');
+  btn.textContent='Saving...'; btn.disabled=true;
+  const { error } = await sb.from('runsheet_items').insert([{
+    event_id: eventId,
+    date:        document.getElementById('mrs-date').value || null,
+    start_time:  document.getElementById('mrs-start').value || null,
+    finish_time: document.getElementById('mrs-finish').value || null,
+    action:      document.getElementById('mrs-action').value.trim(),
+    who:         document.getElementById('mrs-who').value.trim(),
+    where:       document.getElementById('mrs-where').value.trim(),
+    notes:       document.getElementById('mrs-notes').value.trim(),
+    done: false
+  }]);
+  btn.textContent='Add item'; btn.disabled=false;
+  if (!error) { closeMobileRunsheet(); await loadRunsheet(); }
+}
+
 </script>
 
 <!-- MOBILE BUDGET MODAL -->
@@ -2095,6 +2746,34 @@ async function saveMobileChecklist() {
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeMobileChecklist()">Cancel</button>
       <button class="btn-primary" id="mcl-save-btn" onclick="saveMobileChecklist()">Add task</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE RUNSHEET MODAL -->
+<div class="modal-overlay" id="mobile-runsheet-modal" onclick="if(event.target===this)closeMobileRunsheet()">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">Add run sheet item</div>
+      <button class="modal-close" onclick="closeMobileRunsheet()">✕</button>
+    </div>
+    <div class="field">
+      <label>Action / Activity *</label>
+      <input type="text" id="mrs-action" placeholder="What's happening?">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date</label><input type="date" id="mrs-date"></div>
+      <div class="field"><label>Who</label><input type="text" id="mrs-who" placeholder="Name or team"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Start time</label><input type="time" id="mrs-start"></div>
+      <div class="field"><label>Finish time</label><input type="time" id="mrs-finish"></div>
+    </div>
+    <div class="field"><label>Where / Location</label><input type="text" id="mrs-where" placeholder="Location or room"></div>
+    <div class="field"><label>Notes</label><input type="text" id="mrs-notes" placeholder="Any additional notes"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeMobileRunsheet()">Cancel</button>
+      <button class="btn-primary" id="mrs-save-btn" onclick="saveMobileRunsheet()">Add item</button>
     </div>
   </div>
 </div>
