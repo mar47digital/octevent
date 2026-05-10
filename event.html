@@ -2652,10 +2652,10 @@ function buildBudgetRow(item) {
     {field:'notes',type:'text'},
   ];
   cols.forEach(({field,type}) => {
-    const td = document.createElement('td');
     if (type==='calc' || type==='remaining') {
-      refreshCell(td, item, field, type);
-      tr.appendChild(td);
+      const tdx = document.createElement('td');
+      refreshCell(tdx, item, field, type);
+      tr.appendChild(tdx);
       return;
     }
     const td = document.createElement('td');
