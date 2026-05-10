@@ -1325,6 +1325,20 @@ function printTablePlan() {
   .ov-grid{grid-template-columns:1fr 1fr;}
   .ov-quick{grid-template-columns:1fr 1fr;}
 }
+
+.budget-summary-totals{
+  background:#fff;border:1px solid var(--rule);border-radius:16px;
+  padding:1.25rem 1.5rem;max-width:400px;margin-left:auto;
+}
+.bst-row{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;}
+.bst-row.bst-sub{padding:0.3rem 0;}
+.bst-label{font-size:0.85rem;color:var(--ink2);}
+.bst-row.bst-sub .bst-label{font-size:0.78rem;color:var(--ink3);}
+.bst-value{font-family:'Nunito',sans-serif;font-weight:700;font-size:0.95rem;color:var(--ink);}
+.bst-value.green{color:#2d6a4f;}
+.bst-value.red{color:#c0392b;}
+.bst-row.bst-sub .bst-value{font-size:0.82rem;}
+.bst-divider{height:1px;background:var(--rule);margin:0.5rem 0;}
 </style></head><body>
     <h1>${currentEvent?.name||'Event'} — Table Plan</h1>
     <div class="subtitle">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
@@ -1941,6 +1955,20 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
   .ov-grid{grid-template-columns:1fr 1fr;}
   .ov-quick{grid-template-columns:1fr 1fr;}
 }
+
+.budget-summary-totals{
+  background:#fff;border:1px solid var(--rule);border-radius:16px;
+  padding:1.25rem 1.5rem;max-width:400px;margin-left:auto;
+}
+.bst-row{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;}
+.bst-row.bst-sub{padding:0.3rem 0;}
+.bst-label{font-size:0.85rem;color:var(--ink2);}
+.bst-row.bst-sub .bst-label{font-size:0.78rem;color:var(--ink3);}
+.bst-value{font-family:'Nunito',sans-serif;font-weight:700;font-size:0.95rem;color:var(--ink);}
+.bst-value.green{color:#2d6a4f;}
+.bst-value.red{color:#c0392b;}
+.bst-row.bst-sub .bst-value{font-size:0.82rem;}
+.bst-divider{height:1px;background:var(--rule);margin:0.5rem 0;}
 </style>
 </head>
 <body>
@@ -4201,6 +4229,20 @@ function printTablePlan() {
   .ov-grid{grid-template-columns:1fr 1fr;}
   .ov-quick{grid-template-columns:1fr 1fr;}
 }
+
+.budget-summary-totals{
+  background:#fff;border:1px solid var(--rule);border-radius:16px;
+  padding:1.25rem 1.5rem;max-width:400px;margin-left:auto;
+}
+.bst-row{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;}
+.bst-row.bst-sub{padding:0.3rem 0;}
+.bst-label{font-size:0.85rem;color:var(--ink2);}
+.bst-row.bst-sub .bst-label{font-size:0.78rem;color:var(--ink3);}
+.bst-value{font-family:'Nunito',sans-serif;font-weight:700;font-size:0.95rem;color:var(--ink);}
+.bst-value.green{color:#2d6a4f;}
+.bst-value.red{color:#c0392b;}
+.bst-row.bst-sub .bst-value{font-size:0.82rem;}
+.bst-divider{height:1px;background:var(--rule);margin:0.5rem 0;}
 </style></head><body>
     <h1>${currentEvent?.name||'Event'} — Table Plan</h1>
     <div class="subtitle">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
