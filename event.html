@@ -2586,7 +2586,7 @@ function makeEditable(td, item, field, type) {
   } else {
     input = document.createElement('input');
     input.className = 'inline-input';
-    input.type = type==='num' ? 'number' : 'text';
+    input.type = type==='num' ? 'number' : type==='date' ? 'date' : 'text';
     input.value = item[field]||'';
     if (type==='num') { input.step='0.01'; input.min='0'; }
   }
@@ -2632,15 +2632,25 @@ function buildBudgetRow(item) {
     {field:'category',type:'cat'},
     {field:'supplier',type:'text'},
     {field:'description',type:'text'},
+    {field:'quantity',type:'num'},
+    {field:'hours',type:'num'},
+    {field:'cost_pp',type:'num'},
+    {field:'_calc',type:'calc'},
     {field:'allocated_budget',type:'num'},
-    {field:'quoted_amount',type:'num'},
     {field:'actual_amount',type:'num'},
     {field:'deposit_amount',type:'num'},
     {field:'paid_amount',type:'num'},
-    {field:'paid_status',type:'status'},
+    {field:'_remaining',type:'remaining'},
+    {field:'next_payment_date',type:'date'},
     {field:'notes',type:'text'},
   ];
   cols.forEach(({field,type}) => {
+    if (type==='calc' || type==='remaining') {
+      const td = document.createElement('td');
+      refreshCell(td, item, field, type);
+      tr.appendChild(td);
+      return;
+    }
     const td = document.createElement('td');
     if (type==='num') td.className='num';
     refreshCell(td, item, field, type);
@@ -2675,12 +2685,16 @@ function renderBudget(items) {
       <th class="sortable" onclick="sortBudget('category')">Category <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('quantity')">Qty <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('hours')">Hrs <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('cost_pp')">Cost/unit <span class="sort-icon">↕</span></th>
+      <th class="num" style="color:var(--ink3);font-size:0.65rem;">=Total</th>
       <th class="num sortable" onclick="sortBudget('allocated_budget')">Allocated <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('quoted_amount')">Quoted <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('actual_amount')">Actual <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('actual_amount')">Final <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('deposit_amount')">Deposit <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('paid_amount')">Paid <span class="sort-icon">↕</span></th>
-      <th class="sortable" onclick="sortBudget('paid_status')">Status <span class="sort-icon">↕</span></th>
+      <th class="num">Remaining</th>
+      <th class="sortable" onclick="sortBudget('next_payment_date')">Next payment <span class="sort-icon">↕</span></th>
       <th>Notes</th>
       <th></th>
     </tr></thead>
@@ -2738,7 +2752,7 @@ async function addBudgetRow() {
   const { data, error } = await sb.from('budget_items').insert([{
     event_id: eventId, item_type:'expense', category:'other', supplier:'', description:'',
     allocated_budget:0, quoted_amount:0, actual_amount:0,
-    deposit_amount:0, paid_amount:0, paid_status:'unpaid', notes:''
+    quantity:0, hours:0, cost_pp:0, deposit_amount:0, paid_amount:0, next_payment_date:null, notes:''
   }]).select().single();
   if (!error && data) {
     allBudgetItems.push(data);
