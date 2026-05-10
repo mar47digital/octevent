@@ -2600,12 +2600,24 @@ function makeEditable(td, item, field, type) {
   if (input.select) input.select();
 
   async function save() {
-    const val = (type==='num'||type==='hrs') ? (parseFloat(input.value)||0) : input.value.trim();
+    let val;
+    if (type==='num'||type==='hrs'||type==='qty') val = parseFloat(input.value)||0;
+    else if (type==='date') val = input.value || null;
+    else val = input.value.trim();
     item[field] = val;
     td.classList.remove('editing');
     refreshCell(td, item, field, type);
+    // Refresh calc and remaining cells in same row
+    const row = td.closest('tr');
+    if (row && (field==='quantity'||field==='hours'||field==='cost_pp')) {
+      row.querySelectorAll('[data-celltype="calc"]').forEach(c => refreshCell(c, item, '_calc', 'calc'));
+    }
+    if (row && (field==='actual_amount'||field==='paid_amount')) {
+      row.querySelectorAll('[data-celltype="remaining"]').forEach(c => refreshCell(c, item, '_remaining', 'remaining'));
+    }
     updateSummary(allBudgetItems);
-    await sb.from('budget_items').update({ [field]: val }).eq('id', item.id);
+    const saveVal = val === '' ? null : val;
+    await sb.from('budget_items').update({ [field]: saveVal }).eq('id', item.id);
     // Re-apply sort to keep order consistent
     if (sortField && sortField !== field) applySortAndRender();
   }
