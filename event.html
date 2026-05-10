@@ -106,6 +106,9 @@ const PRIVATE_PARTY_TEMPLATE = [
 async function loadChecklist() {
   const { data } = await sb.from('checklist_items').select('*').eq('event_id', eventId).order('created_at', { ascending: true });
   allChecklistItems = data || [];
+  // Show reset all button if items exist
+  const resetAllBtn = document.getElementById('checklist-reset-all');
+  if (resetAllBtn) resetAllBtn.style.display = allChecklistItems.length ? 'inline-flex' : 'none';
   applyChecklistSortAndRender();
 }
 
@@ -160,13 +163,28 @@ function renderChecklist(items) {
   // Desktop table
   const wrap = document.getElementById('checklist-wrap');
   if (!items.length) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><h3>No tasks yet</h3><p>Add a task below or load a template to get started.</p></div>`;
+    wrap.innerHTML = `
+      <div class="checklist-start">
+        <div class="checklist-start-title">How would you like to start?</div>
+        <div class="checklist-start-grid">
+          <div class="checklist-start-card" onclick="addChecklistRow()">
+            <div class="checklist-start-icon">✏️</div>
+            <div class="checklist-start-name">Start from scratch</div>
+            <div class="checklist-start-desc">Add tasks one by one, your own way</div>
+          </div>
+          <div class="checklist-start-card" onclick="openTemplateModal()">
+            <div class="checklist-start-icon">📋</div>
+            <div class="checklist-start-name">Use a template</div>
+            <div class="checklist-start-desc">Load a ready-made checklist for your event type</div>
+          </div>
+        </div>
+      </div>`;
+    return;
   } else {
     wrap.innerHTML = '';
     const tbl = document.createElement('table');
     tbl.className = 'checklist-table';
     tbl.innerHTML = `<thead><tr>
-      <th style="width:32px;"></th>
       <th data-field="stage" onclick="sortChecklist('stage')">Stage <span class="sort-icon">↕</span></th>
       <th data-field="category" onclick="sortChecklist('category')">Category <span class="sort-icon">↕</span></th>
       <th data-field="task" onclick="sortChecklist('task')">Task <span class="sort-icon">↕</span></th>
@@ -174,6 +192,7 @@ function renderChecklist(items) {
       <th data-field="who" onclick="sortChecklist('who')">Who <span class="sort-icon">↕</span></th>
       <th data-field="deadline" onclick="sortChecklist('deadline')">Deadline <span class="sort-icon">↕</span></th>
       <th data-field="reminder" onclick="sortChecklist('reminder')">Reminder <span class="sort-icon">↕</span></th>
+      <th style="width:40px;text-align:center;">Done</th>
       <th></th>
     </tr></thead>
     <tbody id="checklist-tbody"></tbody>
@@ -209,15 +228,6 @@ function buildChecklistRow(item) {
   tr.dataset.id = item.id;
   if (item.status==='done') tr.classList.add('done-row');
 
-  // Checkbox
-  const checkTd = document.createElement('td');
-  checkTd.style.cursor = 'default';
-  const check = document.createElement('div');
-  check.className = 'done-check' + (item.status==='done'?' checked':'');
-  check.onclick = (e) => { e.stopPropagation(); toggleDone(item.id, item.status, tr, check); };
-  checkTd.appendChild(check);
-  tr.appendChild(checkTd);
-
   const clCols = [
     {field:'stage',type:'cl-stage'},
     {field:'category',type:'text'},
@@ -234,6 +244,17 @@ function buildChecklistRow(item) {
     td.addEventListener('click', () => makeClEditable(td, item, field, type));
     tr.appendChild(td);
   });
+
+  // Checkbox at the end
+  const checkTd = document.createElement('td');
+  checkTd.style.cursor = 'default';
+  checkTd.style.textAlign = 'center';
+  const check = document.createElement('div');
+  check.className = 'done-check' + (item.status==='done'?' checked':'');
+  check.style.margin = '0 auto';
+  check.onclick = (e) => { e.stopPropagation(); toggleDone(item.id, item.status, tr, check); };
+  checkTd.appendChild(check);
+  tr.appendChild(checkTd);
 
   const del = document.createElement('td');
   del.innerHTML = `<button class="row-del" onclick="deleteChecklistItem('${item.id}')">Delete</button>`;
@@ -308,6 +329,15 @@ async function deleteChecklistItem(id) {
 }
 
 // TEMPLATE MODAL
+async function resetAllChecklist() {
+  if (!confirm('This will delete all checklist tasks and start again. Are you sure?')) return;
+  const ids = allChecklistItems.map(i => i.id);
+  if (ids.length) await sb.from('checklist_items').delete().in('id', ids);
+  allChecklistItems = [];
+  applyChecklistSortAndRender();
+  document.getElementById('checklist-reset-all').style.display = 'none';
+}
+
 function openTemplateModal() {
   document.getElementById('template-modal').classList.add('open');
 }
@@ -646,6 +676,16 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
   .checklist-cards{display:flex;}
   #checklist-wrap{display:none;}
 }
+
+.checklist-start{padding:3rem 2rem;background:#fff;border:1px solid var(--rule);border-radius:16px;text-align:center;}
+.checklist-start-title{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:1.5rem;color:var(--ink);}
+.checklist-start-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:500px;margin:0 auto;}
+.checklist-start-card{border:2px solid var(--rule);border-radius:16px;padding:2rem 1.5rem;cursor:pointer;transition:all 0.2s;background:#fff;}
+.checklist-start-card:hover{border-color:var(--amber);background:var(--amber-light);transform:translateY(-2px);}
+.checklist-start-icon{font-size:2rem;margin-bottom:0.75rem;}
+.checklist-start-name{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.4rem;}
+.checklist-start-desc{font-size:0.8rem;color:var(--ink3);font-weight:300;line-height:1.5;}
+@media(max-width:480px){.checklist-start-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -728,6 +768,10 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
         <button class="btn-sm" onclick="openTemplateModal()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
           Use template
+        </button>
+        <button class="btn-sm" id="checklist-reset-all" onclick="resetAllChecklist()" style="color:#c0392b;border-color:#fdf0f0;display:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          Reset all
         </button>
         <button class="btn-sm" id="checklist-sort-reset" onclick="resetChecklistSort()" style="display:none;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v4h4"/></svg>
@@ -1562,6 +1606,9 @@ const PRIVATE_PARTY_TEMPLATE = [
 async function loadChecklist() {
   const { data } = await sb.from('checklist_items').select('*').eq('event_id', eventId).order('created_at', { ascending: true });
   allChecklistItems = data || [];
+  // Show reset all button if items exist
+  const resetAllBtn = document.getElementById('checklist-reset-all');
+  if (resetAllBtn) resetAllBtn.style.display = allChecklistItems.length ? 'inline-flex' : 'none';
   applyChecklistSortAndRender();
 }
 
@@ -1616,13 +1663,28 @@ function renderChecklist(items) {
   // Desktop table
   const wrap = document.getElementById('checklist-wrap');
   if (!items.length) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><h3>No tasks yet</h3><p>Add a task below or load a template to get started.</p></div>`;
+    wrap.innerHTML = `
+      <div class="checklist-start">
+        <div class="checklist-start-title">How would you like to start?</div>
+        <div class="checklist-start-grid">
+          <div class="checklist-start-card" onclick="addChecklistRow()">
+            <div class="checklist-start-icon">✏️</div>
+            <div class="checklist-start-name">Start from scratch</div>
+            <div class="checklist-start-desc">Add tasks one by one, your own way</div>
+          </div>
+          <div class="checklist-start-card" onclick="openTemplateModal()">
+            <div class="checklist-start-icon">📋</div>
+            <div class="checklist-start-name">Use a template</div>
+            <div class="checklist-start-desc">Load a ready-made checklist for your event type</div>
+          </div>
+        </div>
+      </div>`;
+    return;
   } else {
     wrap.innerHTML = '';
     const tbl = document.createElement('table');
     tbl.className = 'checklist-table';
     tbl.innerHTML = `<thead><tr>
-      <th style="width:32px;"></th>
       <th data-field="stage" onclick="sortChecklist('stage')">Stage <span class="sort-icon">↕</span></th>
       <th data-field="category" onclick="sortChecklist('category')">Category <span class="sort-icon">↕</span></th>
       <th data-field="task" onclick="sortChecklist('task')">Task <span class="sort-icon">↕</span></th>
@@ -1630,6 +1692,7 @@ function renderChecklist(items) {
       <th data-field="who" onclick="sortChecklist('who')">Who <span class="sort-icon">↕</span></th>
       <th data-field="deadline" onclick="sortChecklist('deadline')">Deadline <span class="sort-icon">↕</span></th>
       <th data-field="reminder" onclick="sortChecklist('reminder')">Reminder <span class="sort-icon">↕</span></th>
+      <th style="width:40px;text-align:center;">Done</th>
       <th></th>
     </tr></thead>
     <tbody id="checklist-tbody"></tbody>
@@ -1665,15 +1728,6 @@ function buildChecklistRow(item) {
   tr.dataset.id = item.id;
   if (item.status==='done') tr.classList.add('done-row');
 
-  // Checkbox
-  const checkTd = document.createElement('td');
-  checkTd.style.cursor = 'default';
-  const check = document.createElement('div');
-  check.className = 'done-check' + (item.status==='done'?' checked':'');
-  check.onclick = (e) => { e.stopPropagation(); toggleDone(item.id, item.status, tr, check); };
-  checkTd.appendChild(check);
-  tr.appendChild(checkTd);
-
   const clCols = [
     {field:'stage',type:'cl-stage'},
     {field:'category',type:'text'},
@@ -1690,6 +1744,17 @@ function buildChecklistRow(item) {
     td.addEventListener('click', () => makeClEditable(td, item, field, type));
     tr.appendChild(td);
   });
+
+  // Checkbox at the end
+  const checkTd = document.createElement('td');
+  checkTd.style.cursor = 'default';
+  checkTd.style.textAlign = 'center';
+  const check = document.createElement('div');
+  check.className = 'done-check' + (item.status==='done'?' checked':'');
+  check.style.margin = '0 auto';
+  check.onclick = (e) => { e.stopPropagation(); toggleDone(item.id, item.status, tr, check); };
+  checkTd.appendChild(check);
+  tr.appendChild(checkTd);
 
   const del = document.createElement('td');
   del.innerHTML = `<button class="row-del" onclick="deleteChecklistItem('${item.id}')">Delete</button>`;
@@ -1764,6 +1829,15 @@ async function deleteChecklistItem(id) {
 }
 
 // TEMPLATE MODAL
+async function resetAllChecklist() {
+  if (!confirm('This will delete all checklist tasks and start again. Are you sure?')) return;
+  const ids = allChecklistItems.map(i => i.id);
+  if (ids.length) await sb.from('checklist_items').delete().in('id', ids);
+  allChecklistItems = [];
+  applyChecklistSortAndRender();
+  document.getElementById('checklist-reset-all').style.display = 'none';
+}
+
 function openTemplateModal() {
   document.getElementById('template-modal').classList.add('open');
 }
