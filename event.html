@@ -368,7 +368,7 @@ function renderChecklist(items) {
       <th data-field="status" onclick="sortChecklist('status')">Status <span class="sort-icon">↕</span></th>
       <th data-field="who" onclick="sortChecklist('who')">Who <span class="sort-icon">↕</span></th>
       <th data-field="deadline" onclick="sortChecklist('deadline')">Deadline <span class="sort-icon">↕</span></th>
-      <th data-field="reminder" onclick="sortChecklist('reminder')">Reminder <span class="sort-icon">↕</span></th>
+      <th data-field="reminder" onclick="sortChecklist('reminder')">Email reminder <span class="sort-icon">↕</span></th>
       <th></th>
     </tr></thead>
     <tbody id="checklist-tbody"></tbody>
@@ -404,16 +404,22 @@ function buildChecklistRow(item) {
   tr.dataset.id = item.id;
   if (item.status==='done') tr.classList.add('done-row');
 
+  // Correct order: stage, category, task, done checkbox, status, who, deadline, reminder
   const clCols = [
     {field:'stage',type:'cl-stage'},
     {field:'category',type:'text'},
     {field:'task',type:'text'},
-    {field:'who',type:'text'},
-    {field:'deadline',type:'date'},
-    {field:'reminder',type:'date'},
   ];
 
-  // Done checkbox before status
+  // First three cols
+  clCols.forEach(({field,type}) => {
+    const td = document.createElement('td');
+    refreshClCell(td, item, field, type);
+    td.addEventListener('click', () => makeClEditable(td, item, field, type));
+    tr.appendChild(td);
+  });
+
+  // Done checkbox
   const checkTd = document.createElement('td');
   checkTd.style.cursor = 'default';
   checkTd.style.textAlign = 'center';
@@ -424,13 +430,19 @@ function buildChecklistRow(item) {
   checkTd.appendChild(check);
   tr.appendChild(checkTd);
 
-  // Status after checkbox
+  // Status
   const statusTd = document.createElement('td');
   refreshClCell(statusTd, item, 'status', 'cl-status');
   statusTd.addEventListener('click', () => makeClEditable(statusTd, item, 'status', 'cl-status'));
   tr.appendChild(statusTd);
 
-  clCols.forEach(({field,type}) => {
+  // Who, deadline, reminder
+  const clCols2 = [
+    {field:'who',type:'text'},
+    {field:'deadline',type:'date'},
+    {field:'reminder',type:'date'},
+  ];
+  clCols2.forEach(({field,type}) => {
     const td = document.createElement('td');
     refreshClCell(td, item, field, type);
     td.addEventListener('click', () => makeClEditable(td, item, field, type));
@@ -3161,7 +3173,7 @@ function renderChecklist(items) {
       <th data-field="status" onclick="sortChecklist('status')">Status <span class="sort-icon">↕</span></th>
       <th data-field="who" onclick="sortChecklist('who')">Who <span class="sort-icon">↕</span></th>
       <th data-field="deadline" onclick="sortChecklist('deadline')">Deadline <span class="sort-icon">↕</span></th>
-      <th data-field="reminder" onclick="sortChecklist('reminder')">Reminder <span class="sort-icon">↕</span></th>
+      <th data-field="reminder" onclick="sortChecklist('reminder')">Email reminder <span class="sort-icon">↕</span></th>
       <th></th>
     </tr></thead>
     <tbody id="checklist-tbody"></tbody>
@@ -3197,16 +3209,22 @@ function buildChecklistRow(item) {
   tr.dataset.id = item.id;
   if (item.status==='done') tr.classList.add('done-row');
 
+  // Correct order: stage, category, task, done checkbox, status, who, deadline, reminder
   const clCols = [
     {field:'stage',type:'cl-stage'},
     {field:'category',type:'text'},
     {field:'task',type:'text'},
-    {field:'who',type:'text'},
-    {field:'deadline',type:'date'},
-    {field:'reminder',type:'date'},
   ];
 
-  // Done checkbox before status
+  // First three cols
+  clCols.forEach(({field,type}) => {
+    const td = document.createElement('td');
+    refreshClCell(td, item, field, type);
+    td.addEventListener('click', () => makeClEditable(td, item, field, type));
+    tr.appendChild(td);
+  });
+
+  // Done checkbox
   const checkTd = document.createElement('td');
   checkTd.style.cursor = 'default';
   checkTd.style.textAlign = 'center';
@@ -3217,13 +3235,19 @@ function buildChecklistRow(item) {
   checkTd.appendChild(check);
   tr.appendChild(checkTd);
 
-  // Status after checkbox
+  // Status
   const statusTd = document.createElement('td');
   refreshClCell(statusTd, item, 'status', 'cl-status');
   statusTd.addEventListener('click', () => makeClEditable(statusTd, item, 'status', 'cl-status'));
   tr.appendChild(statusTd);
 
-  clCols.forEach(({field,type}) => {
+  // Who, deadline, reminder
+  const clCols2 = [
+    {field:'who',type:'text'},
+    {field:'deadline',type:'date'},
+    {field:'reminder',type:'date'},
+  ];
+  clCols2.forEach(({field,type}) => {
     const td = document.createElement('td');
     refreshClCell(td, item, field, type);
     td.addEventListener('click', () => makeClEditable(td, item, field, type));
