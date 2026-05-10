@@ -338,9 +338,10 @@ tr:hover .row-del{opacity:1;}
 
 <div class="tabs-bar">
   <button class="tab active" onclick="showTab('overview')"><span>🏠</span>Overview</button>
+  <button class="tab" onclick="showTab('checklist')"><span>✅</span>Checklist</button>
+  <button class="tab" onclick="showTab('budget')"><span>💰</span>Budget</button>
   <button class="tab" onclick="showTab('guests')"><span>👥</span>Guests</button>
   <button class="tab" onclick="showTab('rooms')"><span>🛏</span>Rooms</button>
-  <button class="tab" onclick="showTab('budget')"><span>💰</span>Budget</button>
   <button class="tab" onclick="showTab('runsheet')"><span>📅</span>Run sheet</button>
   <button class="tab" onclick="showTab('tableplan')"><span>🪑</span>Table plan</button>
   <button class="tab" onclick="showTab('settings')"><span>⚙️</span>Settings</button>
@@ -365,6 +366,16 @@ tr:hover .row-del{opacity:1;}
           <button class="quick-action" onclick="shareEvent()"><div class="quick-action-icon">🔗</div>Share event page with guests</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="panel" id="panel-checklist">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">✅</div>
+      <h3>Event checklist</h3>
+      <p>Choose from wedding, corporate, retreat or party templates — or build your own from scratch. Set due dates and get email reminders as your event approaches.</p>
+      <div class="coming-badge">Coming soon</div>
     </div>
   </div>
 
@@ -1065,7 +1076,7 @@ function showTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
-  const tabMap = ['overview','guests','rooms','budget','runsheet','tableplan','settings'];
+  const tabMap = ['overview','checklist','budget','guests','rooms','runsheet','tableplan','settings'];
   const idx = tabMap.indexOf(name);
   if (idx>-1) document.querySelectorAll('.tab')[idx].classList.add('active');
   if (name==='budget') loadBudget();
