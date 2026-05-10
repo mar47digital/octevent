@@ -318,7 +318,9 @@ function renderChecklist(items) {
 
   // Desktop table
   const wrap = document.getElementById('checklist-wrap');
+  wrap.classList.remove('show-empty');
   if (!items.length) {
+    wrap.classList.add('show-empty');
     wrap.innerHTML = `
       <div class="checklist-start">
         <div class="checklist-start-title">Choose a template or start from scratch</div>
@@ -677,7 +679,9 @@ function fmtTime(t) {
 function renderRunsheet(items) {
   const wrap = document.getElementById('runsheet-wrap');
 
+  wrap.classList.remove('show-empty');
   if (!items.length) {
+    wrap.classList.add('show-empty');
     wrap.innerHTML = `
       <div class="checklist-start">
         <div class="checklist-start-title">Build your run sheet</div>
@@ -1711,6 +1715,7 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 @media(max-width:1024px){
   .checklist-cards{display:flex;}
   #checklist-wrap{display:none;}
+  #checklist-wrap.show-empty{display:block;}
 }
 
 .checklist-start{padding:2rem;background:#fff;border:1px solid var(--rule);border-radius:16px;text-align:center;}
@@ -3125,7 +3130,9 @@ function renderChecklist(items) {
 
   // Desktop table
   const wrap = document.getElementById('checklist-wrap');
+  wrap.classList.remove('show-empty');
   if (!items.length) {
+    wrap.classList.add('show-empty');
     wrap.innerHTML = `
       <div class="checklist-start">
         <div class="checklist-start-title">Choose a template or start from scratch</div>
@@ -3484,7 +3491,9 @@ function fmtTime(t) {
 function renderRunsheet(items) {
   const wrap = document.getElementById('runsheet-wrap');
 
+  wrap.classList.remove('show-empty');
   if (!items.length) {
+    wrap.classList.add('show-empty');
     wrap.innerHTML = `
       <div class="checklist-start">
         <div class="checklist-start-title">Build your run sheet</div>
