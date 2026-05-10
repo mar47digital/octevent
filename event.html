@@ -2620,15 +2620,37 @@ function refreshCell(td, item, field, type) {
     td.innerHTML = `<span class="type-badge ${isIncome?'type-income':'type-expense'}">${isIncome?'Income':'Expense'}</span>`;
     return;
   }
-  if (type==='cat') { td.innerHTML=`<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`; }
-  else if (type==='status') { td.innerHTML=`<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field])}</span>`; }
-  else if (type==='num') {
-    td.innerHTML = fmt(item[field]);
-    let cls = 'num';
-    if (field==='actual_amount' && parseFloat(item[field])>parseFloat(item.allocated_budget||0) && item.item_type!=='income') cls+=' red';
-    if (field==='paid_amount' && item.paid_status==='paid') cls+=' green';
-    td.className = cls;
-  } else { td.textContent = item[field]||'—'; }
+  if (type==='cat') {
+    td.innerHTML=`<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`;
+  } else if (type==='qty') {
+    const v = parseFloat(item[field]||0);
+    td.textContent = v > 0 ? v : '—'; td.className='num';
+  } else if (type==='hrs') {
+    const v = parseFloat(item[field]||0);
+    td.textContent = v > 0 ? v+'h' : '—'; td.className='num';
+  } else if (type==='calc') {
+    const qty=parseFloat(item.quantity||0), hrs=parseFloat(item.hours||0), cpp=parseFloat(item.cost_pp||0);
+    const val = hrs>0 ? qty*hrs*cpp : qty>0 ? qty*cpp : cpp>0 ? cpp : 0;
+    td.textContent = val>0 ? fmt(val) : '—'; td.className='num'; td.style.cursor='default';
+    td.title = hrs>0 ? `${qty} × ${hrs}h × ${fmt(cpp)} = ${fmt(val)}` : qty>0 ? `${qty} × ${fmt(cpp)} = ${fmt(val)}` : '';
+  } else if (type==='remaining') {
+    const rem = parseFloat(item.actual_amount||0) - parseFloat(item.paid_amount||0);
+    if (rem<=0) { td.innerHTML='<span style="color:#2d6a4f;font-weight:600;">✓ Clear</span>'; }
+    else { td.innerHTML=`<span style="color:#c0392b;font-weight:700;">${fmt(rem)}</span>`; }
+    td.className='num'; td.style.cursor='default';
+  } else if (type==='date') {
+    const d=item[field];
+    if (!d) { td.textContent='—'; return; }
+    const [y,m,dy]=d.split('-');
+    td.textContent = new Date(y,m-1,dy).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  } else if (type==='status') {
+    td.innerHTML=`<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field], item.item_type)}</span>`;
+  } else if (type==='num') {
+    td.innerHTML = fmt(item[field]); td.className='num';
+    if (field==='actual_amount' && parseFloat(item[field])>parseFloat(item.allocated_budget||0) && item.item_type!=='income') td.classList.add('red');
+  } else {
+    td.textContent = item[field]||'—';
+  }
 }
 
 function buildBudgetRow(item) {
