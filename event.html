@@ -2593,7 +2593,7 @@ function makeEditable(td, item, field, type) {
   } else {
     input = document.createElement('input');
     input.className = 'inline-input';
-    input.type = type==='num' ? 'number' : type==='date' ? 'date' : 'text';
+    input.type = (type==='num' || type==='hrs') ? 'number' : type==='date' ? 'date' : 'text';
     input.value = item[field]||'';
     if (type==='num') { input.step='0.01'; input.min='0'; }
   }
@@ -2601,7 +2601,7 @@ function makeEditable(td, item, field, type) {
   if (input.select) input.select();
 
   async function save() {
-    const val = type==='num' ? (parseFloat(input.value)||0) : input.value.trim();
+    const val = (type==='num'||type==='hrs') ? (parseFloat(input.value)||0) : input.value.trim();
     item[field] = val;
     td.classList.remove('editing');
     refreshCell(td, item, field, type);
@@ -2639,8 +2639,8 @@ function buildBudgetRow(item) {
     {field:'category',type:'cat'},
     {field:'supplier',type:'text'},
     {field:'description',type:'text'},
-    {field:'quantity',type:'num'},
-    {field:'hours',type:'num'},
+    {field:'quantity',type:'qty'},
+    {field:'hours',type:'hrs'},
     {field:'cost_pp',type:'num'},
     {field:'_calc',type:'calc'},
     {field:'allocated_budget',type:'num'},
@@ -2654,6 +2654,7 @@ function buildBudgetRow(item) {
   cols.forEach(({field,type}) => {
     if (type==='calc' || type==='remaining') {
       const tdx = document.createElement('td');
+      tdx.dataset.celltype = type;
       refreshCell(tdx, item, field, type);
       tr.appendChild(tdx);
       return;
