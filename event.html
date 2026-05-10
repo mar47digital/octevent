@@ -2755,16 +2755,17 @@ function buildBudgetRow(item, isIncome) {
 function renderBudget(items) {
   updateSummary(items);
   const wrap = document.getElementById('budget-wrap');
-  if (!items.length) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Click below to add your first item.</p></div>`;
-    // Still show the + row
-    const tbl = document.createElement('table');
-    tbl.className = 'budget-table';
-    tbl.innerHTML = `<tbody><tr class="add-row" onclick="addBudgetRow()"><td colspan="12">＋ Add line item</td></tr></tbody>`;
-    wrap.appendChild(tbl);
+  wrap.innerHTML = '';
+
+  const expenses = items.filter(i=>i.item_type!=='income').sort((a,b)=>(a.category||'').localeCompare(b.category||''));
+  const income   = items.filter(i=>i.item_type==='income').sort((a,b)=>(a.category||'').localeCompare(b.category||''));
+  const allSorted = [...expenses, ...income];
+
+  if (!allSorted.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>No budget items yet</h3><p>Add your first expense or income item.</p><div style="display:flex;gap:10px;justify-content:center;margin-top:0.5rem;"><button class="btn-primary" onclick="addBudgetRow('expense')">+ Add expense</button><button class="btn-sm" onclick="addBudgetRow('income')" style="padding:0.7rem 1.5rem;">+ Add income</button></div></div>`;
     return;
   }
-  wrap.innerHTML = '';
+
   const tbl = document.createElement('table');
   tbl.className = 'budget-table';
   tbl.innerHTML = `
@@ -2773,8 +2774,10 @@ function renderBudget(items) {
       <th class="sortable" onclick="sortBudget('category')">Category <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('cost_pp')">Cost pp <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('quantity')">Qty <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('hours')">Hrs <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('cost_pp')">Cost / unit <span class="sort-icon">↕</span></th>
+      <th class="num" style="color:var(--ink3);font-size:0.65rem;">= Total</th>
       <th class="num sortable" onclick="sortBudget('allocated_budget')">Allocated <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('actual_amount')">Final <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('deposit_amount')">Refundable deposit <span class="sort-icon">↕</span></th>
@@ -2786,12 +2789,54 @@ function renderBudget(items) {
     </tr></thead>
     <tbody id="budget-tbody"></tbody>
     <tfoot>
-
+      <tr id="budget-footer-exp"></tr>
+      <tr id="budget-footer-inc" style="background:#f0f7f4;"></tr>
+      <tr id="budget-footer-net" style="background:var(--cream);border-top:2px solid var(--rule);"></tr>
+      <tr class="add-row">
+        <td colspan="8" onclick="addBudgetRow('expense')" style="border-right:1px solid var(--rule);">＋ Add expense</td>
+        <td colspan="8" onclick="addBudgetRow('income')">＋ Add income</td>
+      </tr>
     </tfoot>`;
   wrap.appendChild(tbl);
+
   const tbody = document.getElementById('budget-tbody');
-  items.forEach(item => tbody.appendChild(buildBudgetRow(item)));
-  updateSummary(items);
+  allSorted.forEach(item => tbody.appendChild(buildBudgetRow(item, item.item_type==='income')));
+
+  // Footer totals
+  const expFinal = expenses.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+  const expPaid  = expenses.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
+  const expDep   = expenses.reduce((s,i)=>s+parseFloat(i.deposit_amount||0),0);
+  const expAlloc = expenses.reduce((s,i)=>s+parseFloat(i.allocated_budget||0),0);
+  const incAmt   = income.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+  const incPaid  = income.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
+  const net      = incAmt - expFinal;
+  const netPaid  = incPaid - expPaid;
+
+  document.getElementById('budget-footer-exp').innerHTML = `
+    <td colspan="4"><strong>Total expenses</strong></td>
+    <td colspan="4"></td>
+    <td class="num"><strong>${fmtSum(expAlloc)}</strong></td>
+    <td class="num"><strong>${fmtSum(expFinal)}</strong></td>
+    <td class="num"><strong>${fmtSum(expDep)}</strong></td>
+    <td class="num"><strong>${fmtSum(expPaid)}</strong></td>
+    <td class="num ${expFinal-expPaid>0?'red':'green'}"><strong>${fmtSum(expFinal-expPaid)}</strong></td>
+    <td colspan="3"></td>`;
+
+  document.getElementById('budget-footer-inc').innerHTML = `
+    <td colspan="4"><strong style="color:#2d6a4f;">Total income</strong></td>
+    <td colspan="4"></td>
+    <td class="num green"><strong>${fmtSum(incAmt)}</strong></td>
+    <td class="num" colspan="2"></td>
+    <td class="num green"><strong>${fmtSum(incPaid)}</strong></td>
+    <td class="num ${incAmt-incPaid>0?'red':'green'}"><strong>${fmtSum(incAmt-incPaid)}</strong></td>
+    <td colspan="3"></td>`;
+
+  document.getElementById('budget-footer-net').innerHTML = `
+    <td colspan="4"><strong>${net>=0?'✓ Net surplus':'⚠ Outstanding balance'}</strong></td>
+    <td colspan="5"></td>
+    <td class="num ${net>=0?'green':'red'}" colspan="2"><strong style="font-size:1rem;">${fmtSum(Math.abs(net))}</strong></td>
+    <td class="num ${netPaid>=0?'green':'red'}" colspan="2"><strong>${fmtSum(Math.abs(netPaid))}</strong></td>
+    <td colspan="3"></td>`;
 
   // Mobile cards
   let mobileCards = document.getElementById('budget-mobile-cards');
@@ -2801,62 +2846,34 @@ function renderBudget(items) {
     mobileCards.className = 'budget-cards';
     wrap.after(mobileCards);
   }
-  mobileCards.innerHTML = items.map(item => `
-    <div class="budget-card-row">
+  mobileCards.innerHTML = allSorted.map(item => `
+    <div class="budget-card-row ${item.item_type==='income'?'income-card':''}">
       <div class="budget-card-row-header">
         <span class="type-badge ${item.item_type==='income'?'type-income':'type-expense'}">${item.item_type==='income'?'Income':'Expense'}</span>
         <span class="category-badge ${catClass(item.category)}">${catLabel(item.category)}</span>
         ${item.supplier ? `<strong style="font-size:0.88rem;">${item.supplier}</strong>` : ''}
-        <span class="paid-badge ${paidClass(item.paid_status)}" style="margin-left:auto;">${paidLabel(item.paid_status, item.item_type)}</span>
       </div>
       <div class="budget-card-row-amounts">
         <div class="budget-card-row-amount">
-          <div class="budget-card-row-amount-label">Allocated</div>
-          <div class="budget-card-row-amount-value">${fmt(item.allocated_budget)}</div>
+          <div class="budget-card-row-amount-label">${item.item_type==='income'?'Amount':'Final'}</div>
+          <div class="budget-card-row-amount-value">${fmt(item.actual_amount)}</div>
         </div>
         <div class="budget-card-row-amount">
-          <div class="budget-card-row-amount-label">Quoted</div>
-          <div class="budget-card-row-amount-value">${fmt(item.quoted_amount)}</div>
+          <div class="budget-card-row-amount-label">Paid</div>
+          <div class="budget-card-row-amount-value">${fmt(item.paid_amount)}</div>
         </div>
         <div class="budget-card-row-amount">
-          <div class="budget-card-row-amount-label">Actual</div>
-          <div class="budget-card-row-amount-value ${parseFloat(item.actual_amount||0)>parseFloat(item.allocated_budget||0)&&item.item_type!=='income'?'red':''}">${fmt(item.actual_amount)}</div>
+          <div class="budget-card-row-amount-label">Remaining</div>
+          <div class="budget-card-row-amount-value ${parseFloat(item.actual_amount||0)-parseFloat(item.paid_amount||0)>0?'red':'green'}">${fmt(parseFloat(item.actual_amount||0)-parseFloat(item.paid_amount||0))}</div>
         </div>
       </div>
-      ${item.description ? `<div style="font-size:0.78rem;color:var(--ink3);margin-top:0.25rem;">${item.description}</div>` : ''}
+      ${item.notes?`<div style="font-size:0.78rem;color:var(--ink3);margin-top:0.25rem;">${item.notes}</div>`:''}
       <div class="budget-card-row-footer">
-        <span>${item.notes||''}</span>
+        <span>${item.next_payment_date?'Next: '+item.next_payment_date:''}</span>
         <button class="row-del" style="opacity:1;" onclick="deleteBudgetItem('${item.id}')">Delete</button>
       </div>
     </div>`).join('');
-}
 
-async function addBudgetRow(type) {
-  const { data, error } = await sb.from('budget_items').insert([{
-    event_id: eventId, item_type: type||'expense', category:'other', supplier:'', description:'',
-    cost_pp:0, quantity:0, hours:0, allocated_budget:0, quoted_amount:0, actual_amount:0,
-    deposit_amount:0, paid_amount:0, next_payment_date:null, paid_status:'unpaid', notes:''
-  }]).select().single();
-  if (!error && data) {
-    allBudgetItems.push(data);
-    applySortAndRender();
-    setTimeout(() => {
-      const rows = document.querySelectorAll('#budget-tbody tr');
-      if (rows.length) rows[rows.length-1].querySelector('td').click();
-    }, 50);
-  }
-}
-
-function resetSort() {
-  sortField = null;
-  sortDir = 1;
-  applySortAndRender();
-}
-
-function sortBudget(field) {
-  if (sortField===field) sortDir*=-1; else { sortField=field; sortDir=1; }
-  applySortAndRender();
-}
 
 function applySortAndRender() {
   let items = [...allBudgetItems];
