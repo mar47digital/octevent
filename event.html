@@ -592,6 +592,9 @@ function refreshRsCell(td, item, field, type) {
   else { td.innerHTML = field==='action'?`<span class="rs-action">${item[field]||'—'}</span>`:(item[field]||'—'); }
 }
 
+// Editable column order for tab navigation
+const RS_TAB_FIELDS = ['date','start_time','finish_time','action','who','where','notes'];
+
 function makeRsEditable(td, item, field, type) {
   if (td.classList.contains('editing')) return;
   td.classList.add('editing');
@@ -600,24 +603,90 @@ function makeRsEditable(td, item, field, type) {
   input.type = type==='date' ? 'date' : type==='time' ? 'time' : 'text';
   input.value = item[field]||'';
   td.innerHTML=''; td.appendChild(input); input.focus();
+  if (input.select) input.select();
 
   async function save() {
     const val = input.value.trim();
     item[field] = val;
     td.classList.remove('editing');
     refreshRsCell(td, item, field, type);
-    // Update hours cell if time changed
     if (type==='time') {
       const row = td.closest('tr');
       if (row) {
-        const hoursCells = row.querySelectorAll('td');
-        if (hoursCells[3]) hoursCells[3].textContent = calcHours(item.start_time, item.finish_time);
+        const cells = row.querySelectorAll('td');
+        if (cells[3]) cells[3].textContent = calcHours(item.start_time, item.finish_time);
       }
     }
     await sb.from('runsheet_items').update({ [field]: val||null }).eq('id', item.id);
   }
+
   input.addEventListener('blur', save);
-  input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
+
+  input.addEventListener('keydown', async e => {
+    if (e.key === 'Escape') {
+      td.innerHTML=''; td.classList.remove('editing');
+      refreshRsCell(td, item, field, type);
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await save();
+      // Move to same field in next row
+      const row = td.closest('tr');
+      const nextRow = row?.nextElementSibling;
+      if (nextRow && !nextRow.classList.contains('add-row')) {
+        const fieldIdx = RS_TAB_FIELDS.indexOf(field);
+        const cells = nextRow.querySelectorAll('td');
+        // Skip computed (hours) cell at index 3
+        const cellIdx = fieldIdx >= 3 ? fieldIdx + 1 : fieldIdx;
+        if (cells[cellIdx]) cells[cellIdx].click();
+      }
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      await save();
+      const row = td.closest('tr');
+      const allRows = Array.from(document.querySelectorAll('#runsheet-tbody tr'));
+      const rowIdx = allRows.indexOf(row);
+      const fieldIdx = RS_TAB_FIELDS.indexOf(field);
+
+      let nextFieldIdx, nextRowIdx;
+      if (e.shiftKey) {
+        // Shift+Tab — go back
+        if (fieldIdx > 0) {
+          nextFieldIdx = fieldIdx - 1;
+          nextRowIdx = rowIdx;
+        } else if (rowIdx > 0) {
+          nextFieldIdx = RS_TAB_FIELDS.length - 1;
+          nextRowIdx = rowIdx - 1;
+        } else return;
+      } else {
+        // Tab — go forward
+        if (fieldIdx < RS_TAB_FIELDS.length - 1) {
+          nextFieldIdx = fieldIdx + 1;
+          nextRowIdx = rowIdx;
+        } else if (rowIdx < allRows.length - 1) {
+          nextFieldIdx = 0;
+          nextRowIdx = rowIdx + 1;
+        } else {
+          // Last cell of last row — add new row
+          await addRunsheetRow();
+          return;
+        }
+      }
+
+      const nextRow = allRows[nextRowIdx];
+      if (nextRow) {
+        const cells = nextRow.querySelectorAll('td');
+        // Skip computed (hours) cell at index 3
+        const cellIdx = nextFieldIdx >= 3 ? nextFieldIdx + 1 : nextFieldIdx;
+        if (cells[cellIdx]) setTimeout(() => cells[cellIdx].click(), 10);
+      }
+    }
+  });
 }
 
 async function toggleRsDone(id, current) {
@@ -2520,6 +2589,9 @@ function refreshRsCell(td, item, field, type) {
   else { td.innerHTML = field==='action'?`<span class="rs-action">${item[field]||'—'}</span>`:(item[field]||'—'); }
 }
 
+// Editable column order for tab navigation
+const RS_TAB_FIELDS = ['date','start_time','finish_time','action','who','where','notes'];
+
 function makeRsEditable(td, item, field, type) {
   if (td.classList.contains('editing')) return;
   td.classList.add('editing');
@@ -2528,24 +2600,90 @@ function makeRsEditable(td, item, field, type) {
   input.type = type==='date' ? 'date' : type==='time' ? 'time' : 'text';
   input.value = item[field]||'';
   td.innerHTML=''; td.appendChild(input); input.focus();
+  if (input.select) input.select();
 
   async function save() {
     const val = input.value.trim();
     item[field] = val;
     td.classList.remove('editing');
     refreshRsCell(td, item, field, type);
-    // Update hours cell if time changed
     if (type==='time') {
       const row = td.closest('tr');
       if (row) {
-        const hoursCells = row.querySelectorAll('td');
-        if (hoursCells[3]) hoursCells[3].textContent = calcHours(item.start_time, item.finish_time);
+        const cells = row.querySelectorAll('td');
+        if (cells[3]) cells[3].textContent = calcHours(item.start_time, item.finish_time);
       }
     }
     await sb.from('runsheet_items').update({ [field]: val||null }).eq('id', item.id);
   }
+
   input.addEventListener('blur', save);
-  input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
+
+  input.addEventListener('keydown', async e => {
+    if (e.key === 'Escape') {
+      td.innerHTML=''; td.classList.remove('editing');
+      refreshRsCell(td, item, field, type);
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await save();
+      // Move to same field in next row
+      const row = td.closest('tr');
+      const nextRow = row?.nextElementSibling;
+      if (nextRow && !nextRow.classList.contains('add-row')) {
+        const fieldIdx = RS_TAB_FIELDS.indexOf(field);
+        const cells = nextRow.querySelectorAll('td');
+        // Skip computed (hours) cell at index 3
+        const cellIdx = fieldIdx >= 3 ? fieldIdx + 1 : fieldIdx;
+        if (cells[cellIdx]) cells[cellIdx].click();
+      }
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      await save();
+      const row = td.closest('tr');
+      const allRows = Array.from(document.querySelectorAll('#runsheet-tbody tr'));
+      const rowIdx = allRows.indexOf(row);
+      const fieldIdx = RS_TAB_FIELDS.indexOf(field);
+
+      let nextFieldIdx, nextRowIdx;
+      if (e.shiftKey) {
+        // Shift+Tab — go back
+        if (fieldIdx > 0) {
+          nextFieldIdx = fieldIdx - 1;
+          nextRowIdx = rowIdx;
+        } else if (rowIdx > 0) {
+          nextFieldIdx = RS_TAB_FIELDS.length - 1;
+          nextRowIdx = rowIdx - 1;
+        } else return;
+      } else {
+        // Tab — go forward
+        if (fieldIdx < RS_TAB_FIELDS.length - 1) {
+          nextFieldIdx = fieldIdx + 1;
+          nextRowIdx = rowIdx;
+        } else if (rowIdx < allRows.length - 1) {
+          nextFieldIdx = 0;
+          nextRowIdx = rowIdx + 1;
+        } else {
+          // Last cell of last row — add new row
+          await addRunsheetRow();
+          return;
+        }
+      }
+
+      const nextRow = allRows[nextRowIdx];
+      if (nextRow) {
+        const cells = nextRow.querySelectorAll('td');
+        // Skip computed (hours) cell at index 3
+        const cellIdx = nextFieldIdx >= 3 ? nextFieldIdx + 1 : nextFieldIdx;
+        if (cells[cellIdx]) setTimeout(() => cells[cellIdx].click(), 10);
+      }
+    }
+  });
 }
 
 async function toggleRsDone(id, current) {
