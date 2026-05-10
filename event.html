@@ -767,6 +767,276 @@ async function saveMobileRunsheet() {
   if (!error) { closeMobileRunsheet(); await loadRunsheet(); }
 }
 
+
+// ── TABLE PLAN ──
+let tpTables = [];
+let tpGuests = [];
+let tpDragGuest = null;
+let tpDragTable = null;
+let tpDragOffsetX = 0;
+let tpDragOffsetY = 0;
+
+async function loadTablePlan() {
+  // Load guests
+  const { data: gData } = await sb.from('guests').select('*').eq('event_id', eventId);
+  tpGuests = gData || [];
+
+  // Load tables from event
+  const { data: evData } = await sb.from('events').select('table_plan').eq('id', eventId).single();
+  tpTables = evData?.table_plan || [];
+  if (!Array.isArray(tpTables)) tpTables = [];
+
+  renderTablePlan();
+}
+
+function renderTablePlan() {
+  renderCanvas();
+  renderTpSidebar();
+  renderTpMobile();
+}
+
+function getAssignedGuestIds() {
+  const ids = new Set();
+  tpTables.forEach(t => (t.guests||[]).forEach(id => ids.add(id)));
+  return ids;
+}
+
+function getGuestName(id) {
+  const g = tpGuests.find(g=>g.id===id);
+  return g ? `${g.first_name} ${g.last_name||''}`.trim() : '?';
+}
+
+function getGuestInitials(id) {
+  const g = tpGuests.find(g=>g.id===id);
+  if (!g) return '?';
+  return ((g.first_name||'')[0]||(g.last_name||'')[0]||'?').toUpperCase();
+}
+
+function renderCanvas() {
+  const canvas = document.getElementById('tp-canvas');
+  const empty = document.getElementById('tp-canvas-empty');
+  if (!canvas) return;
+
+  // Remove old tables
+  canvas.querySelectorAll('.tp-table').forEach(el => el.remove());
+
+  if (tpTables.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tpTables.forEach(table => {
+    const el = createTableEl(table);
+    canvas.appendChild(el);
+  });
+}
+
+function createTableEl(table) {
+  const size = table.shape === 'round' ? 120 : null;
+  const w = table.shape === 'round' ? 120 : (table.w||160);
+  const h = table.shape === 'round' ? 120 : (table.h||100);
+
+  const wrap = document.createElement('div');
+  wrap.className = `tp-table ${table.shape}`;
+  wrap.dataset.id = table.id;
+  wrap.style.cssText = `left:${table.x||80}px;top:${table.y||80}px;width:${w}px;height:${h}px;`;
+
+  const assigned = (table.guests||[]).length;
+  const capacity = table.capacity||8;
+
+  wrap.innerHTML = `
+    <div class="tp-table-controls">
+      <button class="tp-table-btn" onclick="renameTable('${table.id}')">Rename</button>
+      <button class="tp-table-btn" onclick="resizeTable('${table.id}')">Seats</button>
+      <button class="tp-table-btn del" onclick="removeTable('${table.id}')">Remove</button>
+    </div>
+    <div class="tp-table-inner" style="width:${w}px;height:${h}px;" id="ti-${table.id}">
+      <div class="tp-table-name">${table.name}</div>
+      <div class="tp-table-count">${assigned}/${capacity}</div>
+      <div class="tp-seat-row">
+        ${(table.guests||[]).map(gid => `<div class="tp-seat filled" title="${getGuestName(gid)}" onclick="removeGuestFromTable('${table.id}','${gid}')">${getGuestInitials(gid)}</div>`).join('')}
+        ${Array(Math.max(0,capacity-assigned)).fill('<div class="tp-seat"></div>').join('')}
+      </div>
+    </div>`;
+
+  // Drag to move table
+  wrap.addEventListener('mousedown', e => {
+    if (e.target.closest('.tp-table-btn') || e.target.closest('.tp-seat')) return;
+    tpDragTable = table;
+    const rect = wrap.getBoundingClientRect();
+    tpDragOffsetX = e.clientX - rect.left;
+    tpDragOffsetY = e.clientY - rect.top;
+    e.preventDefault();
+  });
+
+  // Drop guest onto table
+  const inner = wrap.querySelector('.tp-table-inner');
+  inner.addEventListener('dragover', e => { e.preventDefault(); inner.classList.add('dragover'); });
+  inner.addEventListener('dragleave', () => inner.classList.remove('dragover'));
+  inner.addEventListener('drop', e => {
+    e.preventDefault();
+    inner.classList.remove('dragover');
+    const guestId = e.dataTransfer.getData('guestId');
+    if (guestId) assignGuestToTable(table.id, guestId);
+  });
+
+  return wrap;
+}
+
+// Mouse move for table dragging
+document.addEventListener('mousemove', e => {
+  if (!tpDragTable) return;
+  const canvas = document.getElementById('tp-canvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.max(0, e.clientX - rect.left - tpDragOffsetX);
+  const y = Math.max(0, e.clientY - rect.top - tpDragOffsetY);
+  tpDragTable.x = x;
+  tpDragTable.y = y;
+  const el = canvas.querySelector(`[data-id="${tpDragTable.id}"]`);
+  if (el) { el.style.left = x+'px'; el.style.top = y+'px'; }
+});
+
+document.addEventListener('mouseup', () => { tpDragTable = null; });
+
+function renderTpSidebar() {
+  const assigned = getAssignedGuestIds();
+  const unassigned = tpGuests.filter(g => !assigned.has(g.id));
+  const search = document.getElementById('tp-guest-search')?.value.toLowerCase()||'';
+  const filtered = unassigned.filter(g => `${g.first_name} ${g.last_name||''}`.toLowerCase().includes(search));
+  const list = document.getElementById('tp-unassigned');
+  if (!list) return;
+  list.innerHTML = filtered.length ? filtered.map(g => `
+    <div class="tp-guest-chip" draggable="true" data-id="${g.id}"
+      ondragstart="e => { e.dataTransfer.setData('guestId','${g.id}'); this.classList.add('dragging'); }"
+      ondragend="this.classList.remove('dragging')">
+      <div class="tp-guest-chip-avatar">${((g.first_name||'')[0]||'?').toUpperCase()}</div>
+      ${g.first_name} ${g.last_name||''}
+    </div>`).join('')
+  : `<div style="font-size:0.78rem;color:var(--ink3);padding:0.5rem 0.75rem;">${unassigned.length ? 'No matches' : 'All guests assigned!'}</div>`;
+
+  // Re-attach drag events
+  list.querySelectorAll('.tp-guest-chip').forEach(chip => {
+    chip.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('guestId', chip.dataset.id);
+      chip.classList.add('dragging');
+    });
+    chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+  });
+}
+
+function filterTpGuests() { renderTpSidebar(); }
+
+function renderTpMobile() {
+  // Tables view
+  const tablesEl = document.getElementById('tp-mobile-tables');
+  const guestsEl = document.getElementById('tp-mobile-guests');
+  if (!tablesEl || !guestsEl) return;
+
+  tablesEl.innerHTML = tpTables.length ? tpTables.map(t => `
+    <div class="tp-mobile-table-card">
+      <div class="tp-mobile-table-header">
+        <div class="tp-mobile-table-name">${t.name}</div>
+        <span class="tp-mobile-table-badge">${(t.guests||[]).length}/${t.capacity||8} seats</span>
+      </div>
+      ${(t.guests||[]).map(gid => `
+        <div class="tp-mobile-guest-row">
+          <span>${getGuestName(gid)}</span>
+          <button class="row-del" style="opacity:1;" onclick="removeGuestFromTable('${t.id}','${gid}')">Remove</button>
+        </div>`).join('')}
+      ${(t.guests||[]).length < (t.capacity||8) ? `
+        <div style="margin-top:0.5rem;">
+          <select class="tp-assign-select" onchange="assignGuestToTable('${t.id}',this.value);this.value=''">
+            <option value="">+ Add guest...</option>
+            ${tpGuests.filter(g=>!getAssignedGuestIds().has(g.id)).map(g=>`<option value="${g.id}">${g.first_name} ${g.last_name||''}</option>`).join('')}
+          </select>
+        </div>` : ''}
+    </div>`).join('')
+  : `<div class="empty-state"><div class="empty-icon">🪑</div><h3>No tables yet</h3><p>Add tables using the buttons above.</p></div>`;
+
+  // Unassigned guests view
+  const assigned = getAssignedGuestIds();
+  const unassigned = tpGuests.filter(g => !assigned.has(g.id));
+  guestsEl.innerHTML = unassigned.length ? unassigned.map(g => `
+    <div class="tp-mobile-guest-row" style="background:#fff;border:1px solid var(--rule);border-radius:10px;padding:0.6rem 0.75rem;margin-bottom:6px;">
+      <span>${g.first_name} ${g.last_name||''}</span>
+      <select class="tp-assign-select" onchange="assignGuestToTable(this.value,'${g.id}');this.value=''">
+        <option value="">Assign to table...</option>
+        ${tpTables.filter(t=>(t.guests||[]).length<(t.capacity||8)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}
+      </select>
+    </div>`).join('')
+  : `<div style="text-align:center;padding:2rem;color:var(--ink3);font-size:0.85rem;">🎉 All guests assigned!</div>`;
+}
+
+function showTpMobileTab(tab, btn) {
+  document.querySelectorAll('.tp-mobile-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tp-mobile-tables').style.display = tab==='tables'?'block':'none';
+  document.getElementById('tp-mobile-guests').style.display = tab==='guests'?'block':'none';
+}
+
+function addTable(shape) {
+  const name = prompt(`Table name:`, `Table ${tpTables.length+1}`);
+  if (!name) return;
+  const capacity = parseInt(prompt('Number of seats:', shape==='round'?'8':'10'))||8;
+  tpTables.push({
+    id: Date.now().toString(),
+    name, shape, capacity,
+    x: 80 + (tpTables.length%4)*180,
+    y: 80 + Math.floor(tpTables.length/4)*180,
+    w: shape==='rect'?160:120,
+    h: shape==='rect'?100:120,
+    guests: []
+  });
+  renderTablePlan();
+}
+
+function renameTable(id) {
+  const table = tpTables.find(t=>t.id===id);
+  if (!table) return;
+  const name = prompt('New table name:', table.name);
+  if (name) { table.name=name; renderTablePlan(); }
+}
+
+function resizeTable(id) {
+  const table = tpTables.find(t=>t.id===id);
+  if (!table) return;
+  const cap = parseInt(prompt('Number of seats:', table.capacity));
+  if (!isNaN(cap) && cap>0) { table.capacity=cap; renderTablePlan(); }
+}
+
+function removeTable(id) {
+  if (!confirm('Remove this table? Guests will be unassigned.')) return;
+  tpTables = tpTables.filter(t=>t.id!==id);
+  renderTablePlan();
+}
+
+function assignGuestToTable(tableId, guestId) {
+  if (!guestId || !tableId) return;
+  // Remove from any existing table
+  tpTables.forEach(t => { t.guests=(t.guests||[]).filter(id=>id!==guestId); });
+  const table = tpTables.find(t=>t.id===tableId);
+  if (table) {
+    if (!table.guests) table.guests=[];
+    if ((table.guests||[]).length < (table.capacity||8)) table.guests.push(guestId);
+  }
+  renderTablePlan();
+}
+
+function removeGuestFromTable(tableId, guestId) {
+  const table = tpTables.find(t=>t.id===tableId);
+  if (table) table.guests=(table.guests||[]).filter(id=>id!==guestId);
+  renderTablePlan();
+}
+
+async function saveTablePlan() {
+  const btn = document.querySelector('#panel-tableplan .btn-sm.amber');
+  if (btn) { btn.textContent='Saving...'; btn.disabled=true; }
+  const { error } = await sb.from('events').update({ table_plan: tpTables }).eq('id', eventId);
+  if (btn) { btn.textContent='✓ Saved'; btn.disabled=false; setTimeout(()=>btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save plan`,2000); }
+}
+
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -1161,6 +1431,76 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
   .runsheet-cards{display:flex;}
   #runsheet-wrap{display:none;}
 }
+
+/* TABLE PLAN */
+.tableplan-desktop{display:block;}
+.tableplan-mobile{display:none;}
+.tableplan-layout{display:grid;grid-template-columns:220px 1fr;gap:0;height:600px;border:1px solid var(--rule);border-radius:16px;overflow:hidden;background:#fff;}
+.tp-sidebar{border-right:1px solid var(--rule);display:flex;flex-direction:column;background:var(--cream);}
+.tp-sidebar-title{font-size:0.72rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding:1rem 1rem 0.5rem;}
+.tp-sidebar-search input{width:calc(100% - 1.5rem);margin:0 0.75rem 0.75rem;padding:0.5rem 0.75rem;border:1px solid var(--rule);border-radius:8px;font-size:0.8rem;font-family:'DM Sans',sans-serif;outline:none;}
+.tp-sidebar-search input:focus{border-color:var(--amber);}
+.tp-guest-list{flex:1;overflow-y:auto;padding:0 0.5rem 0.5rem;}
+.tp-guest-chip{
+  padding:0.5rem 0.75rem;margin-bottom:4px;background:#fff;
+  border:1px solid var(--rule);border-radius:8px;font-size:0.78rem;
+  cursor:grab;user-select:none;transition:all 0.15s;
+  display:flex;align-items:center;gap:6px;
+}
+.tp-guest-chip:hover{border-color:var(--amber);background:var(--amber-light);}
+.tp-guest-chip.dragging{opacity:0.5;cursor:grabbing;}
+.tp-guest-chip-avatar{width:22px;height:22px;border-radius:50%;background:var(--amber);color:var(--ink);font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tp-canvas-wrap{overflow:auto;position:relative;background:#f5f5f0;}
+.tp-canvas{
+  min-width:100%;min-height:100%;position:relative;
+  background-image:radial-gradient(circle, #ddd 1px, transparent 1px);
+  background-size:24px 24px;
+}
+.tp-canvas-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--ink3);}
+
+/* TABLE ELEMENT */
+.tp-table{
+  position:absolute;cursor:move;user-select:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.tp-table-inner{
+  position:relative;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  border:2px solid var(--amber);background:#fff;
+  transition:border-color 0.15s;
+}
+.tp-table-inner:hover{border-color:var(--amber-dark);}
+.tp-table-inner.dragover{background:var(--amber-light);border-color:var(--amber-dark);}
+.tp-table.round .tp-table-inner{border-radius:50%;}
+.tp-table.rect .tp-table-inner{border-radius:12px;}
+.tp-table-name{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;color:var(--ink);text-align:center;padding:4px;}
+.tp-table-count{font-size:0.65rem;color:var(--ink3);}
+.tp-table-controls{display:none;position:absolute;top:-28px;left:50%;transform:translateX(-50%);gap:4px;white-space:nowrap;}
+.tp-table:hover .tp-table-controls{display:flex;}
+.tp-table-btn{font-size:0.65rem;padding:2px 8px;border-radius:20px;border:1px solid var(--rule);background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ink2);}
+.tp-table-btn:hover{border-color:var(--ink);color:var(--ink);}
+.tp-table-btn.del:hover{border-color:#e53e3e;color:#e53e3e;}
+.tp-seat-row{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;padding:4px 8px;max-width:140px;}
+.tp-seat{width:18px;height:18px;border-radius:50%;background:var(--cream);border:1px solid var(--rule);cursor:pointer;font-size:0.5rem;display:flex;align-items:center;justify-content:center;}
+.tp-seat.filled{background:var(--amber);border-color:var(--amber-dark);}
+
+/* MOBILE TABLE PLAN */
+.tp-mobile-tabs{display:flex;gap:0;border-bottom:1px solid var(--rule);margin-bottom:1rem;}
+.tp-mobile-tab{flex:1;padding:0.75rem;font-size:0.85rem;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+.tp-mobile-tab.active{color:var(--ink);border-bottom-color:var(--amber);}
+.tp-mobile-table-card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:1rem;margin-bottom:10px;}
+.tp-mobile-table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;}
+.tp-mobile-table-name{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.95rem;}
+.tp-mobile-table-badge{font-size:0.65rem;padding:2px 8px;border-radius:20px;background:var(--amber-light);color:var(--amber-dark);font-weight:600;}
+.tp-mobile-guest-row{display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--rule);font-size:0.82rem;}
+.tp-mobile-guest-row:last-child{border-bottom:none;}
+.tp-assign-select{font-size:0.78rem;padding:4px 8px;border:1px solid var(--rule);border-radius:8px;font-family:'DM Sans',sans-serif;outline:none;color:var(--ink);}
+.tp-assign-select:focus{border-color:var(--amber);}
+
+@media(max-width:1024px){
+  .tableplan-desktop{display:none;}
+  .tableplan-mobile{display:block;}
+}
 </style>
 </head>
 <body>
@@ -1356,7 +1696,51 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
 
   <!-- TABLE PLAN -->
   <div class="panel" id="panel-tableplan">
-    <div class="coming-soon"><div class="coming-soon-icon">🪑</div><h3>Table plan</h3><p>Drag and drop guests to seats. Share with your client for approval.</p><div class="coming-badge">Coming soon — Pro feature</div></div>
+    <div class="panel-header">
+      <div class="panel-title">Table plan</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-sm" onclick="addTable('round')">+ Round table</button>
+        <button class="btn-sm" onclick="addTable('rect')">+ Rectangular table</button>
+        <button class="btn-sm amber" onclick="saveTablePlan()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save plan
+        </button>
+      </div>
+    </div>
+
+    <!-- DESKTOP: Visual canvas -->
+    <div class="tableplan-desktop">
+      <div class="tableplan-layout">
+        <!-- Guest sidebar -->
+        <div class="tp-sidebar">
+          <div class="tp-sidebar-title">Unassigned guests</div>
+          <div class="tp-sidebar-search">
+            <input type="text" id="tp-guest-search" placeholder="Search guests..." oninput="filterTpGuests()">
+          </div>
+          <div class="tp-guest-list" id="tp-unassigned"></div>
+        </div>
+        <!-- Canvas -->
+        <div class="tp-canvas-wrap">
+          <div class="tp-canvas" id="tp-canvas">
+            <div class="tp-canvas-empty" id="tp-canvas-empty">
+              <div style="font-size:2rem;margin-bottom:0.75rem;">🪑</div>
+              <div style="font-weight:600;margin-bottom:0.4rem;">No tables yet</div>
+              <div style="font-size:0.82rem;color:var(--ink3);">Add a round or rectangular table to get started</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOBILE: List assignment -->
+    <div class="tableplan-mobile">
+      <div class="tp-mobile-tabs">
+        <button class="tp-mobile-tab active" onclick="showTpMobileTab('tables',this)">Tables</button>
+        <button class="tp-mobile-tab" onclick="showTpMobileTab('guests',this)">Unassigned</button>
+      </div>
+      <div id="tp-mobile-tables"></div>
+      <div id="tp-mobile-guests" style="display:none;"></div>
+    </div>
   </div>
 
   <!-- SETTINGS -->
@@ -2017,6 +2401,7 @@ function showTab(name) {
   if (name==='budget') loadBudget();
   if (name==='checklist') loadChecklist();
   if (name==='runsheet') loadRunsheet();
+  if (name==='tableplan') loadTablePlan();
   if (name==='settings') setTimeout(() => initDragDrop('settings-photo-area','settings-photo-input','settings-photo-preview','settings-photo-placeholder'), 100);
 }
 
@@ -2785,6 +3170,276 @@ async function saveMobileRunsheet() {
   }]);
   btn.textContent='Add item'; btn.disabled=false;
   if (!error) { closeMobileRunsheet(); await loadRunsheet(); }
+}
+
+
+// ── TABLE PLAN ──
+let tpTables = [];
+let tpGuests = [];
+let tpDragGuest = null;
+let tpDragTable = null;
+let tpDragOffsetX = 0;
+let tpDragOffsetY = 0;
+
+async function loadTablePlan() {
+  // Load guests
+  const { data: gData } = await sb.from('guests').select('*').eq('event_id', eventId);
+  tpGuests = gData || [];
+
+  // Load tables from event
+  const { data: evData } = await sb.from('events').select('table_plan').eq('id', eventId).single();
+  tpTables = evData?.table_plan || [];
+  if (!Array.isArray(tpTables)) tpTables = [];
+
+  renderTablePlan();
+}
+
+function renderTablePlan() {
+  renderCanvas();
+  renderTpSidebar();
+  renderTpMobile();
+}
+
+function getAssignedGuestIds() {
+  const ids = new Set();
+  tpTables.forEach(t => (t.guests||[]).forEach(id => ids.add(id)));
+  return ids;
+}
+
+function getGuestName(id) {
+  const g = tpGuests.find(g=>g.id===id);
+  return g ? `${g.first_name} ${g.last_name||''}`.trim() : '?';
+}
+
+function getGuestInitials(id) {
+  const g = tpGuests.find(g=>g.id===id);
+  if (!g) return '?';
+  return ((g.first_name||'')[0]||(g.last_name||'')[0]||'?').toUpperCase();
+}
+
+function renderCanvas() {
+  const canvas = document.getElementById('tp-canvas');
+  const empty = document.getElementById('tp-canvas-empty');
+  if (!canvas) return;
+
+  // Remove old tables
+  canvas.querySelectorAll('.tp-table').forEach(el => el.remove());
+
+  if (tpTables.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tpTables.forEach(table => {
+    const el = createTableEl(table);
+    canvas.appendChild(el);
+  });
+}
+
+function createTableEl(table) {
+  const size = table.shape === 'round' ? 120 : null;
+  const w = table.shape === 'round' ? 120 : (table.w||160);
+  const h = table.shape === 'round' ? 120 : (table.h||100);
+
+  const wrap = document.createElement('div');
+  wrap.className = `tp-table ${table.shape}`;
+  wrap.dataset.id = table.id;
+  wrap.style.cssText = `left:${table.x||80}px;top:${table.y||80}px;width:${w}px;height:${h}px;`;
+
+  const assigned = (table.guests||[]).length;
+  const capacity = table.capacity||8;
+
+  wrap.innerHTML = `
+    <div class="tp-table-controls">
+      <button class="tp-table-btn" onclick="renameTable('${table.id}')">Rename</button>
+      <button class="tp-table-btn" onclick="resizeTable('${table.id}')">Seats</button>
+      <button class="tp-table-btn del" onclick="removeTable('${table.id}')">Remove</button>
+    </div>
+    <div class="tp-table-inner" style="width:${w}px;height:${h}px;" id="ti-${table.id}">
+      <div class="tp-table-name">${table.name}</div>
+      <div class="tp-table-count">${assigned}/${capacity}</div>
+      <div class="tp-seat-row">
+        ${(table.guests||[]).map(gid => `<div class="tp-seat filled" title="${getGuestName(gid)}" onclick="removeGuestFromTable('${table.id}','${gid}')">${getGuestInitials(gid)}</div>`).join('')}
+        ${Array(Math.max(0,capacity-assigned)).fill('<div class="tp-seat"></div>').join('')}
+      </div>
+    </div>`;
+
+  // Drag to move table
+  wrap.addEventListener('mousedown', e => {
+    if (e.target.closest('.tp-table-btn') || e.target.closest('.tp-seat')) return;
+    tpDragTable = table;
+    const rect = wrap.getBoundingClientRect();
+    tpDragOffsetX = e.clientX - rect.left;
+    tpDragOffsetY = e.clientY - rect.top;
+    e.preventDefault();
+  });
+
+  // Drop guest onto table
+  const inner = wrap.querySelector('.tp-table-inner');
+  inner.addEventListener('dragover', e => { e.preventDefault(); inner.classList.add('dragover'); });
+  inner.addEventListener('dragleave', () => inner.classList.remove('dragover'));
+  inner.addEventListener('drop', e => {
+    e.preventDefault();
+    inner.classList.remove('dragover');
+    const guestId = e.dataTransfer.getData('guestId');
+    if (guestId) assignGuestToTable(table.id, guestId);
+  });
+
+  return wrap;
+}
+
+// Mouse move for table dragging
+document.addEventListener('mousemove', e => {
+  if (!tpDragTable) return;
+  const canvas = document.getElementById('tp-canvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.max(0, e.clientX - rect.left - tpDragOffsetX);
+  const y = Math.max(0, e.clientY - rect.top - tpDragOffsetY);
+  tpDragTable.x = x;
+  tpDragTable.y = y;
+  const el = canvas.querySelector(`[data-id="${tpDragTable.id}"]`);
+  if (el) { el.style.left = x+'px'; el.style.top = y+'px'; }
+});
+
+document.addEventListener('mouseup', () => { tpDragTable = null; });
+
+function renderTpSidebar() {
+  const assigned = getAssignedGuestIds();
+  const unassigned = tpGuests.filter(g => !assigned.has(g.id));
+  const search = document.getElementById('tp-guest-search')?.value.toLowerCase()||'';
+  const filtered = unassigned.filter(g => `${g.first_name} ${g.last_name||''}`.toLowerCase().includes(search));
+  const list = document.getElementById('tp-unassigned');
+  if (!list) return;
+  list.innerHTML = filtered.length ? filtered.map(g => `
+    <div class="tp-guest-chip" draggable="true" data-id="${g.id}"
+      ondragstart="e => { e.dataTransfer.setData('guestId','${g.id}'); this.classList.add('dragging'); }"
+      ondragend="this.classList.remove('dragging')">
+      <div class="tp-guest-chip-avatar">${((g.first_name||'')[0]||'?').toUpperCase()}</div>
+      ${g.first_name} ${g.last_name||''}
+    </div>`).join('')
+  : `<div style="font-size:0.78rem;color:var(--ink3);padding:0.5rem 0.75rem;">${unassigned.length ? 'No matches' : 'All guests assigned!'}</div>`;
+
+  // Re-attach drag events
+  list.querySelectorAll('.tp-guest-chip').forEach(chip => {
+    chip.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('guestId', chip.dataset.id);
+      chip.classList.add('dragging');
+    });
+    chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+  });
+}
+
+function filterTpGuests() { renderTpSidebar(); }
+
+function renderTpMobile() {
+  // Tables view
+  const tablesEl = document.getElementById('tp-mobile-tables');
+  const guestsEl = document.getElementById('tp-mobile-guests');
+  if (!tablesEl || !guestsEl) return;
+
+  tablesEl.innerHTML = tpTables.length ? tpTables.map(t => `
+    <div class="tp-mobile-table-card">
+      <div class="tp-mobile-table-header">
+        <div class="tp-mobile-table-name">${t.name}</div>
+        <span class="tp-mobile-table-badge">${(t.guests||[]).length}/${t.capacity||8} seats</span>
+      </div>
+      ${(t.guests||[]).map(gid => `
+        <div class="tp-mobile-guest-row">
+          <span>${getGuestName(gid)}</span>
+          <button class="row-del" style="opacity:1;" onclick="removeGuestFromTable('${t.id}','${gid}')">Remove</button>
+        </div>`).join('')}
+      ${(t.guests||[]).length < (t.capacity||8) ? `
+        <div style="margin-top:0.5rem;">
+          <select class="tp-assign-select" onchange="assignGuestToTable('${t.id}',this.value);this.value=''">
+            <option value="">+ Add guest...</option>
+            ${tpGuests.filter(g=>!getAssignedGuestIds().has(g.id)).map(g=>`<option value="${g.id}">${g.first_name} ${g.last_name||''}</option>`).join('')}
+          </select>
+        </div>` : ''}
+    </div>`).join('')
+  : `<div class="empty-state"><div class="empty-icon">🪑</div><h3>No tables yet</h3><p>Add tables using the buttons above.</p></div>`;
+
+  // Unassigned guests view
+  const assigned = getAssignedGuestIds();
+  const unassigned = tpGuests.filter(g => !assigned.has(g.id));
+  guestsEl.innerHTML = unassigned.length ? unassigned.map(g => `
+    <div class="tp-mobile-guest-row" style="background:#fff;border:1px solid var(--rule);border-radius:10px;padding:0.6rem 0.75rem;margin-bottom:6px;">
+      <span>${g.first_name} ${g.last_name||''}</span>
+      <select class="tp-assign-select" onchange="assignGuestToTable(this.value,'${g.id}');this.value=''">
+        <option value="">Assign to table...</option>
+        ${tpTables.filter(t=>(t.guests||[]).length<(t.capacity||8)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}
+      </select>
+    </div>`).join('')
+  : `<div style="text-align:center;padding:2rem;color:var(--ink3);font-size:0.85rem;">🎉 All guests assigned!</div>`;
+}
+
+function showTpMobileTab(tab, btn) {
+  document.querySelectorAll('.tp-mobile-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tp-mobile-tables').style.display = tab==='tables'?'block':'none';
+  document.getElementById('tp-mobile-guests').style.display = tab==='guests'?'block':'none';
+}
+
+function addTable(shape) {
+  const name = prompt(`Table name:`, `Table ${tpTables.length+1}`);
+  if (!name) return;
+  const capacity = parseInt(prompt('Number of seats:', shape==='round'?'8':'10'))||8;
+  tpTables.push({
+    id: Date.now().toString(),
+    name, shape, capacity,
+    x: 80 + (tpTables.length%4)*180,
+    y: 80 + Math.floor(tpTables.length/4)*180,
+    w: shape==='rect'?160:120,
+    h: shape==='rect'?100:120,
+    guests: []
+  });
+  renderTablePlan();
+}
+
+function renameTable(id) {
+  const table = tpTables.find(t=>t.id===id);
+  if (!table) return;
+  const name = prompt('New table name:', table.name);
+  if (name) { table.name=name; renderTablePlan(); }
+}
+
+function resizeTable(id) {
+  const table = tpTables.find(t=>t.id===id);
+  if (!table) return;
+  const cap = parseInt(prompt('Number of seats:', table.capacity));
+  if (!isNaN(cap) && cap>0) { table.capacity=cap; renderTablePlan(); }
+}
+
+function removeTable(id) {
+  if (!confirm('Remove this table? Guests will be unassigned.')) return;
+  tpTables = tpTables.filter(t=>t.id!==id);
+  renderTablePlan();
+}
+
+function assignGuestToTable(tableId, guestId) {
+  if (!guestId || !tableId) return;
+  // Remove from any existing table
+  tpTables.forEach(t => { t.guests=(t.guests||[]).filter(id=>id!==guestId); });
+  const table = tpTables.find(t=>t.id===tableId);
+  if (table) {
+    if (!table.guests) table.guests=[];
+    if ((table.guests||[]).length < (table.capacity||8)) table.guests.push(guestId);
+  }
+  renderTablePlan();
+}
+
+function removeGuestFromTable(tableId, guestId) {
+  const table = tpTables.find(t=>t.id===tableId);
+  if (table) table.guests=(table.guests||[]).filter(id=>id!==guestId);
+  renderTablePlan();
+}
+
+async function saveTablePlan() {
+  const btn = document.querySelector('#panel-tableplan .btn-sm.amber');
+  if (btn) { btn.textContent='Saving...'; btn.disabled=true; }
+  const { error } = await sb.from('events').update({ table_plan: tpTables }).eq('id', eventId);
+  if (btn) { btn.textContent='✓ Saved'; btn.disabled=false; setTimeout(()=>btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save plan`,2000); }
 }
 
 </script>
