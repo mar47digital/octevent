@@ -2622,8 +2622,15 @@ function makeEditable(td, item, field, type) {
     updateSummary(allBudgetItems);
     const saveVal = val === '' ? null : val;
     await sb.from('budget_items').update({ [field]: saveVal }).eq('id', item.id);
-    // Re-apply sort to keep order consistent
-    if (sortField && sortField !== field) applySortAndRender();
+    // Re-sort when focus leaves the whole row
+    const currentRow = td.closest('tr');
+    if (currentRow) {
+      setTimeout(() => {
+        if (!currentRow.querySelector('.editing') && !currentRow.matches(':focus-within')) {
+          applySortAndRender();
+        }
+      }, 150);
+    }
   }
   input.addEventListener('blur', save);
   input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
@@ -2652,7 +2659,12 @@ function refreshCell(td, item, field, type) {
     const actual = parseFloat(item.actual_amount)||0;
     const paid   = parseFloat(item.paid_amount)||0;
     const rem    = actual - paid;
-    if (item.item_type==='income') { td.textContent='—'; td.className='num'; td.style.cursor='default'; return; }
+    if (item.item_type==='income') {
+      if (actual===0 && paid===0) { td.textContent='—'; td.className='num'; td.style.cursor='default'; return; }
+      if (rem<=0) { td.innerHTML='<span style="color:#2d6a4f;font-weight:600;">✓ Received</span>'; }
+      else { td.innerHTML=`<span style="color:#2d6a4f;font-weight:600;">${fmt(rem)}</span>`; }
+      td.className='num'; td.style.cursor='default'; return;
+    }
     if (actual === 0 && paid === 0) { td.textContent='—'; td.className='num'; td.style.cursor='default'; return; }
     if (rem<=0) { td.innerHTML='<span style="color:#2d6a4f;font-weight:600;">✓ Clear</span>'; }
     else { td.innerHTML=`<span style="color:#c0392b;font-weight:700;">${fmt(rem)}</span>`; }
@@ -2721,7 +2733,7 @@ function renderBudget(items) {
     // Still show the + row
     const tbl = document.createElement('table');
     tbl.className = 'budget-table';
-    tbl.innerHTML = `<tbody><tr class="add-row" onclick="addBudgetRow()"><td colspan="12">＋ Add line item</td></tr></tbody>`;
+    tbl.innerHTML = `<tbody></tbody>`;
     wrap.appendChild(tbl);
     return;
   }
@@ -2752,7 +2764,7 @@ function renderBudget(items) {
       <tr id="budget-footer"></tr>
       <tr id="budget-footer2" style="background:#f0f7f4;"></tr>
       <tr id="budget-footer3" style="background:var(--cream);border-top:2px solid var(--rule);"></tr>
-      <tr class="add-row" onclick="addBudgetRow()"><td colspan="12">＋ Add line item</td></tr>
+      
     </tfoot>`;
   wrap.appendChild(tbl);
   const tbody = document.getElementById('budget-tbody');
