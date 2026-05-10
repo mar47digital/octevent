@@ -59,6 +59,300 @@ async function saveMobileBudget() {
   }
 }
 
+
+// ── CHECKLIST ──
+let allChecklistItems = [];
+let checklistSortField = 'stage';
+let checklistSortDir = 1;
+
+const STAGE_ORDER = ['planning','booking','confirmed','on_the_day','post_event'];
+
+function stageLabel(s) { return ({planning:'Planning',booking:'Booking',confirmed:'Confirmed',on_the_day:'On the day',post_event:'Post event'})[s]||'Planning'; }
+function stageClass(s) { return 'stage-'+(s||'planning'); }
+function clStatusLabel(s) { return ({not_started:'Not started',in_progress:'In progress',done:'Done',blocked:'Blocked'})[s]||'Not started'; }
+function clStatusClass(s) { return 'cl-'+(s||'not_started'); }
+
+const PRIVATE_PARTY_TEMPLATE = [
+  {stage:'planning',category:'Venue',task:'Research and shortlist venues',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Venue',task:'Visit top venue choices',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Venue',task:'Confirm venue and sign contract',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Budget',task:'Set overall event budget',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Guests',task:'Create guest list',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Catering & Drinks',task:'Research catering options',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Entertainment',task:'Research entertainment options',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Guests',task:'Send invitations',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Catering & Drinks',task:'Book catering supplier',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Catering & Drinks',task:'Arrange drinks / bar',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Entertainment',task:'Book DJ / band / entertainment',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Decor & Styling',task:'Book florist / decorator',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Photography',task:'Book photographer / videographer',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Transport',task:'Arrange guest transport if needed',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Guests',task:'Chase RSVPs',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Guests',task:'Collect dietary requirements',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Catering & Drinks',task:'Confirm final guest numbers with caterer',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Venue',task:'Final walkthrough of venue',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Decor & Styling',task:'Confirm decor setup time with venue',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'On the day',task:'Create run sheet for the day',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'on_the_day',category:'Venue',task:'Oversee venue setup',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'on_the_day',category:'Catering & Drinks',task:'Brief catering team',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'on_the_day',category:'Entertainment',task:'Brief entertainment / DJ',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'on_the_day',category:'Guests',task:'Welcome guests on arrival',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'post_event',category:'Venue',task:'Settle final venue invoice',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'post_event',category:'Catering & Drinks',task:'Settle catering invoice',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'post_event',category:'Guests',task:'Send thank you messages',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'post_event',category:'General',task:'Gather feedback from client',status:'not_started',who:'',deadline:'',reminder:''},
+];
+
+async function loadChecklist() {
+  const { data } = await sb.from('checklist_items').select('*').eq('event_id', eventId).order('created_at', { ascending: true });
+  allChecklistItems = data || [];
+  applyChecklistSortAndRender();
+}
+
+function applyChecklistSortAndRender() {
+  let items = [...allChecklistItems];
+  if (checklistSortField) {
+    items.sort((a,b) => {
+      if (checklistSortField === 'stage') {
+        const ai = STAGE_ORDER.indexOf(a.stage||'planning');
+        const bi = STAGE_ORDER.indexOf(b.stage||'planning');
+        return (ai - bi) * checklistSortDir;
+      }
+      const av = a[checklistSortField]||'', bv = b[checklistSortField]||'';
+      return av.toString().localeCompare(bv.toString()) * checklistSortDir;
+    });
+  }
+  renderChecklist(items);
+  setTimeout(() => {
+    document.querySelectorAll('table.checklist-table th').forEach(th => {
+      th.classList.remove('sort-asc','sort-desc');
+      if (th.dataset.field === checklistSortField) th.classList.add(checklistSortDir===1?'sort-asc':'sort-desc');
+    });
+    const resetBtn = document.getElementById('checklist-sort-reset');
+    if (resetBtn) resetBtn.style.display = checklistSortField !== 'stage' ? 'inline-flex' : 'none';
+  }, 10);
+}
+
+function sortChecklist(field) {
+  if (checklistSortField===field) checklistSortDir*=-1; else { checklistSortField=field; checklistSortDir=1; }
+  applyChecklistSortAndRender();
+}
+
+function resetChecklistSort() {
+  checklistSortField = 'stage';
+  checklistSortDir = 1;
+  applyChecklistSortAndRender();
+}
+
+function renderChecklist(items) {
+  // Progress
+  const total = items.length;
+  const done  = items.filter(i=>i.status==='done').length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+  const prog  = document.getElementById('checklist-progress');
+  if (total > 0) {
+    prog.style.display = 'block';
+    document.getElementById('progress-text').textContent = `${done} of ${total} tasks complete`;
+    document.getElementById('progress-pct').textContent = `${pct}%`;
+    document.getElementById('progress-fill').style.width = pct+'%';
+  } else { prog.style.display = 'none'; }
+
+  // Desktop table
+  const wrap = document.getElementById('checklist-wrap');
+  if (!items.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><h3>No tasks yet</h3><p>Add a task below or load a template to get started.</p></div>`;
+  } else {
+    wrap.innerHTML = '';
+    const tbl = document.createElement('table');
+    tbl.className = 'checklist-table';
+    tbl.innerHTML = `<thead><tr>
+      <th style="width:32px;"></th>
+      <th data-field="stage" onclick="sortChecklist('stage')">Stage <span class="sort-icon">↕</span></th>
+      <th data-field="category" onclick="sortChecklist('category')">Category <span class="sort-icon">↕</span></th>
+      <th data-field="task" onclick="sortChecklist('task')">Task <span class="sort-icon">↕</span></th>
+      <th data-field="status" onclick="sortChecklist('status')">Status <span class="sort-icon">↕</span></th>
+      <th data-field="who" onclick="sortChecklist('who')">Who <span class="sort-icon">↕</span></th>
+      <th data-field="deadline" onclick="sortChecklist('deadline')">Deadline <span class="sort-icon">↕</span></th>
+      <th data-field="reminder" onclick="sortChecklist('reminder')">Reminder <span class="sort-icon">↕</span></th>
+      <th></th>
+    </tr></thead>
+    <tbody id="checklist-tbody"></tbody>
+    <tfoot><tr class="add-row" onclick="addChecklistRow()"><td colspan="9">＋ Add task</td></tr></tfoot>`;
+    wrap.appendChild(tbl);
+    const tbody = document.getElementById('checklist-tbody');
+    items.forEach(item => tbody.appendChild(buildChecklistRow(item)));
+  }
+
+  // Mobile cards
+  const mCards = document.getElementById('checklist-mobile-cards');
+  mCards.innerHTML = items.map(item => `
+    <div class="checklist-card ${item.status==='done'?'done':''}">
+      <div class="checklist-card-header">
+        <div class="done-check ${item.status==='done'?'checked':''}" onclick="toggleDone('${item.id}','${item.status}')"></div>
+        <div class="checklist-card-title ${item.status==='done'?'done':''}">${item.task||'Untitled task'}</div>
+      </div>
+      <div class="checklist-card-meta">
+        <span class="stage-badge ${stageClass(item.stage)}">${stageLabel(item.stage)}</span>
+        ${item.category?`<span style="font-size:0.72rem;color:var(--ink3);">${item.category}</span>`:''}
+        <span class="cl-status-badge ${clStatusClass(item.status)}">${clStatusLabel(item.status)}</span>
+      </div>
+      ${item.who?`<div style="font-size:0.78rem;color:var(--ink2);">👤 ${item.who}</div>`:''}
+      <div class="checklist-card-footer">
+        <span>${item.deadline?'📅 '+item.deadline:''}</span>
+        <button class="row-del" style="opacity:1;" onclick="deleteChecklistItem('${item.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function buildChecklistRow(item) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = item.id;
+  if (item.status==='done') tr.classList.add('done-row');
+
+  // Checkbox
+  const checkTd = document.createElement('td');
+  checkTd.style.cursor = 'default';
+  const check = document.createElement('div');
+  check.className = 'done-check' + (item.status==='done'?' checked':'');
+  check.onclick = (e) => { e.stopPropagation(); toggleDone(item.id, item.status, tr, check); };
+  checkTd.appendChild(check);
+  tr.appendChild(checkTd);
+
+  const clCols = [
+    {field:'stage',type:'cl-stage'},
+    {field:'category',type:'text'},
+    {field:'task',type:'text'},
+    {field:'status',type:'cl-status'},
+    {field:'who',type:'text'},
+    {field:'deadline',type:'date'},
+    {field:'reminder',type:'date'},
+  ];
+
+  clCols.forEach(({field,type}) => {
+    const td = document.createElement('td');
+    refreshClCell(td, item, field, type);
+    td.addEventListener('click', () => makeClEditable(td, item, field, type));
+    tr.appendChild(td);
+  });
+
+  const del = document.createElement('td');
+  del.innerHTML = `<button class="row-del" onclick="deleteChecklistItem('${item.id}')">Delete</button>`;
+  tr.appendChild(del);
+  return tr;
+}
+
+function refreshClCell(td, item, field, type) {
+  if (type==='cl-stage') { td.innerHTML=`<span class="stage-badge ${stageClass(item[field])}">${stageLabel(item[field])}</span>`; }
+  else if (type==='cl-status') { td.innerHTML=`<span class="cl-status-badge ${clStatusClass(item[field])}">${clStatusLabel(item[field])}</span>`; }
+  else if (type==='date') { td.textContent = item[field] ? new Date(item[field]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
+  else { td.innerHTML = field==='task' ? `<span class="task-name">${item[field]||'—'}</span>` : (item[field]||'—'); }
+}
+
+function makeClEditable(td, item, field, type) {
+  if (td.classList.contains('editing')) return;
+  td.classList.add('editing');
+  let input;
+  if (type==='cl-stage') {
+    input = document.createElement('select'); input.className='inline-select';
+    STAGE_ORDER.forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=stageLabel(v); if(v===item[field])o.selected=true; input.appendChild(o); });
+  } else if (type==='cl-status') {
+    input = document.createElement('select'); input.className='inline-select';
+    ['not_started','in_progress','done','blocked'].forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=clStatusLabel(v); if(v===item[field])o.selected=true; input.appendChild(o); });
+  } else if (type==='date') {
+    input = document.createElement('input'); input.className='inline-input'; input.type='date'; input.value=item[field]||'';
+  } else {
+    input = document.createElement('input'); input.className='inline-input'; input.type='text'; input.value=item[field]||'';
+  }
+  td.innerHTML=''; td.appendChild(input); input.focus();
+
+  async function save() {
+    const val = input.value.trim();
+    item[field] = val;
+    td.classList.remove('editing');
+    refreshClCell(td, item, field, type);
+    if (type==='cl-status') applyChecklistSortAndRender();
+    await sb.from('checklist_items').update({ [field]: val }).eq('id', item.id);
+  }
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
+}
+
+async function toggleDone(id, currentStatus, tr, check) {
+  const newStatus = currentStatus==='done' ? 'not_started' : 'done';
+  const item = allChecklistItems.find(i=>i.id===id);
+  if (item) item.status = newStatus;
+  await sb.from('checklist_items').update({ status: newStatus }).eq('id', id);
+  applyChecklistSortAndRender();
+}
+
+async function addChecklistRow() {
+  const { data, error } = await sb.from('checklist_items').insert([{
+    event_id: eventId, stage:'planning', category:'', task:'',
+    status:'not_started', who:'', deadline:null, reminder:null
+  }]).select().single();
+  if (!error && data) {
+    allChecklistItems.push(data);
+    applyChecklistSortAndRender();
+    setTimeout(() => {
+      const rows = document.querySelectorAll('#checklist-tbody tr');
+      if (rows.length) rows[rows.length-1].querySelectorAll('td')[2].click();
+    }, 60);
+  }
+}
+
+async function deleteChecklistItem(id) {
+  if (!confirm('Delete this task?')) return;
+  await sb.from('checklist_items').delete().eq('id', id);
+  allChecklistItems = allChecklistItems.filter(i=>i.id!==id);
+  applyChecklistSortAndRender();
+}
+
+// TEMPLATE MODAL
+function openTemplateModal() {
+  document.getElementById('template-modal').classList.add('open');
+}
+function closeTemplateModal() {
+  document.getElementById('template-modal').classList.remove('open');
+}
+
+async function loadTemplate(type) {
+  closeTemplateModal();
+  if (!confirm('This will add template tasks to your existing checklist. Continue?')) return;
+  let templates = [];
+  if (type==='private_party') templates = PRIVATE_PARTY_TEMPLATE;
+  if (!templates.length) return;
+  const rows = templates.map(t => ({ ...t, event_id: eventId }));
+  const { data, error } = await sb.from('checklist_items').insert(rows).select();
+  if (!error && data) {
+    allChecklistItems = [...allChecklistItems, ...data];
+    applyChecklistSortAndRender();
+  }
+}
+
+// MOBILE CHECKLIST MODAL
+function openMobileChecklist() {
+  document.getElementById('mobile-checklist-modal').classList.add('open');
+}
+function closeMobileChecklist() {
+  document.getElementById('mobile-checklist-modal').classList.remove('open');
+}
+async function saveMobileChecklist() {
+  const btn = document.getElementById('mcl-save-btn');
+  btn.textContent='Saving...'; btn.disabled=true;
+  const { error } = await sb.from('checklist_items').insert([{
+    event_id: eventId,
+    stage:    document.getElementById('mcl-stage').value,
+    category: document.getElementById('mcl-category').value.trim(),
+    task:     document.getElementById('mcl-task').value.trim(),
+    status:   document.getElementById('mcl-status').value,
+    who:      document.getElementById('mcl-who').value.trim(),
+    deadline: document.getElementById('mcl-deadline').value || null,
+    reminder: document.getElementById('mcl-reminder').value || null,
+  }]);
+  btn.textContent='Add task'; btn.disabled=false;
+  if (!error) { closeMobileChecklist(); await loadChecklist(); }
+}
+
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -295,6 +589,63 @@ tr:hover .row-del{opacity:1;}
 @media(min-width:769px){
   .budget-cards{display:none;}
 }
+
+/* CHECKLIST */
+.checklist-progress{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;}
+.progress-label{display:flex;justify-content:space-between;font-size:0.8rem;color:var(--ink2);margin-bottom:0.5rem;}
+.progress-bar{height:8px;background:var(--rule);border-radius:100px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--amber);border-radius:100px;transition:width 0.4s ease;}
+table.checklist-table{width:100%;border-collapse:collapse;}
+table.checklist-table thead{background:var(--cream);}
+table.checklist-table th{padding:0.7rem 0.85rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--rule);white-space:nowrap;cursor:pointer;user-select:none;}
+table.checklist-table th:hover{color:var(--ink);}
+table.checklist-table th .sort-icon{opacity:0.3;font-size:0.7rem;margin-left:3px;}
+table.checklist-table th.sort-asc .sort-icon,table.checklist-table th.sort-desc .sort-icon{opacity:1;color:var(--amber-dark);}
+table.checklist-table td{padding:0.75rem 0.85rem;font-size:0.82rem;border-bottom:1px solid var(--rule);vertical-align:middle;cursor:pointer;}
+table.checklist-table tr:last-child td{border-bottom:none;}
+table.checklist-table tr:hover td{background:var(--amber-light);}
+table.checklist-table tr.done-row td{opacity:0.5;}
+table.checklist-table tr.done-row td .task-name{text-decoration:line-through;}
+table.checklist-table tr.add-row td{cursor:pointer;color:var(--ink3);font-size:0.82rem;border-top:2px solid var(--rule);}
+table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:var(--ink);}
+.stage-badge{font-size:0.65rem;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;}
+.stage-planning{background:#e8f0fd;color:#1a3fa8;}
+.stage-booking{background:#fdf6ec;color:#92600a;}
+.stage-confirmed{background:#f0f7f4;color:#2d6a4f;}
+.stage-on_the_day{background:var(--amber-light);color:var(--amber-dark);}
+.stage-post_event{background:var(--rule);color:var(--ink3);}
+.cl-status-badge{font-size:0.65rem;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;}
+.cl-not_started{background:var(--rule);color:var(--ink3);}
+.cl-in_progress{background:#e8f0fd;color:#1a3fa8;}
+.cl-done{background:#f0f7f4;color:#2d6a4f;}
+.cl-blocked{background:#fdf0f0;color:#9b2c2c;}
+.done-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--rule);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
+.done-check.checked{background:var(--amber);border-color:var(--amber);}
+.done-check.checked::after{content:'✓';font-size:11px;color:var(--ink);font-weight:700;}
+.task-name{font-weight:500;}
+
+/* CHECKLIST MOBILE CARDS */
+.checklist-cards{display:none;flex-direction:column;gap:10px;margin-top:0.5rem;}
+.checklist-card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:1rem;}
+.checklist-card.done{opacity:0.6;}
+.checklist-card-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:0.75rem;}
+.checklist-card-title{font-weight:600;font-size:0.9rem;flex:1;}
+.checklist-card-title.done{text-decoration:line-through;}
+.checklist-card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0.5rem;}
+.checklist-card-footer{display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--ink3);margin-top:0.5rem;}
+
+/* TEMPLATE MODAL */
+.template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:0.5rem;}
+.template-card{border:1.5px solid var(--rule);border-radius:12px;padding:1.25rem;cursor:pointer;transition:all 0.2s;text-align:center;}
+.template-card:hover{border-color:var(--amber);background:var(--amber-light);}
+.template-card-icon{font-size:1.75rem;margin-bottom:0.5rem;}
+.template-card-name{font-size:0.88rem;font-weight:600;}
+.template-card-count{font-size:0.75rem;color:var(--ink3);margin-top:2px;}
+
+@media(max-width:768px){
+  .checklist-cards{display:flex;}
+  #checklist-wrap{display:none;}
+}
 </style>
 </head>
 <body>
@@ -371,12 +722,33 @@ tr:hover .row-del{opacity:1;}
 
   <!-- CHECKLIST -->
   <div class="panel" id="panel-checklist">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">✅</div>
-      <h3>Event checklist</h3>
-      <p>Choose from wedding, corporate, retreat or party templates — or build your own from scratch. Set due dates and get email reminders as your event approaches.</p>
-      <div class="coming-badge">Coming soon</div>
+    <div class="panel-header">
+      <div class="panel-title">Checklist</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn-sm" onclick="openTemplateModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          Use template
+        </button>
+        <button class="btn-sm" id="checklist-sort-reset" onclick="resetChecklistSort()" style="display:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v4h4"/></svg>
+          Reset sort
+        </button>
+        <button class="btn-sm amber mobile-only" onclick="openMobileChecklist()">+ Add task</button>
+      </div>
     </div>
+
+    <!-- CHECKLIST PROGRESS -->
+    <div class="checklist-progress" id="checklist-progress" style="display:none;">
+      <div class="progress-label"><span id="progress-text">0 of 0 tasks complete</span><span id="progress-pct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <div class="table-wrap" id="checklist-wrap">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- MOBILE CARDS -->
+    <div class="checklist-cards" id="checklist-mobile-cards"></div>
   </div>
 
   <!-- GUESTS -->
@@ -1080,6 +1452,7 @@ function showTab(name) {
   const idx = tabMap.indexOf(name);
   if (idx>-1) document.querySelectorAll('.tab')[idx].classList.add('active');
   if (name==='budget') loadBudget();
+  if (name==='checklist') loadChecklist();
   if (name==='settings') setTimeout(() => initDragDrop('settings-photo-area','settings-photo-input','settings-photo-preview','settings-photo-placeholder'), 100);
 }
 
@@ -1142,6 +1515,300 @@ async function saveMobileBudget() {
   }
 }
 
+
+// ── CHECKLIST ──
+let allChecklistItems = [];
+let checklistSortField = 'stage';
+let checklistSortDir = 1;
+
+const STAGE_ORDER = ['planning','booking','confirmed','on_the_day','post_event'];
+
+function stageLabel(s) { return ({planning:'Planning',booking:'Booking',confirmed:'Confirmed',on_the_day:'On the day',post_event:'Post event'})[s]||'Planning'; }
+function stageClass(s) { return 'stage-'+(s||'planning'); }
+function clStatusLabel(s) { return ({not_started:'Not started',in_progress:'In progress',done:'Done',blocked:'Blocked'})[s]||'Not started'; }
+function clStatusClass(s) { return 'cl-'+(s||'not_started'); }
+
+const PRIVATE_PARTY_TEMPLATE = [
+  {stage:'planning',category:'Venue',task:'Research and shortlist venues',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Venue',task:'Visit top venue choices',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Venue',task:'Confirm venue and sign contract',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Budget',task:'Set overall event budget',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Guests',task:'Create guest list',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Catering & Drinks',task:'Research catering options',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'planning',category:'Entertainment',task:'Research entertainment options',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Guests',task:'Send invitations',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Catering & Drinks',task:'Book catering supplier',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Catering & Drinks',task:'Arrange drinks / bar',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Entertainment',task:'Book DJ / band / entertainment',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Decor & Styling',task:'Book florist / decorator',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Photography',task:'Book photographer / videographer',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'booking',category:'Transport',task:'Arrange guest transport if needed',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Guests',task:'Chase RSVPs',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Guests',task:'Collect dietary requirements',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Catering & Drinks',task:'Confirm final guest numbers with caterer',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Venue',task:'Final walkthrough of venue',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'Decor & Styling',task:'Confirm decor setup time with venue',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'confirmed',category:'On the day',task:'Create run sheet for the day',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'on_the_day',category:'Venue',task:'Oversee venue setup',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'on_the_day',category:'Catering & Drinks',task:'Brief catering team',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'on_the_day',category:'Entertainment',task:'Brief entertainment / DJ',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'on_the_day',category:'Guests',task:'Welcome guests on arrival',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'post_event',category:'Venue',task:'Settle final venue invoice',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'post_event',category:'Catering & Drinks',task:'Settle catering invoice',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'post_event',category:'Guests',task:'Send thank you messages',status:'not_started',who:'',deadline:'',reminder:''},
+  {stage:'post_event',category:'General',task:'Gather feedback from client',status:'not_started',who:'',deadline:'',reminder:''},
+];
+
+async function loadChecklist() {
+  const { data } = await sb.from('checklist_items').select('*').eq('event_id', eventId).order('created_at', { ascending: true });
+  allChecklistItems = data || [];
+  applyChecklistSortAndRender();
+}
+
+function applyChecklistSortAndRender() {
+  let items = [...allChecklistItems];
+  if (checklistSortField) {
+    items.sort((a,b) => {
+      if (checklistSortField === 'stage') {
+        const ai = STAGE_ORDER.indexOf(a.stage||'planning');
+        const bi = STAGE_ORDER.indexOf(b.stage||'planning');
+        return (ai - bi) * checklistSortDir;
+      }
+      const av = a[checklistSortField]||'', bv = b[checklistSortField]||'';
+      return av.toString().localeCompare(bv.toString()) * checklistSortDir;
+    });
+  }
+  renderChecklist(items);
+  setTimeout(() => {
+    document.querySelectorAll('table.checklist-table th').forEach(th => {
+      th.classList.remove('sort-asc','sort-desc');
+      if (th.dataset.field === checklistSortField) th.classList.add(checklistSortDir===1?'sort-asc':'sort-desc');
+    });
+    const resetBtn = document.getElementById('checklist-sort-reset');
+    if (resetBtn) resetBtn.style.display = checklistSortField !== 'stage' ? 'inline-flex' : 'none';
+  }, 10);
+}
+
+function sortChecklist(field) {
+  if (checklistSortField===field) checklistSortDir*=-1; else { checklistSortField=field; checklistSortDir=1; }
+  applyChecklistSortAndRender();
+}
+
+function resetChecklistSort() {
+  checklistSortField = 'stage';
+  checklistSortDir = 1;
+  applyChecklistSortAndRender();
+}
+
+function renderChecklist(items) {
+  // Progress
+  const total = items.length;
+  const done  = items.filter(i=>i.status==='done').length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+  const prog  = document.getElementById('checklist-progress');
+  if (total > 0) {
+    prog.style.display = 'block';
+    document.getElementById('progress-text').textContent = `${done} of ${total} tasks complete`;
+    document.getElementById('progress-pct').textContent = `${pct}%`;
+    document.getElementById('progress-fill').style.width = pct+'%';
+  } else { prog.style.display = 'none'; }
+
+  // Desktop table
+  const wrap = document.getElementById('checklist-wrap');
+  if (!items.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><h3>No tasks yet</h3><p>Add a task below or load a template to get started.</p></div>`;
+  } else {
+    wrap.innerHTML = '';
+    const tbl = document.createElement('table');
+    tbl.className = 'checklist-table';
+    tbl.innerHTML = `<thead><tr>
+      <th style="width:32px;"></th>
+      <th data-field="stage" onclick="sortChecklist('stage')">Stage <span class="sort-icon">↕</span></th>
+      <th data-field="category" onclick="sortChecklist('category')">Category <span class="sort-icon">↕</span></th>
+      <th data-field="task" onclick="sortChecklist('task')">Task <span class="sort-icon">↕</span></th>
+      <th data-field="status" onclick="sortChecklist('status')">Status <span class="sort-icon">↕</span></th>
+      <th data-field="who" onclick="sortChecklist('who')">Who <span class="sort-icon">↕</span></th>
+      <th data-field="deadline" onclick="sortChecklist('deadline')">Deadline <span class="sort-icon">↕</span></th>
+      <th data-field="reminder" onclick="sortChecklist('reminder')">Reminder <span class="sort-icon">↕</span></th>
+      <th></th>
+    </tr></thead>
+    <tbody id="checklist-tbody"></tbody>
+    <tfoot><tr class="add-row" onclick="addChecklistRow()"><td colspan="9">＋ Add task</td></tr></tfoot>`;
+    wrap.appendChild(tbl);
+    const tbody = document.getElementById('checklist-tbody');
+    items.forEach(item => tbody.appendChild(buildChecklistRow(item)));
+  }
+
+  // Mobile cards
+  const mCards = document.getElementById('checklist-mobile-cards');
+  mCards.innerHTML = items.map(item => `
+    <div class="checklist-card ${item.status==='done'?'done':''}">
+      <div class="checklist-card-header">
+        <div class="done-check ${item.status==='done'?'checked':''}" onclick="toggleDone('${item.id}','${item.status}')"></div>
+        <div class="checklist-card-title ${item.status==='done'?'done':''}">${item.task||'Untitled task'}</div>
+      </div>
+      <div class="checklist-card-meta">
+        <span class="stage-badge ${stageClass(item.stage)}">${stageLabel(item.stage)}</span>
+        ${item.category?`<span style="font-size:0.72rem;color:var(--ink3);">${item.category}</span>`:''}
+        <span class="cl-status-badge ${clStatusClass(item.status)}">${clStatusLabel(item.status)}</span>
+      </div>
+      ${item.who?`<div style="font-size:0.78rem;color:var(--ink2);">👤 ${item.who}</div>`:''}
+      <div class="checklist-card-footer">
+        <span>${item.deadline?'📅 '+item.deadline:''}</span>
+        <button class="row-del" style="opacity:1;" onclick="deleteChecklistItem('${item.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function buildChecklistRow(item) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = item.id;
+  if (item.status==='done') tr.classList.add('done-row');
+
+  // Checkbox
+  const checkTd = document.createElement('td');
+  checkTd.style.cursor = 'default';
+  const check = document.createElement('div');
+  check.className = 'done-check' + (item.status==='done'?' checked':'');
+  check.onclick = (e) => { e.stopPropagation(); toggleDone(item.id, item.status, tr, check); };
+  checkTd.appendChild(check);
+  tr.appendChild(checkTd);
+
+  const clCols = [
+    {field:'stage',type:'cl-stage'},
+    {field:'category',type:'text'},
+    {field:'task',type:'text'},
+    {field:'status',type:'cl-status'},
+    {field:'who',type:'text'},
+    {field:'deadline',type:'date'},
+    {field:'reminder',type:'date'},
+  ];
+
+  clCols.forEach(({field,type}) => {
+    const td = document.createElement('td');
+    refreshClCell(td, item, field, type);
+    td.addEventListener('click', () => makeClEditable(td, item, field, type));
+    tr.appendChild(td);
+  });
+
+  const del = document.createElement('td');
+  del.innerHTML = `<button class="row-del" onclick="deleteChecklistItem('${item.id}')">Delete</button>`;
+  tr.appendChild(del);
+  return tr;
+}
+
+function refreshClCell(td, item, field, type) {
+  if (type==='cl-stage') { td.innerHTML=`<span class="stage-badge ${stageClass(item[field])}">${stageLabel(item[field])}</span>`; }
+  else if (type==='cl-status') { td.innerHTML=`<span class="cl-status-badge ${clStatusClass(item[field])}">${clStatusLabel(item[field])}</span>`; }
+  else if (type==='date') { td.textContent = item[field] ? new Date(item[field]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
+  else { td.innerHTML = field==='task' ? `<span class="task-name">${item[field]||'—'}</span>` : (item[field]||'—'); }
+}
+
+function makeClEditable(td, item, field, type) {
+  if (td.classList.contains('editing')) return;
+  td.classList.add('editing');
+  let input;
+  if (type==='cl-stage') {
+    input = document.createElement('select'); input.className='inline-select';
+    STAGE_ORDER.forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=stageLabel(v); if(v===item[field])o.selected=true; input.appendChild(o); });
+  } else if (type==='cl-status') {
+    input = document.createElement('select'); input.className='inline-select';
+    ['not_started','in_progress','done','blocked'].forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=clStatusLabel(v); if(v===item[field])o.selected=true; input.appendChild(o); });
+  } else if (type==='date') {
+    input = document.createElement('input'); input.className='inline-input'; input.type='date'; input.value=item[field]||'';
+  } else {
+    input = document.createElement('input'); input.className='inline-input'; input.type='text'; input.value=item[field]||'';
+  }
+  td.innerHTML=''; td.appendChild(input); input.focus();
+
+  async function save() {
+    const val = input.value.trim();
+    item[field] = val;
+    td.classList.remove('editing');
+    refreshClCell(td, item, field, type);
+    if (type==='cl-status') applyChecklistSortAndRender();
+    await sb.from('checklist_items').update({ [field]: val }).eq('id', item.id);
+  }
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
+}
+
+async function toggleDone(id, currentStatus, tr, check) {
+  const newStatus = currentStatus==='done' ? 'not_started' : 'done';
+  const item = allChecklistItems.find(i=>i.id===id);
+  if (item) item.status = newStatus;
+  await sb.from('checklist_items').update({ status: newStatus }).eq('id', id);
+  applyChecklistSortAndRender();
+}
+
+async function addChecklistRow() {
+  const { data, error } = await sb.from('checklist_items').insert([{
+    event_id: eventId, stage:'planning', category:'', task:'',
+    status:'not_started', who:'', deadline:null, reminder:null
+  }]).select().single();
+  if (!error && data) {
+    allChecklistItems.push(data);
+    applyChecklistSortAndRender();
+    setTimeout(() => {
+      const rows = document.querySelectorAll('#checklist-tbody tr');
+      if (rows.length) rows[rows.length-1].querySelectorAll('td')[2].click();
+    }, 60);
+  }
+}
+
+async function deleteChecklistItem(id) {
+  if (!confirm('Delete this task?')) return;
+  await sb.from('checklist_items').delete().eq('id', id);
+  allChecklistItems = allChecklistItems.filter(i=>i.id!==id);
+  applyChecklistSortAndRender();
+}
+
+// TEMPLATE MODAL
+function openTemplateModal() {
+  document.getElementById('template-modal').classList.add('open');
+}
+function closeTemplateModal() {
+  document.getElementById('template-modal').classList.remove('open');
+}
+
+async function loadTemplate(type) {
+  closeTemplateModal();
+  if (!confirm('This will add template tasks to your existing checklist. Continue?')) return;
+  let templates = [];
+  if (type==='private_party') templates = PRIVATE_PARTY_TEMPLATE;
+  if (!templates.length) return;
+  const rows = templates.map(t => ({ ...t, event_id: eventId }));
+  const { data, error } = await sb.from('checklist_items').insert(rows).select();
+  if (!error && data) {
+    allChecklistItems = [...allChecklistItems, ...data];
+    applyChecklistSortAndRender();
+  }
+}
+
+// MOBILE CHECKLIST MODAL
+function openMobileChecklist() {
+  document.getElementById('mobile-checklist-modal').classList.add('open');
+}
+function closeMobileChecklist() {
+  document.getElementById('mobile-checklist-modal').classList.remove('open');
+}
+async function saveMobileChecklist() {
+  const btn = document.getElementById('mcl-save-btn');
+  btn.textContent='Saving...'; btn.disabled=true;
+  const { error } = await sb.from('checklist_items').insert([{
+    event_id: eventId,
+    stage:    document.getElementById('mcl-stage').value,
+    category: document.getElementById('mcl-category').value.trim(),
+    task:     document.getElementById('mcl-task').value.trim(),
+    status:   document.getElementById('mcl-status').value,
+    who:      document.getElementById('mcl-who').value.trim(),
+    deadline: document.getElementById('mcl-deadline').value || null,
+    reminder: document.getElementById('mcl-reminder').value || null,
+  }]);
+  btn.textContent='Add task'; btn.disabled=false;
+  if (!error) { closeMobileChecklist(); await loadChecklist(); }
+}
+
 </script>
 
 <!-- MOBILE BUDGET MODAL -->
@@ -1192,6 +1859,95 @@ async function saveMobileBudget() {
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeMobileBudget()">Cancel</button>
       <button class="btn-primary" id="mb-save-btn" onclick="saveMobileBudget()">Add item</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATE MODAL -->
+<div class="modal-overlay" id="template-modal" onclick="if(event.target===this)closeTemplateModal()">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">Choose a template</div>
+      <button class="modal-close" onclick="closeTemplateModal()">✕</button>
+    </div>
+    <p style="font-size:0.83rem;color:var(--ink3);margin-bottom:1.25rem;font-weight:300;">Tasks will be added to your existing checklist. You can edit or delete any of them.</p>
+    <div class="template-grid">
+      <div class="template-card" onclick="loadTemplate('private_party')">
+        <div class="template-card-icon">🎉</div>
+        <div class="template-card-name">Private party</div>
+        <div class="template-card-count">28 tasks</div>
+      </div>
+      <div class="template-card" style="opacity:0.4;cursor:not-allowed;">
+        <div class="template-card-icon">💍</div>
+        <div class="template-card-name">Wedding</div>
+        <div class="template-card-count">Coming soon</div>
+      </div>
+      <div class="template-card" style="opacity:0.4;cursor:not-allowed;">
+        <div class="template-card-icon">💼</div>
+        <div class="template-card-name">Corporate event</div>
+        <div class="template-card-count">Coming soon</div>
+      </div>
+      <div class="template-card" style="opacity:0.4;cursor:not-allowed;">
+        <div class="template-card-icon">🌿</div>
+        <div class="template-card-name">Retreat</div>
+        <div class="template-card-count">Coming soon</div>
+      </div>
+    </div>
+    <div style="margin-top:1.25rem;text-align:center;">
+      <button class="btn-cancel" onclick="closeTemplateModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE CHECKLIST MODAL -->
+<div class="modal-overlay" id="mobile-checklist-modal" onclick="if(event.target===this)closeMobileChecklist()">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">Add task</div>
+      <button class="modal-close" onclick="closeMobileChecklist()">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Stage</label>
+        <select id="mcl-stage">
+          <option value="planning">Planning</option>
+          <option value="booking">Booking</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="on_the_day">On the day</option>
+          <option value="post_event">Post event</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <input type="text" id="mcl-category" placeholder="e.g. Venue">
+      </div>
+    </div>
+    <div class="field">
+      <label>Task *</label>
+      <input type="text" id="mcl-task" placeholder="What needs to be done?">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Status</label>
+        <select id="mcl-status">
+          <option value="not_started">Not started</option>
+          <option value="in_progress">In progress</option>
+          <option value="done">Done</option>
+          <option value="blocked">Blocked</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Who</label>
+        <input type="text" id="mcl-who" placeholder="Name or initials">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Deadline</label><input type="date" id="mcl-deadline"></div>
+      <div class="field"><label>Reminder date</label><input type="date" id="mcl-reminder"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeMobileChecklist()">Cancel</button>
+      <button class="btn-primary" id="mcl-save-btn" onclick="saveMobileChecklist()">Add task</button>
     </div>
   </div>
 </div>
