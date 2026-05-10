@@ -1716,8 +1716,8 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 .checklist-start{padding:2rem;background:#fff;border:1px solid var(--rule);border-radius:16px;text-align:center;}
 .checklist-start-title{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:1.25rem;color:var(--ink);}
 .checklist-start-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:400px;margin:0 auto;}
-.checklist-start-row{display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;}
-.checklist-start-row .checklist-start-card{flex:1;min-width:0;padding:0.75rem 0.5rem;}
+.checklist-start-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.checklist-start-row .checklist-start-card{padding:0.75rem 0.5rem;}
 .checklist-start-card{border:1.5px solid var(--rule);border-radius:12px;padding:1.25rem 1rem;cursor:pointer;transition:all 0.2s;background:#fff;}
 .checklist-start-card:hover{border-color:var(--amber);background:var(--amber-light);}
 .checklist-start-icon{font-size:1.25rem;margin-bottom:0.4rem;}
