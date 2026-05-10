@@ -687,25 +687,13 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 .checklist-start-desc{font-size:0.8rem;color:var(--ink3);font-weight:300;line-height:1.5;}
 @media(max-width:480px){.checklist-start-grid{grid-template-columns:1fr;}}
 
-.event-header-cover{
-  height:200px;overflow:hidden;position:relative;
-  background:linear-gradient(135deg,#1a1a2e,#533483);
-  margin-bottom:0;
+.event-cover-strip{
+  width:100%;height:220px;overflow:hidden;
+  border-bottom:1px solid var(--rule);
+  display:none;
 }
-.event-header-cover img{width:100%;height:100%;object-fit:cover;}
-.event-header-cover-overlay{
-  position:absolute;inset:0;
-  background:linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
-}
-.event-header.has-cover{padding-top:1.25rem;}
-.event-header.has-cover .event-title{color:#fff;}
-.event-header.has-cover .event-meta-item{color:rgba(255,255,255,0.8);}
-.event-header.has-cover .event-meta-item svg{stroke:rgba(255,255,255,0.8);}
-.event-header.has-cover .event-status{background:rgba(255,255,255,0.2);color:#fff;}
-.event-header.has-cover .btn-sm{background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:#fff;}
-.event-header.has-cover .btn-sm:hover{background:rgba(255,255,255,0.3);}
-.event-header.has-cover .btn-sm.amber{background:var(--amber);border-color:var(--amber);color:var(--ink);}
-@media(max-width:768px){.event-header-cover{height:140px;}}
+.event-cover-strip img{width:100%;height:100%;object-fit:cover;object-position:center;}
+@media(max-width:768px){.event-cover-strip{height:160px;}}
 </style>
 </head>
 <body>
@@ -725,7 +713,6 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
   </div>
 </nav>
 
-<div class="event-header-cover" id="event-cover" style="display:none;"><img id="event-cover-img" alt="Event cover"><div class="event-header-cover-overlay"></div></div>
 <div class="event-header" id="event-header-bar">
   <div class="event-header-top">
     <div>
@@ -748,6 +735,9 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
   </div>
 </div>
 
+<div class="event-cover-strip" id="event-cover-strip">
+  <img id="event-cover-img" alt="Event cover">
+</div>
 <div class="tabs-bar">
   <button class="tab active" onclick="showTab('overview')"><span>🏠</span>Overview</button>
   <button class="tab" onclick="showTab('checklist')"><span>✅</span>Checklist</button>
@@ -1006,14 +996,12 @@ function renderEventHeader(ev) {
   if (loc) meta.push(`<div class="event-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>${loc}</div>`);
   if (ev.event_type) meta.push(`<div class="event-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${ev.event_type.charAt(0).toUpperCase()+ev.event_type.slice(1)}</div>`);
   document.getElementById('event-meta').innerHTML = meta.join('');
-  // Cover image
+  // Cover image strip
   if (ev.cover_image) {
-    const coverEl = document.getElementById('event-cover');
+    const strip = document.getElementById('event-cover-strip');
     const coverImg = document.getElementById('event-cover-img');
-    const headerBar = document.getElementById('event-header-bar');
-    coverEl.style.display = 'block';
+    strip.style.display = 'block';
     coverImg.src = ev.cover_image;
-    headerBar.classList.add('has-cover');
   }
   document.getElementById('stat-guests').textContent = ev.guest_count || 0;
   document.getElementById('stat-rsvp').textContent = ev.rsvp_count || 0;
