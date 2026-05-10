@@ -49,6 +49,7 @@ async function saveMobileBudget() {
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
     deposit_amount:   parseFloat(document.getElementById('mb-deposit').value)||0,
     paid_amount:      parseFloat(document.getElementById('mb-paid-amount').value)||0,
+    next_payment_date: document.getElementById('mb-next-payment').value || null,
     paid_status:      document.getElementById('mb-paid-status').value,
     notes:            document.getElementById('mb-notes').value.trim(),
   }]);
@@ -1559,6 +1560,7 @@ td.editing{padding:2px !important;background:#fff !important;}
 .paid-badge{font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:20px;}
 .paid-yes{background:#f0f7f4;color:#2d6a4f;}
 .paid-no{background:#fdf0f0;color:#9b2c2c;}
+.paid-overpaid{background:#f0f0fd;color:#4a4aab;}
 .type-badge{font-size:0.65rem;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;}
 .type-expense{background:#fdf0f0;color:#9b2c2c;}
 .type-income{background:#f0f7f4;color:#2d6a4f;}
@@ -2057,7 +2059,7 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
       <div class="budget-card"><div class="budget-card-label">Total income</div><div class="budget-card-value green" id="b-total-income">€0</div></div>
       <div class="budget-card"><div class="budget-card-label">Total paid out</div><div class="budget-card-value" id="b-total-paid">€0</div></div>
       <div class="budget-card"><div class="budget-card-label">Total deposits</div><div class="budget-card-value amber" id="b-total-deposit">€0</div></div>
-      <div class="budget-card"><div class="budget-card-label" id="b-net-label">Net surplus</div><div class="budget-card-value green" id="b-net">€0</div></div>
+      <div class="budget-card"><div class="budget-card-label" id="b-net-label">Net surplus / balance</div><div class="budget-card-value green" id="b-net">€0</div></div>
     </div>
     <div class="table-wrap budget-table-wrap" id="budget-wrap">
       <div class="spinner"></div>
@@ -2484,10 +2486,10 @@ function fmtSum(n) { return '€' + parseFloat(n||0).toLocaleString('en-GB', { m
 function catClass(c) { return 'cat-'+(c||'other'); }
 function catLabel(c) { return ({venue:'Venue',catering:'Catering',flowers:'Flowers',music:'Music',photography:'Photography',transport:'Transport',accommodation:'Accommodation',staffing:'Staffing',decor:'Decor',other:'Other',room_rental:'Room rental',ticket_sales:'Ticket sales',sponsorship:'Sponsorship',client_payment:'Client payment',other_income:'Other income'})[c]||'Other'; }
 function paidLabel(s, type) {
-  if (type === 'income') return ({received:'Received',partial_received:'Part received',expected:'Expected',unpaid:'Unpaid'})[s]||'Expected';
-  return ({paid:'Paid',deposit:'Deposit paid',partial:'Part paid',unpaid:'Unpaid'})[s]||'Unpaid';
+  if (type === 'income') return ({received:'Received',partial_received:'Part received',expected:'Expected',unpaid:'Not received'})[s]||'Expected';
+  return ({paid:'Paid in full',deposit:'Deposit paid',partial:'Part paid',unpaid:'Unpaid',overpaid:'Overpaid'})[s]||'Unpaid';
 }
-function paidClass(s) { return ({paid:'paid-yes',received:'paid-yes',deposit:'paid-partial',partial:'paid-partial',partial_received:'paid-partial',expected:'paid-no',unpaid:'paid-no'})[s]||'paid-no'; }
+function paidClass(s) { return ({paid:'paid-yes',received:'paid-yes',deposit:'paid-partial',partial:'paid-partial',partial_received:'paid-partial',expected:'paid-no',unpaid:'paid-no',overpaid:'paid-overpaid'})[s]||'paid-no'; }
 
 function updateSummary(items) {
   const exp = items.filter(i => i.item_type !== 'income');
@@ -2514,7 +2516,7 @@ function updateSummary(items) {
   const netEl = document.getElementById('b-net');
   netEl.textContent = fmtSum(Math.abs(net));
   netEl.className = 'budget-card-value ' + (net < 0 ? 'red' : 'green');
-  document.getElementById('b-net-label').textContent = net >= 0 ? 'Net surplus' : 'Net deficit';
+  document.getElementById('b-net-label').textContent = net >= 0 ? 'Net surplus' : 'Outstanding balance';
   // footer - separate expense and income rows
   const footer = document.getElementById('budget-footer');
   if (footer) {
@@ -2540,7 +2542,7 @@ function updateSummary(items) {
       <td class="num"><strong>${fmtSum(expActual)}</strong></td>
       <td class="num"><strong>${fmtSum(expDeposit)}</strong></td>
       <td class="num"><strong>${fmtSum(expPaid)}</strong></td>
-      <td colspan="3"></td>`;
+      <td colspan="4"></td>`;
     const footer2 = document.getElementById('budget-footer2');
     if (footer2) footer2.innerHTML = `
       <td colspan="2" style="color:#2d6a4f;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total income</td>
@@ -2550,10 +2552,10 @@ function updateSummary(items) {
       <td class="num green"><strong>${fmtSum(incActual)}</strong></td>
       <td class="num green"><strong>${fmtSum(incDeposit)}</strong></td>
       <td class="num green"><strong>${fmtSum(incPaid)}</strong></td>
-      <td colspan="3"></td>`;
+      <td colspan="4"></td>`;
     const footer3 = document.getElementById('budget-footer3');
     if (footer3) footer3.innerHTML = `
-      <td colspan="2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;" class="${netActual>=0?'':'red'}">${netActual>=0?'Net surplus':'Net deficit'}</td>
+      <td colspan="2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;" class="${netActual>=0?'':'red'}">${netActual>=0?'Net surplus':'Outstanding balance'}</td>
       <td></td><td></td>
       <td class="num ${netAllocated>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netAllocated))}</strong></td>
       <td class="num"></td>
@@ -2620,6 +2622,7 @@ function refreshCell(td, item, field, type) {
   }
   if (type==='cat') { td.innerHTML=`<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`; }
   else if (type==='status') { td.innerHTML=`<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field])}</span>`; }
+  else if (type==='date') { td.textContent = item[field] ? new Date(item[field]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
   else if (type==='num') {
     td.innerHTML = fmt(item[field]);
     let cls = 'num';
@@ -2642,7 +2645,8 @@ function buildBudgetRow(item) {
     {field:'actual_amount',type:'num'},
     {field:'deposit_amount',type:'num'},
     {field:'paid_amount',type:'num'},
-    {field:'paid_status',type:'status'},
+    {field:'next_payment_date',type:'date'},
+    {field:'paid_status',type:'auto-status'},
     {field:'notes',type:'text'},
   ];
   cols.forEach(({field,type}) => {
@@ -2681,10 +2685,11 @@ function renderBudget(items) {
       <th class="sortable" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('allocated_budget')">Allocated <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('quoted_amount')">Quoted <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('actual_amount')">Actual <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('deposit_amount')">Deposit <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('quoted_amount')">Quote <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('actual_amount')">Final <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('deposit_amount')">Refundable deposit <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('paid_amount')">Paid <span class="sort-icon">↕</span></th>
+      <th class="sortable" onclick="sortBudget('next_payment_date')">Next payment <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('paid_status')">Status <span class="sort-icon">↕</span></th>
       <th>Notes</th>
       <th></th>
@@ -2743,7 +2748,7 @@ async function addBudgetRow() {
   const { data, error } = await sb.from('budget_items').insert([{
     event_id: eventId, item_type:'expense', category:'other', supplier:'', description:'',
     allocated_budget:0, quoted_amount:0, actual_amount:0,
-    deposit_amount:0, paid_amount:0, paid_status:'unpaid', notes:''
+    deposit_amount:0, paid_amount:0, next_payment_date:null, paid_status:'unpaid', notes:''
   }]).select().single();
   if (!error && data) {
     allBudgetItems.push(data);
@@ -2861,6 +2866,7 @@ async function saveMobileBudget() {
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
     deposit_amount:   parseFloat(document.getElementById('mb-deposit').value)||0,
     paid_amount:      parseFloat(document.getElementById('mb-paid-amount').value)||0,
+    next_payment_date: document.getElementById('mb-next-payment').value || null,
     paid_status:      document.getElementById('mb-paid-status').value,
     notes:            document.getElementById('mb-notes').value.trim(),
   }]);
@@ -4271,15 +4277,17 @@ async function renderOverviewDashboard() {
     </div>
     <div class="field-row">
       <div class="field"><label>Amount paid (€)</label><input type="number" id="mb-paid-amount" placeholder="0.00" min="0" step="0.01"></div>
-      <div class="field">
-        <label>Payment status</label>
+      <div class="field"><label>Next payment date</label><input type="date" id="mb-next-payment"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="display:none;"><label>Status (auto-calculated)</label>
         <select id="mb-paid-status">
           <option value="unpaid">Unpaid</option>
           <option value="deposit">Deposit paid</option>
           <option value="partial">Part paid</option>
           <option value="paid">Paid</option>
         </select>
-      </div>
+      </div></div>
     </div>
     <div class="field"><label>Notes</label><input type="text" id="mb-notes" placeholder="Any additional notes"></div>
     <div class="modal-footer">
