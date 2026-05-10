@@ -605,7 +605,10 @@ function makeRsEditable(td, item, field, type) {
   td.innerHTML=''; td.appendChild(input); input.focus();
   if (input.select) input.select();
 
+  let saved = false;
   async function save() {
+    if (saved) return;
+    saved = true;
     const val = input.value.trim();
     item[field] = val;
     td.classList.remove('editing');
@@ -2602,7 +2605,10 @@ function makeRsEditable(td, item, field, type) {
   td.innerHTML=''; td.appendChild(input); input.focus();
   if (input.select) input.select();
 
+  let saved = false;
   async function save() {
+    if (saved) return;
+    saved = true;
     const val = input.value.trim();
     item[field] = val;
     td.classList.remove('editing');
