@@ -687,15 +687,29 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 .checklist-start-desc{font-size:0.8rem;color:var(--ink3);font-weight:300;line-height:1.5;}
 @media(max-width:480px){.checklist-start-grid{grid-template-columns:1fr;}}
 
+.event-header-grid{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:1.5rem;
+  margin-bottom:1.25rem;
+}
+.event-header-left{min-width:0;}
+.event-header-right{display:flex;gap:8px;flex-shrink:0;}
 .event-cover-strip{
-  width:100%;height:180px;overflow:hidden;
+  height:72px;
+  overflow:hidden;
   border:1px solid var(--rule);
-  border-radius:12px;
-  margin:0.75rem 0;
+  border-radius:10px;
   display:none;
+  min-width:0;
 }
 .event-cover-strip img{width:100%;height:100%;object-fit:cover;object-position:center;}
-@media(max-width:768px){.event-cover-strip{height:140px;}}
+@media(max-width:768px){
+  .event-header-grid{grid-template-columns:1fr auto;grid-template-rows:auto auto;}
+  .event-cover-strip{grid-column:1/-1;height:120px;display:none;}
+  .event-cover-strip.visible{display:block;}
+}
 </style>
 </head>
 <body>
@@ -716,24 +730,24 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 </nav>
 
 <div class="event-header" id="event-header-bar">
-  <!-- Title + buttons on same row -->
-  <div class="event-header-top">
-    <div>
+  <div class="event-header-grid">
+    <!-- Left: title + meta -->
+    <div class="event-header-left">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="event-title" id="event-title">Loading...</div>
         <span class="event-status status-upcoming" id="event-status">Upcoming</span>
       </div>
       <div class="event-meta" id="event-meta"></div>
     </div>
-    <div style="display:flex;gap:8px;flex-shrink:0;align-self:flex-start;">
+    <!-- Middle: cover image -->
+    <div class="event-cover-strip" id="event-cover-strip">
+      <img id="event-cover-img" alt="Event cover">
+    </div>
+    <!-- Right: buttons -->
+    <div class="event-header-right">
       <button class="btn-sm" onclick="shareEvent()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg><span>Share</span></button>
       <button class="btn-sm amber" onclick="showTab('settings')"><span>⚙️</span><span>Settings</span></button>
     </div>
-  </div>
-
-  <!-- Cover image — same ratio as dashboard card, sits between header row and stats -->
-  <div class="event-cover-strip" id="event-cover-strip">
-    <img id="event-cover-img" alt="Event cover">
   </div>
 
   <!-- Stats -->
@@ -1007,6 +1021,7 @@ function renderEventHeader(ev) {
     const strip = document.getElementById('event-cover-strip');
     const coverImg = document.getElementById('event-cover-img');
     strip.style.display = 'block';
+    strip.classList.add('visible');
     coverImg.src = ev.cover_image;
   }
   document.getElementById('stat-guests').textContent = ev.guest_count || 0;
