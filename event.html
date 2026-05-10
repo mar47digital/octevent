@@ -46,6 +46,7 @@ async function saveMobileBudget() {
     description:      document.getElementById('mb-description').value.trim(),
     cost_pp:          parseFloat(document.getElementById('mb-cost-pp').value)||0,
     quantity:         parseFloat(document.getElementById('mb-qty').value)||0,
+    hours:            parseFloat(document.getElementById('mb-hours').value)||0,
     allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
     quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
@@ -463,6 +464,21 @@ function buildChecklistRow(item) {
 function refreshClCell(td, item, field, type) {
   if (type==='cl-stage') { td.innerHTML=`<span class="stage-badge ${stageClass(item[field])}">${stageLabel(item[field])}</span>`; }
   else if (type==='cl-status') { td.innerHTML=`<span class="cl-status-badge ${clStatusClass(item[field])}">${clStatusLabel(item[field])}</span>`; }
+  else if (type==='computed-calc') {
+    const qty   = parseFloat(item.quantity||0);
+    const hrs   = parseFloat(item.hours||0);
+    const cpp   = parseFloat(item.cost_pp||0);
+    if (!qty && !hrs && !cpp) { td.textContent='—'; td.className='num'; return; }
+    let calc = 0;
+    if (hrs > 0) calc = qty * hrs * cpp;
+    else if (qty > 0) calc = qty * cpp;
+    else calc = cpp;
+    td.innerHTML = calc > 0 ? `<span style="color:var(--ink2);font-size:0.75rem;">${fmt(calc)}</span>` : '—';
+    td.className = 'num';
+    td.title = hrs>0 ? `${qty} × ${hrs}hrs × ${fmt(cpp)} = ${fmt(calc)}` : `${qty} × ${fmt(cpp)} = ${fmt(calc)}`;
+    td.style.cursor = 'default';
+    return;
+  }
   else if (type==='computed-remaining') {
     if (item.item_type === 'income') { td.textContent = '—'; td.className='num'; return; }
     const remaining = parseFloat(item.actual_amount||0) - parseFloat(item.paid_amount||0);
@@ -2060,7 +2076,7 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v4h4"/></svg>
           Reset sort
         </button>
-        <button class="btn-sm amber mobile-only" onclick="openMobileBudget()">+ Add item</button>
+        <button class="btn-sm amber mobile-only" onclick="openMobileBudget()">+ Add</button>
       </div>
     </div>
     <div class="budget-summary">
@@ -2630,6 +2646,21 @@ function refreshCell(td, item, field, type) {
   }
   if (type==='cat') { td.innerHTML=`<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`; }
   else if (type==='status') { td.innerHTML=`<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field])}</span>`; }
+  else if (type==='computed-calc') {
+    const qty   = parseFloat(item.quantity||0);
+    const hrs   = parseFloat(item.hours||0);
+    const cpp   = parseFloat(item.cost_pp||0);
+    if (!qty && !hrs && !cpp) { td.textContent='—'; td.className='num'; return; }
+    let calc = 0;
+    if (hrs > 0) calc = qty * hrs * cpp;
+    else if (qty > 0) calc = qty * cpp;
+    else calc = cpp;
+    td.innerHTML = calc > 0 ? `<span style="color:var(--ink2);font-size:0.75rem;">${fmt(calc)}</span>` : '—';
+    td.className = 'num';
+    td.title = hrs>0 ? `${qty} × ${hrs}hrs × ${fmt(cpp)} = ${fmt(calc)}` : `${qty} × ${fmt(cpp)} = ${fmt(calc)}`;
+    td.style.cursor = 'default';
+    return;
+  }
   else if (type==='computed-remaining') {
     if (item.item_type === 'income') { td.textContent = '—'; td.className='num'; return; }
     const remaining = parseFloat(item.actual_amount||0) - parseFloat(item.paid_amount||0);
@@ -2647,29 +2678,41 @@ function refreshCell(td, item, field, type) {
   } else { td.textContent = item[field]||'—'; }
 }
 
-function buildBudgetRow(item) {
+function buildBudgetRow(item, isIncome) {
   const tr = document.createElement('tr');
   tr.dataset.id = item.id;
-  const cols = [
-    {field:'item_type',type:'itype'},
-    {field:'category',type:'cat'},
-    {field:'supplier',type:'text'},
-    {field:'description',type:'text'},
-    {field:'cost_pp',type:'num'},
-    {field:'quantity',type:'num'},
-    {field:'allocated_budget',type:'num'},
-    {field:'actual_amount',type:'num'},
-    {field:'deposit_amount',type:'num'},
-    {field:'paid_amount',type:'num'},
-    {field:'_remaining',type:'computed-remaining'},
-    {field:'next_payment_date',type:'date'},
-    {field:'notes',type:'text'},
-  ];
+  const cols = isIncome
+    ? [
+        {field:'category',type:'cat'},
+        {field:'supplier',type:'text'},
+        {field:'description',type:'text'},
+        {field:'actual_amount',type:'num'},
+        {field:'paid_amount',type:'num'},
+        {field:'_remaining',type:'computed-remaining'},
+        {field:'next_payment_date',type:'date'},
+        {field:'notes',type:'text'},
+      ]
+    : [
+        {field:'category',type:'cat'},
+        {field:'supplier',type:'text'},
+        {field:'description',type:'text'},
+        {field:'quantity',type:'num'},
+        {field:'hours',type:'num'},
+        {field:'cost_pp',type:'num'},
+        {field:'_calc_total',type:'computed-calc'},
+        {field:'allocated_budget',type:'num'},
+        {field:'actual_amount',type:'num'},
+        {field:'deposit_amount',type:'num'},
+        {field:'paid_amount',type:'num'},
+        {field:'_remaining',type:'computed-remaining'},
+        {field:'next_payment_date',type:'date'},
+        {field:'notes',type:'text'},
+      ];
   cols.forEach(({field,type}) => {
     const td = document.createElement('td');
     if (type==='num') td.className='num';
     refreshCell(td, item, field, type);
-    if (type !== 'computed-remaining') {
+    if (type !== 'computed-remaining' && type !== 'computed-calc') {
       td.title='Click to edit'; td.style.cursor='pointer';
       td.addEventListener('click', () => makeEditable(td, item, field, type));
     } else { td.style.cursor='default'; }
@@ -2715,10 +2758,7 @@ function renderBudget(items) {
     </tr></thead>
     <tbody id="budget-tbody"></tbody>
     <tfoot>
-      <tr id="budget-footer"></tr>
-      <tr id="budget-footer2" style="background:#f0f7f4;"></tr>
-      <tr id="budget-footer3" style="background:var(--cream);border-top:2px solid var(--rule);"></tr>
-      <tr class="add-row" onclick="addBudgetRow()"><td colspan="12">＋ Add line item</td></tr>
+
     </tfoot>`;
   wrap.appendChild(tbl);
   const tbody = document.getElementById('budget-tbody');
@@ -2763,10 +2803,10 @@ function renderBudget(items) {
     </div>`).join('');
 }
 
-async function addBudgetRow() {
+async function addBudgetRow(type) {
   const { data, error } = await sb.from('budget_items').insert([{
-    event_id: eventId, item_type:'expense', category:'other', supplier:'', description:'',
-    cost_pp:0, quantity:0, allocated_budget:0, quoted_amount:0, actual_amount:0,
+    event_id: eventId, item_type: type||'expense', category:'other', supplier:'', description:'',
+    cost_pp:0, quantity:0, hours:0, allocated_budget:0, quoted_amount:0, actual_amount:0,
     deposit_amount:0, paid_amount:0, next_payment_date:null, paid_status:'unpaid', notes:''
   }]).select().single();
   if (!error && data) {
@@ -2882,6 +2922,7 @@ async function saveMobileBudget() {
     description:      document.getElementById('mb-description').value.trim(),
     cost_pp:          parseFloat(document.getElementById('mb-cost-pp').value)||0,
     quantity:         parseFloat(document.getElementById('mb-qty').value)||0,
+    hours:            parseFloat(document.getElementById('mb-hours').value)||0,
     allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
     quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
@@ -3299,6 +3340,21 @@ function buildChecklistRow(item) {
 function refreshClCell(td, item, field, type) {
   if (type==='cl-stage') { td.innerHTML=`<span class="stage-badge ${stageClass(item[field])}">${stageLabel(item[field])}</span>`; }
   else if (type==='cl-status') { td.innerHTML=`<span class="cl-status-badge ${clStatusClass(item[field])}">${clStatusLabel(item[field])}</span>`; }
+  else if (type==='computed-calc') {
+    const qty   = parseFloat(item.quantity||0);
+    const hrs   = parseFloat(item.hours||0);
+    const cpp   = parseFloat(item.cost_pp||0);
+    if (!qty && !hrs && !cpp) { td.textContent='—'; td.className='num'; return; }
+    let calc = 0;
+    if (hrs > 0) calc = qty * hrs * cpp;
+    else if (qty > 0) calc = qty * cpp;
+    else calc = cpp;
+    td.innerHTML = calc > 0 ? `<span style="color:var(--ink2);font-size:0.75rem;">${fmt(calc)}</span>` : '—';
+    td.className = 'num';
+    td.title = hrs>0 ? `${qty} × ${hrs}hrs × ${fmt(cpp)} = ${fmt(calc)}` : `${qty} × ${fmt(cpp)} = ${fmt(calc)}`;
+    td.style.cursor = 'default';
+    return;
+  }
   else if (type==='computed-remaining') {
     if (item.item_type === 'income') { td.textContent = '—'; td.className='num'; return; }
     const remaining = parseFloat(item.actual_amount||0) - parseFloat(item.paid_amount||0);
@@ -4296,8 +4352,9 @@ async function renderOverviewDashboard() {
       <div class="field"><label>Description</label><input type="text" id="mb-description" placeholder="What is this for?"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Cost per person (€)</label><input type="number" id="mb-cost-pp" placeholder="0.00" min="0" step="0.01"></div>
       <div class="field"><label>Quantity</label><input type="number" id="mb-qty" placeholder="0" min="0" step="1"></div>
+      <div class="field"><label>Hours</label><input type="number" id="mb-hours" placeholder="0" min="0" step="0.5"></div>
+      <div class="field"><label>Cost / unit (€)</label><input type="number" id="mb-cost-pp" placeholder="0.00" min="0" step="0.01"></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Allocated (€)</label><input type="number" id="mb-allocated" placeholder="0.00" min="0" step="0.01"></div>
