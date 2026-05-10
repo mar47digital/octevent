@@ -692,31 +692,33 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
   gap:1rem;margin-bottom:1rem;
 }
 .event-lower-row{
-  display:grid;
-  grid-template-columns:280px 1fr;
-  gap:16px;
-  align-items:stretch;
+  display:flex;
+  flex-direction:column;
+  gap:0;
 }
 .event-cover-strip{
   display:none;
   overflow:hidden;
-  border:1px solid var(--rule);
-  border-radius:12px;
-  min-height:100px;
+  border-left:1px solid var(--rule);
+  border-right:1px solid var(--rule);
+  border-top:1px solid var(--rule);
+  border-radius:12px 12px 0 0;
+  height:180px;
+  width:100%;
 }
 .event-cover-strip img{width:100%;height:100%;object-fit:cover;object-position:center;}
 .event-stats{
-  display:grid;grid-template-columns:repeat(2,1fr);
+  display:grid;grid-template-columns:repeat(4,1fr);
   gap:1px;background:var(--rule);
-  border:1px solid var(--rule);border-radius:12px;overflow:hidden;flex:1;
+  border:1px solid var(--rule);border-radius:12px;overflow:hidden;
 }
-/* When no cover image, stats take full width */
-.event-lower-row:not(.has-cover) {
-  grid-template-columns:1fr;
+/* When cover shown, stats connect below image */
+.event-lower-row.has-cover .event-stats{
+  border-radius:0 0 12px 12px;
+  border-top:none;
 }
 @media(max-width:768px){
-  .event-lower-row{grid-template-columns:1fr;grid-template-rows:auto auto;}
-  .event-cover-strip{min-height:140px;}
+  .event-cover-strip{height:130px;}
   .event-stats{grid-template-columns:repeat(2,1fr);}
   .event-title-row{flex-direction:column;}
 }
