@@ -419,7 +419,7 @@ nav{background:#fff;border-bottom:1px solid var(--rule);padding:0 2.5rem;height:
 .status-upcoming{background:var(--amber-light);color:var(--amber-dark);}
 .status-live{background:#f0f7f4;color:#2d6a4f;}
 .status-past{background:var(--rule);color:var(--ink3);}
-.event-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden;}
+
 .event-stat{background:#fff;padding:0.85rem 1rem;text-align:center;}
 .event-stat-n{font-family:'Nunito',sans-serif;font-size:1.5rem;font-weight:800;line-height:1;color:var(--ink);}
 .event-stat-l{font-size:0.65rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
@@ -687,28 +687,38 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 .checklist-start-desc{font-size:0.8rem;color:var(--ink3);font-weight:300;line-height:1.5;}
 @media(max-width:480px){.checklist-start-grid{grid-template-columns:1fr;}}
 
-.event-header-grid{
-  display:grid;
-  grid-template-columns:auto 1fr auto;
-  align-items:center;
-  gap:1.5rem;
-  margin-bottom:1.25rem;
+.event-title-row{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:1rem;margin-bottom:1rem;
 }
-.event-header-left{min-width:0;}
-.event-header-right{display:flex;gap:8px;flex-shrink:0;}
+.event-lower-row{
+  display:grid;
+  grid-template-columns:280px 1fr;
+  gap:16px;
+  align-items:stretch;
+}
 .event-cover-strip{
-  height:72px;
+  display:none;
   overflow:hidden;
   border:1px solid var(--rule);
-  border-radius:10px;
-  display:none;
-  min-width:0;
+  border-radius:12px;
+  min-height:100px;
 }
 .event-cover-strip img{width:100%;height:100%;object-fit:cover;object-position:center;}
+.event-stats{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:12px;overflow:hidden;flex:1;
+}
+/* When no cover image, stats take full width */
+.event-lower-row:not(.has-cover) {
+  grid-template-columns:1fr;
+}
 @media(max-width:768px){
-  .event-header-grid{grid-template-columns:1fr auto;grid-template-rows:auto auto;}
-  .event-cover-strip{grid-column:1/-1;height:120px;display:none;}
-  .event-cover-strip.visible{display:block;}
+  .event-lower-row{grid-template-columns:1fr;grid-template-rows:auto auto;}
+  .event-cover-strip{min-height:140px;}
+  .event-stats{grid-template-columns:repeat(2,1fr);}
+  .event-title-row{flex-direction:column;}
 }
 </style>
 </head>
@@ -730,32 +740,33 @@ table.checklist-table tr.add-row:hover td{background:var(--amber-light);color:va
 </nav>
 
 <div class="event-header" id="event-header-bar">
-  <div class="event-header-grid">
-    <!-- Left: title + meta -->
-    <div class="event-header-left">
+  <!-- Title row -->
+  <div class="event-title-row">
+    <div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="event-title" id="event-title">Loading...</div>
         <span class="event-status status-upcoming" id="event-status">Upcoming</span>
       </div>
       <div class="event-meta" id="event-meta"></div>
     </div>
-    <!-- Middle: cover image -->
-    <div class="event-cover-strip" id="event-cover-strip">
-      <img id="event-cover-img" alt="Event cover">
-    </div>
-    <!-- Right: buttons -->
-    <div class="event-header-right">
+    <div style="display:flex;gap:8px;flex-shrink:0;align-self:flex-start;">
       <button class="btn-sm" onclick="shareEvent()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg><span>Share</span></button>
       <button class="btn-sm amber" onclick="showTab('settings')"><span>⚙️</span><span>Settings</span></button>
     </div>
   </div>
 
   <!-- Stats -->
-  <div class="event-stats">
-    <div class="event-stat"><div class="event-stat-n" id="stat-guests">0</div><div class="event-stat-l">Guests</div></div>
-    <div class="event-stat"><div class="event-stat-n" id="stat-rsvp">0</div><div class="event-stat-l">RSVPs</div></div>
-    <div class="event-stat"><div class="event-stat-n" id="stat-rooms">0</div><div class="event-stat-l">Rooms</div></div>
-    <div class="event-stat"><div class="event-stat-n" id="stat-budget">€0</div><div class="event-stat-l">Budget</div></div>
+  <!-- Image + stats row -->
+  <div class="event-lower-row">
+    <div class="event-cover-strip" id="event-cover-strip">
+      <img id="event-cover-img" alt="Event cover">
+    </div>
+    <div class="event-stats">
+      <div class="event-stat"><div class="event-stat-n" id="stat-guests">0</div><div class="event-stat-l">Guests</div></div>
+      <div class="event-stat"><div class="event-stat-n" id="stat-rsvp">0</div><div class="event-stat-l">RSVPs</div></div>
+      <div class="event-stat"><div class="event-stat-n" id="stat-rooms">0</div><div class="event-stat-l">Rooms</div></div>
+      <div class="event-stat"><div class="event-stat-n" id="stat-budget">€0</div><div class="event-stat-l">Budget</div></div>
+    </div>
   </div>
 </div>
 <div class="tabs-bar">
@@ -1020,9 +1031,10 @@ function renderEventHeader(ev) {
   if (ev.cover_image) {
     const strip = document.getElementById('event-cover-strip');
     const coverImg = document.getElementById('event-cover-img');
+    const lowerRow = strip.closest('.event-lower-row');
     strip.style.display = 'block';
-    strip.classList.add('visible');
     coverImg.src = ev.cover_image;
+    if (lowerRow) lowerRow.classList.add('has-cover');
   }
   document.getElementById('stat-guests').textContent = ev.guest_count || 0;
   document.getElementById('stat-rsvp').textContent = ev.rsvp_count || 0;
