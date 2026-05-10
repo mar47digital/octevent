@@ -2527,32 +2527,33 @@ function updateSummary(items) {
     const incPaid      = incRows.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
     const netAllocated = incAllocated - expAllocated;
     const netActual    = incActual - expActual;
+    // New cols: type,cat,sup,desc(4), qty,hrs,cost,=total(4), alloc,final,deposit,paid,remaining,nextpay,notes,del(8)
+    const expRem = expActual - expPaid;
+    const incRem = incActual - incPaid;
     footer.innerHTML = `
-      <td colspan="2" style="color:var(--ink2);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total expenses</td>
-      <td></td><td></td>
+      <td colspan="4"><strong>Total expenses</strong></td>
+      <td colspan="4"></td>
       <td class="num"><strong>${fmtSum(expAllocated)}</strong></td>
-      <td class="num"><strong>${fmtSum(expQuoted)}</strong></td>
       <td class="num"><strong>${fmtSum(expActual)}</strong></td>
       <td class="num"><strong>${fmtSum(expDeposit)}</strong></td>
       <td class="num"><strong>${fmtSum(expPaid)}</strong></td>
+      <td class="num ${expRem>0?'red':'green'}"><strong>${fmtSum(expRem)}</strong></td>
       <td colspan="3"></td>`;
     const footer2 = document.getElementById('budget-footer2');
     if (footer2) footer2.innerHTML = `
-      <td colspan="2" style="color:#2d6a4f;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total income</td>
-      <td></td><td></td>
+      <td colspan="4"><strong style="color:#2d6a4f;">Total income</strong></td>
+      <td colspan="4"></td>
       <td class="num green"><strong>${fmtSum(incAllocated)}</strong></td>
-      <td class="num green"><strong>${fmtSum(incQuoted)}</strong></td>
       <td class="num green"><strong>${fmtSum(incActual)}</strong></td>
-      <td class="num green"><strong>${fmtSum(incDeposit)}</strong></td>
+      <td class="num"></td>
       <td class="num green"><strong>${fmtSum(incPaid)}</strong></td>
+      <td class="num ${incRem>0?'red':'green'}"><strong>${fmtSum(incRem)}</strong></td>
       <td colspan="3"></td>`;
     const footer3 = document.getElementById('budget-footer3');
     if (footer3) footer3.innerHTML = `
-      <td colspan="2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;" class="${netActual>=0?'':'red'}">${netActual>=0?'Net surplus':'Net deficit'}</td>
-      <td></td><td></td>
-      <td class="num ${netAllocated>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netAllocated))}</strong></td>
-      <td class="num"></td>
-      <td class="num ${netActual>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netActual))}</strong></td>
+      <td colspan="4"><strong class="${netActual>=0?'':'red'}">${netActual>=0?'✓ Net surplus':'⚠ Outstanding balance'}</strong></td>
+      <td colspan="5"></td>
+      <td class="num ${netActual>=0?'green':'red'}" colspan="2"><strong style="font-size:1rem;">${fmtSum(Math.abs(netActual))}</strong></td>
       <td colspan="5"></td>`;
   }
 }
@@ -2707,7 +2708,10 @@ function renderBudget(items) {
     </tfoot>`;
   wrap.appendChild(tbl);
   const tbody = document.getElementById('budget-tbody');
-  items.forEach(item => tbody.appendChild(buildBudgetRow(item)));
+  // Sort: expenses A-Z by category, then income A-Z by category
+  const expenses = items.filter(i=>i.item_type!=='income').sort((a,b)=>(a.category||'').localeCompare(b.category||''));
+  const income   = items.filter(i=>i.item_type==='income').sort((a,b)=>(a.category||'').localeCompare(b.category||''));
+  [...expenses, ...income].forEach(item => tbody.appendChild(buildBudgetRow(item)));
   updateSummary(items);
 
   // Mobile cards
