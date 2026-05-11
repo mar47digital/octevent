@@ -2822,9 +2822,13 @@ async function addBudgetRow(type) {
     allBudgetItems.push(data);
     applySortAndRender();
     setTimeout(() => {
-      const rows = document.querySelectorAll('#budget-tbody tr');
-      if (rows.length) rows[rows.length-1].querySelector('td').click();
-    }, 50);
+      const newRow = document.querySelector('#budget-tbody tr[data-id="' + data.id + '"]');
+      if (newRow) {
+        newRow.scrollIntoView({behavior:'smooth', block:'center'});
+        const cells = newRow.querySelectorAll('td');
+        if (cells[1]) cells[1].click();
+      }
+    }, 80);
   }
 }
 
