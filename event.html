@@ -2026,9 +2026,7 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
           <input type="text" id="guest-search" placeholder="Search guests..." oninput="filterGuests()">
         </div>
         <button class="btn-sm" onclick="exportGuests()">⬇ Export CSV</button>
-        <button class="btn-sm" onclick="document.getElementById('guest-import-input').click()">⬆ Import CSV</button>
-        <input type="file" id="guest-import-input" accept=".csv" style="display:none" onchange="importGuests(event)">
-        <button class="btn-sm amber" onclick="openAddGuest()">+ Add guest</button>
+<button class="btn-sm amber" onclick="openAddGuest()">+ Add guest</button>
       </div>
     </div>
     <div id="guests-content"><div class="spinner"></div></div>
@@ -2410,23 +2408,35 @@ function renderGuests(guests) {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><h3>No guests yet</h3><p>Add your first guest to get started.</p><button class="btn-primary" onclick="openAddGuest()">+ Add first guest</button></div>`;
     return;
   }
-  el.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>Name</th><th>Email</th><th>RSVP</th><th>Table</th><th>Dietary</th><th>Notes</th></tr></thead>
+  el.innerHTML = `<div class="table-wrap" style="overflow-x:auto;"><table>
+    <thead><tr>
+      <th>Name</th><th>Email</th><th>RSVP</th>
+      <th>Table</th><th>Room</th>
+      <th>Dietary</th><th>Notes</th><th></th>
+    </tr></thead>
     <tbody>${guests.map(g => {
       const assignedTable = tpTables.find(t=>(t.guests||[]).includes(g.id));
       const tableOptions = tpTables.map(t=>`<option value="${t.id}" ${assignedTable?.id===t.id?'selected':''}>${t.name}</option>`).join('');
       return `<tr>
-        <td><div class="guest-name">${g.first_name} ${g.last_name||''}</div></td>
-        <td><div class="guest-email">${g.email||'—'}</div></td>
-        <td><span class="rsvp-badge rsvp-${g.rsvp_status||'pending'}">${g.rsvp_status||'pending'}</span></td>
+        <td><div class="guest-name">${g.first_name} ${g.last_name||''}</div><div class="guest-email">${g.email||''}</div></td>
+        <td style="display:none;">${g.email||''}</td>
         <td>
-          <select class="tp-assign-select" onchange="assignGuestFromGuestList('${g.id}',this.value)">
-            <option value="">Unassigned</option>
+          <select style="font-size:0.75rem;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateGuestRsvp('${g.id}',this.value)">
+            <option value="pending" ${(g.rsvp_status||'pending')==='pending'?'selected':''}>Pending</option>
+            <option value="confirmed" ${g.rsvp_status==='confirmed'?'selected':''}>Confirmed</option>
+            <option value="declined" ${g.rsvp_status==='declined'?'selected':''}>Declined</option>
+          </select>
+        </td>
+        <td>
+          <select style="font-size:0.75rem;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;font-family:'DM Sans',sans-serif;outline:none;max-width:110px;" onchange="assignGuestFromGuestList('${g.id}',this.value)">
+            <option value="">— Table —</option>
             ${tableOptions}
           </select>
         </td>
-        <td>${g.dietary||'—'}</td>
-        <td>${g.notes||'—'}</td>
+        <td><span style="font-size:0.78rem;color:var(--ink3);">—</span></td>
+        <td style="font-size:0.78rem;">${g.dietary||'—'}</td>
+        <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.notes||'—'}</td>
+        <td><button onclick="deleteGuest('${g.id}')" style="font-size:0.7rem;padding:2px 8px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;color:#c0392b;font-family:'DM Sans',sans-serif;">Delete</button></td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
@@ -2443,6 +2453,100 @@ function openAddGuest() {
 }
 function closeAddGuest() { document.getElementById('guest-modal').classList.remove('open'); }
 
+
+
+async function updateGuestRsvp(id, status) {
+  const item = allGuests.find(g=>g.id===id);
+  if (item) item.rsvp_status = status;
+  await sb.from('guests').update({ rsvp_status: status }).eq('id', id);
+  const confirmed = allGuests.filter(g=>g.rsvp_status==='confirmed').length;
+  await sb.from('events').update({ rsvp_count: confirmed }).eq('id', eventId);
+  document.getElementById('stat-rsvp').textContent = confirmed;
+}
+
+async function deleteGuest(id) {
+  if (!confirm('Delete this guest?')) return;
+  await sb.from('guests').delete().eq('id', id);
+  // Also remove from table plan
+  tpTables.forEach(t => { t.guests = (t.guests||[]).filter(gid=>gid!==id); });
+  allGuests = allGuests.filter(g=>g.id!==id);
+  await sb.from('events').update({ guest_count: allGuests.length }).eq('id', eventId);
+  document.getElementById('stat-guests').textContent = allGuests.length;
+  renderGuests(allGuests);
+}
+
+async function clearAllGuests() {
+  if (!confirm('Delete ALL guests? This cannot be undone.')) return;
+  const ids = allGuests.map(g=>g.id);
+  if (ids.length) await sb.from('guests').delete().in('id', ids);
+  allGuests = [];
+  tpTables.forEach(t => t.guests = []);
+  await sb.from('events').update({ guest_count: 0, rsvp_count: 0 }).eq('id', eventId);
+  document.getElementById('stat-guests').textContent = 0;
+  document.getElementById('stat-rsvp').textContent = 0;
+  renderGuests([]);
+}
+
+async function importGuests(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  // Split lines handling 
+ and 
+
+  const lines = text.replace(//g,'').split('
+').filter(l=>l.trim());
+  if (lines.length < 2) { alert('CSV appears empty.'); return; }
+
+  // Parse CSV row handling quoted fields
+  function parseRow(row) {
+    const cols=[]; let cur='', inQ=false;
+    for (let i=0;i<row.length;i++) {
+      const ch=row[i];
+      if (ch==='"') { if(inQ&&row[i+1]==='"'){cur+='"';i++;}else inQ=!inQ; }
+      else if (ch===','&&!inQ) { cols.push(cur.trim()); cur=''; }
+      else cur+=ch;
+    }
+    cols.push(cur.trim());
+    return cols;
+  }
+
+  const headers = parseRow(lines[0]).map(h=>h.toLowerCase().replace(/[^a-z0-9]/g,''));
+  const findCol = (...names) => { for(const n of names){const i=headers.findIndex(h=>h===n.replace(/[^a-z0-9]/g,''));if(i>-1)return i;} return -1; };
+
+  const firstCol  = findCol('firstname','first');
+  const lastCol   = findCol('lastname','last','surname');
+  const emailCol  = findCol('email','emailaddress');
+  const rsvpCol   = findCol('rsvp','rsvpstatus','status');
+  const dietCol   = findCol('dietary','diet','dietaryrequirements');
+  const notesCol  = findCol('notes','note');
+
+  const toInsert = lines.slice(1).map(line => {
+    const r = parseRow(line);
+    const firstName = firstCol>-1 ? r[firstCol]||'' : r[0]||'';
+    if (!firstName.trim()) return null;
+    return {
+      event_id:    eventId,
+      first_name:  firstName.trim(),
+      last_name:   lastCol>-1  ? (r[lastCol]||'').trim()  : (r[1]||'').trim(),
+      email:       emailCol>-1 ? (r[emailCol]||'').trim() : (r[2]||'').trim(),
+      rsvp_status: rsvpCol>-1  ? (r[rsvpCol]||'pending').trim().toLowerCase() : 'pending',
+      dietary:     dietCol>-1  ? (r[dietCol]||'').trim()  : '',
+      notes:       notesCol>-1 ? (r[notesCol]||'').trim() : '',
+    };
+  }).filter(Boolean);
+
+  if (!toInsert.length) { alert('No valid rows found. Make sure your CSV has a First name column.'); return; }
+  if (!confirm(`Import ${toInsert.length} guests?`)) return;
+
+  const { error } = await sb.from('guests').insert(toInsert);
+  if (error) { alert('Import failed: '+error.message); return; }
+  e.target.value='';
+  await loadGuests();
+  await sb.from('events').update({ guest_count: allGuests.length }).eq('id', eventId);
+  document.getElementById('stat-guests').textContent = allGuests.length;
+  alert('✓ '+toInsert.length+' guests imported!');
+}
 
 function exportGuests() {
   if (!allGuests.length) { alert('No guests to export.'); return; }
