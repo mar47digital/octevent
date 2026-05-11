@@ -1,8 +1,17 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/event", "destination": "/event.html" }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/event-overview", "dest": "/event-overview.html" },
+    { "src": "/event-checklist", "dest": "/event-checklist.html" },
+    { "src": "/event-budget", "dest": "/event-budget.html" },
+    { "src": "/event-guests", "dest": "/event-guests.html" },
+    { "src": "/event-rooms", "dest": "/event-rooms.html" },
+    { "src": "/event-runsheet", "dest": "/event-runsheet.html" },
+    { "src": "/event-tableplan", "dest": "/event-tableplan.html" },
+    { "src": "/event-settings", "dest": "/event-settings.html" },
+    { "src": "/event", "dest": "/event-overview.html" },
+    { "src": "/dashboard", "dest": "/dashboard.html" },
+    { "src": "/login", "dest": "/login.html" },
+    { "src": "/", "dest": "/index.html" }
   ]
 }
