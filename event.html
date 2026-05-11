@@ -45,6 +45,7 @@ async function saveMobileBudget() {
     supplier:         document.getElementById('mb-supplier').value.trim(),
     description:      document.getElementById('mb-description').value.trim(),
     allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
+    quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
     deposit_amount:   parseFloat(document.getElementById('mb-deposit').value)||0,
     paid_amount:      parseFloat(document.getElementById('mb-paid-amount').value)||0,
@@ -1294,6 +1295,12 @@ function printTablePlan() {
   .ov-grid{grid-template-columns:1fr 1fr;}
   .ov-quick{grid-template-columns:1fr 1fr;}
 }
+
+/* DRAG TO REORDER */
+.drag-handle{cursor:grab;padding:0 6px;color:var(--ink3);font-size:1rem;user-select:none;}
+.drag-handle:hover{color:var(--ink);}
+tr.dragging-row{opacity:0.4;}
+tr.drag-over{border-top:2px solid var(--amber);}
 </style></head><body>
     <h1>${currentEvent?.name||'Event'} — Table Plan</h1>
     <div class="subtitle">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
@@ -2036,11 +2043,7 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
   <!-- BUDGET -->
   <div class="panel" id="panel-budget">
     <div class="panel-header">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div class="panel-title">Budget tracker</div>
-        <button class="btn-sm" onclick="addBudgetRow('expense')">＋ Expense</button>
-        <button class="btn-sm" onclick="addBudgetRow('income')">＋ Income</button>
-      </div>
+      <div class="panel-title">Budget tracker</div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn-sm" id="sort-reset-btn" onclick="resetSort()" style="display:none;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v4h4"/></svg>
@@ -2530,40 +2533,33 @@ function updateSummary(items) {
     const incPaid      = incRows.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
     const netAllocated = incAllocated - expAllocated;
     const netActual    = incActual - expActual;
-    // New cols: type,cat,sup,desc(4), qty,hrs,cost,=total(4), alloc,final,deposit,paid,remaining,nextpay,notes,del(8)
-    const expRem = expActual - expPaid;
-    const incRem = incActual - incPaid;
     footer.innerHTML = `
-      <td colspan="4"><strong>Total expenses</strong></td>
-      <td colspan="4"></td>
+      <td colspan="2" style="color:var(--ink2);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total expenses</td>
+      <td></td><td></td>
       <td class="num"><strong>${fmtSum(expAllocated)}</strong></td>
+      <td class="num"><strong>${fmtSum(expQuoted)}</strong></td>
       <td class="num"><strong>${fmtSum(expActual)}</strong></td>
       <td class="num"><strong>${fmtSum(expDeposit)}</strong></td>
       <td class="num"><strong>${fmtSum(expPaid)}</strong></td>
-      <td class="num ${expRem>0?'red':'green'}"><strong>${fmtSum(expRem)}</strong></td>
       <td colspan="3"></td>`;
     const footer2 = document.getElementById('budget-footer2');
     if (footer2) footer2.innerHTML = `
-      <td colspan="4"><strong style="color:#2d6a4f;">Total income</strong></td>
-      <td colspan="4"></td>
+      <td colspan="2" style="color:#2d6a4f;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">Total income</td>
+      <td></td><td></td>
       <td class="num green"><strong>${fmtSum(incAllocated)}</strong></td>
+      <td class="num green"><strong>${fmtSum(incQuoted)}</strong></td>
       <td class="num green"><strong>${fmtSum(incActual)}</strong></td>
-      <td class="num"></td>
+      <td class="num green"><strong>${fmtSum(incDeposit)}</strong></td>
       <td class="num green"><strong>${fmtSum(incPaid)}</strong></td>
-      <td class="num ${incRem>0?'red':'green'}"><strong>${fmtSum(incRem)}</strong></td>
       <td colspan="3"></td>`;
-    const netPaid = incPaid - expPaid;
-    const netRem  = incRem - expRem;
     const footer3 = document.getElementById('budget-footer3');
     if (footer3) footer3.innerHTML = `
-      <td colspan="4"><strong class="${netActual>=0?'':'red'}">${netActual>=0?'✓ Net surplus':'⚠ Outstanding balance'}</strong></td>
-      <td colspan="4"></td>
+      <td colspan="2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;" class="${netActual>=0?'':'red'}">${netActual>=0?'Net surplus':'Net deficit'}</td>
+      <td></td><td></td>
       <td class="num ${netAllocated>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netAllocated))}</strong></td>
-      <td class="num ${netActual>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netActual))}</strong></td>
       <td class="num"></td>
-      <td class="num ${netPaid>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netPaid))}</strong></td>
-      <td class="num ${netRem>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netRem))}</strong></td>
-      <td colspan="3"></td>`;
+      <td class="num ${netActual>=0?'green':'red'}"><strong>${fmtSum(Math.abs(netActual))}</strong></td>
+      <td colspan="5"></td>`;
   }
 }
 
@@ -2596,7 +2592,7 @@ function makeEditable(td, item, field, type) {
   } else {
     input = document.createElement('input');
     input.className = 'inline-input';
-    input.type = (type==='num' || type==='hrs') ? 'number' : type==='date' ? 'date' : 'text';
+    input.type = type==='num' ? 'number' : 'text';
     input.value = item[field]||'';
     if (type==='num') { input.step='0.01'; input.min='0'; }
   }
@@ -2604,33 +2600,14 @@ function makeEditable(td, item, field, type) {
   if (input.select) input.select();
 
   async function save() {
-    let val;
-    if (type==='num'||type==='hrs'||type==='qty') val = parseFloat(input.value)||0;
-    else if (type==='date') val = input.value || null;
-    else val = input.value.trim();
+    const val = type==='num' ? (parseFloat(input.value)||0) : input.value.trim();
     item[field] = val;
     td.classList.remove('editing');
     refreshCell(td, item, field, type);
-    // Refresh calc and remaining cells in same row
-    const row = td.closest('tr');
-    if (row && (field==='quantity'||field==='hours'||field==='cost_pp')) {
-      row.querySelectorAll('[data-celltype="calc"]').forEach(c => refreshCell(c, item, '_calc', 'calc'));
-    }
-    if (row && (field==='actual_amount'||field==='paid_amount')) {
-      row.querySelectorAll('[data-celltype="remaining"]').forEach(c => refreshCell(c, item, '_remaining', 'remaining'));
-    }
     updateSummary(allBudgetItems);
-    const saveVal = val === '' ? null : val;
-    await sb.from('budget_items').update({ [field]: saveVal }).eq('id', item.id);
-    // Re-sort when focus leaves the whole row
-    const currentRow = td.closest('tr');
-    if (currentRow) {
-      setTimeout(() => {
-        if (!currentRow.querySelector('.editing') && !currentRow.matches(':focus-within')) {
-          applySortAndRender();
-        }
-      }, 150);
-    }
+    await sb.from('budget_items').update({ [field]: val }).eq('id', item.id);
+    // Re-apply sort to keep order consistent
+    if (sortField && sortField !== field) applySortAndRender();
   }
   input.addEventListener('blur', save);
   input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();input.blur();} });
@@ -2642,76 +2619,64 @@ function refreshCell(td, item, field, type) {
     td.innerHTML = `<span class="type-badge ${isIncome?'type-income':'type-expense'}">${isIncome?'Income':'Expense'}</span>`;
     return;
   }
-  if (type==='cat') {
-    td.innerHTML=`<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`;
-  } else if (type==='qty') {
-    const v = parseFloat(item[field]||0);
-    td.textContent = v > 0 ? v : '—'; td.className='num';
-  } else if (type==='hrs') {
-    const v = parseFloat(item[field]||0);
-    td.textContent = v > 0 ? v+'h' : '—'; td.className='num';
-  } else if (type==='calc') {
-    const qty=parseFloat(item.quantity||0), hrs=parseFloat(item.hours||0), cpp=parseFloat(item.cost_pp||0);
-    const val = hrs>0 ? qty*hrs*cpp : qty>0 ? qty*cpp : cpp>0 ? cpp : 0;
-    td.textContent = val>0 ? fmt(val) : '—'; td.className='num'; td.style.cursor='default';
-    td.title = hrs>0 ? `${qty} × ${hrs}h × ${fmt(cpp)} = ${fmt(val)}` : qty>0 ? `${qty} × ${fmt(cpp)} = ${fmt(val)}` : '';
-  } else if (type==='remaining') {
-    const actual = parseFloat(item.actual_amount)||0;
-    const paid   = parseFloat(item.paid_amount)||0;
-    const rem    = actual - paid;
-    if (item.item_type==='income') {
-      if (actual===0 && paid===0) { td.textContent='—'; td.className='num'; td.style.cursor='default'; return; }
-      if (rem<=0) { td.innerHTML='<span style="color:#2d6a4f;font-weight:600;">✓ Received</span>'; }
-      else { td.innerHTML=`<span style="color:#2d6a4f;font-weight:600;">${fmt(rem)}</span>`; }
-      td.className='num'; td.style.cursor='default'; return;
-    }
-    if (actual === 0 && paid === 0) { td.textContent='—'; td.className='num'; td.style.cursor='default'; return; }
-    if (rem<=0) { td.innerHTML='<span style="color:#2d6a4f;font-weight:600;">✓ Clear</span>'; }
-    else { td.innerHTML=`<span style="color:#c0392b;font-weight:700;">${fmt(rem)}</span>`; }
-    td.className='num'; td.style.cursor='default';
-  } else if (type==='date') {
-    const d=item[field];
-    if (!d) { td.textContent='—'; return; }
-    const [y,m,dy]=d.split('-');
-    td.textContent = new Date(y,m-1,dy).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  } else if (type==='status') {
-    td.innerHTML=`<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field], item.item_type)}</span>`;
-  } else if (type==='num') {
-    td.innerHTML = fmt(item[field]); td.className='num';
-    if (field==='actual_amount' && parseFloat(item[field])>parseFloat(item.allocated_budget||0) && item.item_type!=='income') td.classList.add('red');
-  } else {
-    td.textContent = item[field]||'—';
-  }
+  if (type==='cat') { td.innerHTML=`<span class="category-badge ${catClass(item[field])}">${catLabel(item[field])}</span>`; }
+  else if (type==='status') { td.innerHTML=`<span class="paid-badge ${paidClass(item[field])}">${paidLabel(item[field])}</span>`; }
+  else if (type==='num') {
+    td.innerHTML = fmt(item[field]);
+    let cls = 'num';
+    if (field==='actual_amount' && parseFloat(item[field])>parseFloat(item.allocated_budget||0) && item.item_type!=='income') cls+=' red';
+    if (field==='paid_amount' && item.paid_status==='paid') cls+=' green';
+    td.className = cls;
+  } else { td.textContent = item[field]||'—'; }
 }
 
 function buildBudgetRow(item) {
   const tr = document.createElement('tr');
   tr.dataset.id = item.id;
+  tr.draggable = true;
+  // Drag handle cell
+  const handleTd = document.createElement('td');
+  handleTd.innerHTML = '<span class="drag-handle" title="Drag to reorder">⠿</span>';
+  handleTd.style.cursor = 'grab';
+  handleTd.style.width = '24px';
+  handleTd.style.padding = '0 4px';
+  tr.appendChild(handleTd);
+  // Drag events
+  tr.addEventListener('dragstart', e => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('rowId', item.id);
+    setTimeout(() => tr.classList.add('dragging-row'), 0);
+  });
+  tr.addEventListener('dragend', () => tr.classList.remove('dragging-row'));
+  tr.addEventListener('dragover', e => { e.preventDefault(); tr.classList.add('drag-over'); });
+  tr.addEventListener('dragleave', () => tr.classList.remove('drag-over'));
+  tr.addEventListener('drop', e => {
+    e.preventDefault();
+    tr.classList.remove('drag-over');
+    const fromId = e.dataTransfer.getData('rowId');
+    if (fromId === item.id) return;
+    const fromIdx = allBudgetItems.findIndex(i => i.id === fromId);
+    const toIdx   = allBudgetItems.findIndex(i => i.id === item.id);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [moved] = allBudgetItems.splice(fromIdx, 1);
+    allBudgetItems.splice(toIdx, 0, moved);
+    applySortAndRender();
+    document.getElementById('save-order-btn').style.display = 'inline-flex';
+  });
   const cols = [
     {field:'item_type',type:'itype'},
     {field:'category',type:'cat'},
     {field:'supplier',type:'text'},
     {field:'description',type:'text'},
-    {field:'quantity',type:'qty'},
-    {field:'hours',type:'hrs'},
-    {field:'cost_pp',type:'num'},
-    {field:'_calc',type:'calc'},
     {field:'allocated_budget',type:'num'},
+    {field:'quoted_amount',type:'num'},
     {field:'actual_amount',type:'num'},
     {field:'deposit_amount',type:'num'},
     {field:'paid_amount',type:'num'},
-    {field:'_remaining',type:'remaining'},
-    {field:'next_payment_date',type:'date'},
+    {field:'paid_status',type:'status'},
     {field:'notes',type:'text'},
   ];
   cols.forEach(({field,type}) => {
-    if (type==='calc' || type==='remaining') {
-      const tdx = document.createElement('td');
-      tdx.dataset.celltype = type;
-      refreshCell(tdx, item, field, type);
-      tr.appendChild(tdx);
-      return;
-    }
     const td = document.createElement('td');
     if (type==='num') td.className='num';
     refreshCell(td, item, field, type);
@@ -2733,7 +2698,7 @@ function renderBudget(items) {
     // Still show the + row
     const tbl = document.createElement('table');
     tbl.className = 'budget-table';
-    tbl.innerHTML = `<tbody></tbody>`;
+    tbl.innerHTML = `<tbody><tr class="add-row" onclick="addBudgetRow()"><td colspan="13">＋ Add line item</td></tr></tbody>`;
     wrap.appendChild(tbl);
     return;
   }
@@ -2742,20 +2707,17 @@ function renderBudget(items) {
   tbl.className = 'budget-table';
   tbl.innerHTML = `
     <thead><tr>
+      <th style="width:24px;"></th>
       <th class="sortable" onclick="sortBudget('item_type')">Type <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('category')">Category <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('description')">Description <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('quantity')">Qty <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('hours')">Hrs <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('cost_pp')">Cost/unit <span class="sort-icon">↕</span></th>
-      <th class="num" style="color:var(--ink3);font-size:0.65rem;">=Total</th>
       <th class="num sortable" onclick="sortBudget('allocated_budget')">Allocated <span class="sort-icon">↕</span></th>
-      <th class="num sortable" onclick="sortBudget('actual_amount')">Final <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('quoted_amount')">Quoted <span class="sort-icon">↕</span></th>
+      <th class="num sortable" onclick="sortBudget('actual_amount')">Actual <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('deposit_amount')">Deposit <span class="sort-icon">↕</span></th>
       <th class="num sortable" onclick="sortBudget('paid_amount')">Paid <span class="sort-icon">↕</span></th>
-      <th class="num">Remaining</th>
-      <th class="sortable" onclick="sortBudget('next_payment_date')">Next payment <span class="sort-icon">↕</span></th>
+      <th class="sortable" onclick="sortBudget('paid_status')">Status <span class="sort-icon">↕</span></th>
       <th>Notes</th>
       <th></th>
     </tr></thead>
@@ -2764,14 +2726,11 @@ function renderBudget(items) {
       <tr id="budget-footer"></tr>
       <tr id="budget-footer2" style="background:#f0f7f4;"></tr>
       <tr id="budget-footer3" style="background:var(--cream);border-top:2px solid var(--rule);"></tr>
-      
+      <tr class="add-row" onclick="addBudgetRow()"><td colspan="13">＋ Add line item</td></tr>
     </tfoot>`;
   wrap.appendChild(tbl);
   const tbody = document.getElementById('budget-tbody');
-  // Sort: expenses A-Z by category, then income A-Z by category
-  const expenses = items.filter(i=>i.item_type!=='income').sort((a,b)=>(a.category||'').localeCompare(b.category||''));
-  const income   = items.filter(i=>i.item_type==='income').sort((a,b)=>(a.category||'').localeCompare(b.category||''));
-  [...expenses, ...income].forEach(item => tbody.appendChild(buildBudgetRow(item)));
+  items.forEach(item => tbody.appendChild(buildBudgetRow(item)));
   updateSummary(items);
 
   // Mobile cards
@@ -2812,23 +2771,31 @@ function renderBudget(items) {
     </div>`).join('');
 }
 
-async function addBudgetRow(type) {
+async function saveBudgetOrder() {
+  const btn = document.getElementById('save-order-btn');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  // Update sort_order on each item
+  const updates = allBudgetItems.map((item, idx) => 
+    sb.from('budget_items').update({ sort_order: idx }).eq('id', item.id)
+  );
+  await Promise.all(updates);
+  btn.textContent = '✓ Saved'; btn.disabled = false;
+  setTimeout(() => { btn.textContent = '💾 Save order'; btn.style.display = 'none'; }, 2000);
+}
+
+async function addBudgetRow() {
   const { data, error } = await sb.from('budget_items').insert([{
-    event_id: eventId, item_type: type||'expense', category:'other', supplier:'', description:'',
-    allocated_budget:0, actual_amount:0,
-    quantity:0, hours:0, cost_pp:0, deposit_amount:0, paid_amount:0, next_payment_date:null, notes:''
+    event_id: eventId, item_type:'expense', category:'other', supplier:'', description:'',
+    allocated_budget:0, quoted_amount:0, actual_amount:0,
+    deposit_amount:0, paid_amount:0, paid_status:'unpaid', notes:''
   }]).select().single();
   if (!error && data) {
     allBudgetItems.push(data);
     applySortAndRender();
     setTimeout(() => {
-      const newRow = document.querySelector('#budget-tbody tr[data-id="' + data.id + '"]');
-      if (newRow) {
-        newRow.scrollIntoView({behavior:'smooth', block:'center'});
-        const cells = newRow.querySelectorAll('td');
-        if (cells[1]) cells[1].click();
-      }
-    }, 80);
+      const rows = document.querySelectorAll('#budget-tbody tr');
+      if (rows.length) rows[rows.length-1].querySelector('td').click();
+    }, 50);
   }
 }
 
@@ -2934,6 +2901,7 @@ async function saveMobileBudget() {
     supplier:         document.getElementById('mb-supplier').value.trim(),
     description:      document.getElementById('mb-description').value.trim(),
     allocated_budget: parseFloat(document.getElementById('mb-allocated').value)||0,
+    quoted_amount:    parseFloat(document.getElementById('mb-quoted').value)||0,
     actual_amount:    parseFloat(document.getElementById('mb-actual').value)||0,
     deposit_amount:   parseFloat(document.getElementById('mb-deposit').value)||0,
     paid_amount:      parseFloat(document.getElementById('mb-paid-amount').value)||0,
