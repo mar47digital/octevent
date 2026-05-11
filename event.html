@@ -2026,7 +2026,10 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
           <input type="text" id="guest-search" placeholder="Search guests..." oninput="filterGuests()">
         </div>
         <button class="btn-sm" onclick="exportGuests()">⬇ Export CSV</button>
-<button class="btn-sm amber" onclick="openAddGuest()">+ Add guest</button>
+        <button class="btn-sm" onclick="document.getElementById('g-import').click()">⬆ Import CSV</button>
+        <input type="file" id="g-import" accept=".csv" style="display:none" onchange="importGuests(event)">
+        <button class="btn-sm" onclick="clearAllGuests()" style="color:#c0392b;border-color:#fdf0f0;">🗑 Clear all</button>
+        <button class="btn-sm amber" onclick="openAddGuest()">+ Add guest</button>
       </div>
     </div>
     <div id="guests-content"><div class="spinner"></div></div>
@@ -2410,16 +2413,19 @@ function renderGuests(guests) {
   }
   el.innerHTML = `<div class="table-wrap" style="overflow-x:auto;"><table>
     <thead><tr>
-      <th>Name</th><th>Email</th><th>RSVP</th>
-      <th>Table</th><th>Room</th>
-      <th>Dietary</th><th>Notes</th><th></th>
+      <th style="min-width:140px;">Name</th>
+      <th style="min-width:80px;">RSVP</th>
+      <th style="min-width:120px;">Table</th>
+      <th style="min-width:60px;">Room</th>
+      <th style="min-width:100px;">Dietary</th>
+      <th style="min-width:120px;">Notes</th>
+      <th style="width:60px;"></th>
     </tr></thead>
     <tbody>${guests.map(g => {
       const assignedTable = tpTables.find(t=>(t.guests||[]).includes(g.id));
       const tableOptions = tpTables.map(t=>`<option value="${t.id}" ${assignedTable?.id===t.id?'selected':''}>${t.name}</option>`).join('');
       return `<tr>
-        <td><div class="guest-name">${g.first_name} ${g.last_name||''}</div><div class="guest-email">${g.email||''}</div></td>
-        <td style="display:none;">${g.email||''}</td>
+        <td style="min-width:140px;"><div class="guest-name">${g.first_name} ${g.last_name||''}</div><div class="guest-email">${g.email||''}</div></td>
         <td>
           <select style="font-size:0.75rem;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateGuestRsvp('${g.id}',this.value)">
             <option value="pending" ${(g.rsvp_status||'pending')==='pending'?'selected':''}>Pending</option>
