@@ -1296,11 +1296,7 @@ function printTablePlan() {
   .ov-quick{grid-template-columns:1fr 1fr;}
 }
 
-/* DRAG TO REORDER */
-.drag-handle{cursor:grab;padding:0 6px;color:var(--ink3);font-size:1rem;user-select:none;}
-.drag-handle:hover{color:var(--ink);}
-tr.dragging-row{opacity:0.4;}
-tr.drag-over{border-top:2px solid var(--amber);}
+
 </style></head><body>
     <h1>${currentEvent?.name||'Event'} — Table Plan</h1>
     <div class="subtitle">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
@@ -2633,50 +2629,13 @@ function refreshCell(td, item, field, type) {
 function buildBudgetRow(item) {
   const tr = document.createElement('tr');
   tr.dataset.id = item.id;
-  tr.draggable = false;
-  // Drag handle cell — only drag from handle
-  const handleTd = document.createElement('td');
-  handleTd.innerHTML = '<span class="drag-handle" title="Drag to reorder">⠿</span>';
-  handleTd.style.cursor = 'grab';
-  handleTd.style.width = '24px';
-  handleTd.style.padding = '0 4px';
-  tr.appendChild(handleTd);
-  // Only start drag from handle
-  handleTd.addEventListener('mousedown', () => { tr.draggable = true; });
-  document.addEventListener('mouseup', () => { tr.draggable = false; }, {once:true});
-  tr.addEventListener('dragstart', e => {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', item.id);
-    window._budgetDragId = item.id;
-    setTimeout(() => tr.classList.add('dragging-row'), 0);
-  });
-  tr.addEventListener('dragend', () => {
-    tr.classList.remove('dragging-row');
-    tr.draggable = false;
-    document.querySelectorAll('#budget-tbody tr').forEach(r => r.classList.remove('drag-over'));
-  });
-  tr.addEventListener('dragover', e => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    document.querySelectorAll('#budget-tbody tr').forEach(r => r.classList.remove('drag-over'));
-    if (window._budgetDragId !== item.id) tr.classList.add('drag-over');
-  });
-  tr.addEventListener('drop', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    tr.classList.remove('drag-over');
-    const fromId = window._budgetDragId || e.dataTransfer.getData('text/plain');
-    if (!fromId || fromId === item.id) return;
-    const fromIdx = allBudgetItems.findIndex(i => i.id === fromId);
-    const toIdx   = allBudgetItems.findIndex(i => i.id === item.id);
-    if (fromIdx === -1 || toIdx === -1) return;
-    const [moved] = allBudgetItems.splice(fromIdx, 1);
-    allBudgetItems.splice(toIdx, 0, moved);
-    window._budgetDragId = null;
-    applySortAndRender();
-    const btn = document.getElementById('save-order-btn');
-    if (btn) btn.style.display = 'inline-flex';
-  });
+  // Up/down arrow cell
+  const moveTd = document.createElement('td');
+  moveTd.style.cssText = 'width:36px;padding:0 2px;white-space:nowrap;cursor:default;';
+  moveTd.innerHTML = `
+    <button onclick="moveBudgetRow('${item.id}',-1)" title="Move up" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.8rem;padding:1px 3px;line-height:1;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink3)'">▲</button>
+    <button onclick="moveBudgetRow('${item.id}',1)" title="Move down" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.8rem;padding:1px 3px;line-height:1;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink3)'">▼</button>`;
+  tr.appendChild(moveTd);
   const cols = [
     {field:'item_type',type:'itype'},
     {field:'category',type:'cat'},
@@ -2721,7 +2680,7 @@ function renderBudget(items) {
   tbl.className = 'budget-table';
   tbl.innerHTML = `
     <thead><tr>
-      <th style="width:24px;"></th>
+      <th style="width:36px;"></th>
       <th class="sortable" onclick="sortBudget('item_type')">Type <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('category')">Category <span class="sort-icon">↕</span></th>
       <th class="sortable" onclick="sortBudget('supplier')">Supplier <span class="sort-icon">↕</span></th>
@@ -2783,6 +2742,17 @@ function renderBudget(items) {
         <button class="row-del" style="opacity:1;" onclick="deleteBudgetItem('${item.id}')">Delete</button>
       </div>
     </div>`).join('');
+}
+
+function moveBudgetRow(id, dir) {
+  const idx = allBudgetItems.findIndex(i => i.id === id);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= allBudgetItems.length) return;
+  const [moved] = allBudgetItems.splice(idx, 1);
+  allBudgetItems.splice(newIdx, 0, moved);
+  applySortAndRender();
+  const btn = document.getElementById('save-order-btn');
+  if (btn) btn.style.display = 'inline-flex';
 }
 
 async function saveBudgetOrder() {
