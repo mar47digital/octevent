@@ -2750,7 +2750,7 @@ function moveBudgetRow(id, dir) {
   if (newIdx < 0 || newIdx >= allBudgetItems.length) return;
   const [moved] = allBudgetItems.splice(idx, 1);
   allBudgetItems.splice(newIdx, 0, moved);
-  applySortAndRender();
+  renderBudget(allBudgetItems);
   const btn = document.getElementById('save-order-btn');
   if (btn) btn.style.display = 'inline-flex';
 }
