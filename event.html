@@ -2025,6 +2025,9 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="text" id="guest-search" placeholder="Search guests..." oninput="filterGuests()">
         </div>
+        <button class="btn-sm" onclick="exportGuests()">⬇ Export CSV</button>
+        <button class="btn-sm" onclick="document.getElementById('guest-import-input').click()">⬆ Import CSV</button>
+        <input type="file" id="guest-import-input" accept=".csv" style="display:none" onchange="importGuests(event)">
         <button class="btn-sm amber" onclick="openAddGuest()">+ Add guest</button>
       </div>
     </div>
@@ -2439,6 +2442,91 @@ function openAddGuest() {
   setTimeout(() => document.getElementById('g-first').focus(), 100);
 }
 function closeAddGuest() { document.getElementById('guest-modal').classList.remove('open'); }
+
+
+function exportGuests() {
+  if (!allGuests.length) { alert('No guests to export.'); return; }
+  const headers = ['First name','Last name','Email','RSVP','Dietary','Notes'];
+  const rows = allGuests.map(g => [
+    g.first_name||'', g.last_name||'', g.email||'',
+    g.rsvp_status||'pending', g.dietary||'', g.notes||''
+  ].map(v => `"${v.toString().replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${currentEvent?.name||'event'}-guests.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+async function importGuests(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) { alert('CSV appears empty.'); return; }
+  
+  // Parse header row to find columns
+  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g,'').toLowerCase().trim());
+  const col = name => {
+    const variants = {
+      'first name': ['first name','first','firstname'],
+      'last name':  ['last name','last','lastname','surname'],
+      'email':      ['email','email address'],
+      'rsvp':       ['rsvp','rsvp status','status'],
+      'dietary':    ['dietary','dietary requirements','diet'],
+      'notes':      ['notes','note'],
+    };
+    for (const [key, opts] of Object.entries(variants)) {
+      if (key === name && opts.some(o => headers.includes(o))) {
+        return headers.indexOf(opts.find(o => headers.includes(o)));
+      }
+    }
+    return -1;
+  };
+
+  const parseRow = row => {
+    const cols = []; let cur = '', inQ = false;
+    for (const ch of row) {
+      if (ch === '"') inQ = !inQ;
+      else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    cols.push(cur.trim());
+    return cols;
+  };
+
+  const rows = lines.slice(1).map(parseRow).filter(r => r.length > 0);
+  const firstIdx = col('first name');
+  
+  if (firstIdx === -1 && headers.length > 0) {
+    // No header match - assume first col is first name
+  }
+
+  const toInsert = rows.map(r => ({
+    event_id: eventId,
+    first_name: (r[col('first name') > -1 ? col('first name') : 0]||'').replace(/^"|"$/g,'').trim(),
+    last_name:  (r[col('last name')  > -1 ? col('last name')  : 1]||'').replace(/^"|"$/g,'').trim(),
+    email:      (r[col('email')      > -1 ? col('email')      : 2]||'').replace(/^"|"$/g,'').trim(),
+    rsvp_status:(r[col('rsvp')       > -1 ? col('rsvp')       : -1]||'pending').replace(/^"|"$/g,'').trim().toLowerCase()||'pending',
+    dietary:    (r[col('dietary')    > -1 ? col('dietary')    : -1]||'').replace(/^"|"$/g,'').trim(),
+    notes:      (r[col('notes')      > -1 ? col('notes')      : -1]||'').replace(/^"|"$/g,'').trim(),
+  })).filter(r => r.first_name);
+
+  if (!toInsert.length) { alert('No valid rows found. Make sure your CSV has a "First name" column.'); return; }
+  
+  const confirmed = confirm(`Import ${toInsert.length} guests?`);
+  if (!confirmed) return;
+
+  const { error } = await sb.from('guests').insert(toInsert);
+  if (error) { alert('Import failed: ' + error.message); return; }
+  
+  e.target.value = '';
+  await loadGuests();
+  await sb.from('events').update({ guest_count: allGuests.length }).eq('id', eventId);
+  document.getElementById('stat-guests').textContent = allGuests.length;
+  alert(`✓ ${toInsert.length} guests imported successfully!`);
+}
 
 async function addGuest() {
   const first = document.getElementById('g-first').value.trim();
