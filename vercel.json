@@ -1,17 +1,9 @@
 {
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/event-overview(.*)", "dest": "/event-overview.html$1" },
-    { "src": "/event-checklist(.*)", "dest": "/event-checklist.html$1" },
-    { "src": "/event-budget(.*)", "dest": "/event-budget.html$1" },
-    { "src": "/event-guests(.*)", "dest": "/event-guests.html$1" },
-    { "src": "/event-rooms(.*)", "dest": "/event-rooms.html$1" },
-    { "src": "/event-runsheet(.*)", "dest": "/event-runsheet.html$1" },
-    { "src": "/event-tableplan(.*)", "dest": "/event-tableplan.html$1" },
-    { "src": "/event-settings(.*)", "dest": "/event-settings.html$1" },
-    { "src": "/event(.*)", "dest": "/event-overview.html$1" },
-    { "src": "/dashboard(.*)", "dest": "/dashboard.html$1" },
-    { "src": "/login(.*)", "dest": "/login.html$1" },
+    { "src": "/event(.*)", "dest": "/event.html" },
+    { "src": "/dashboard(.*)", "dest": "/dashboard.html" },
+    { "src": "/login(.*)", "dest": "/login.html" },
     { "src": "/", "dest": "/index.html" }
   ]
 }
