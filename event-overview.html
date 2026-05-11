@@ -1254,13 +1254,13 @@ function renderEventHeader(ev) {
   }
 }
 
-const SUPABASE_URL = 'https://esjmzvhxbwcpslutprel.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzam16dmh4YndjcHNsdXRwcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzcxNjAsImV4cCI6MjA5Mzc1MzE2MH0.fsr1_P_ZB68SaiK00GPXvJLQUePM4eLght_CaAYOeF0';
-const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+
+
 const params = new URLSearchParams(window.location.search);
-const eventId = params.get('id');
-let currentEvent = null;
+
+
 let allGuests = [];
 let allBudgetItems = [];
 let sortField = 'category';
