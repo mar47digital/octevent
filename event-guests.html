@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
   --amber:#F5A800;--amber-light:#FFF8E6;--amber-dark:#C98A00;
@@ -496,10 +495,137 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
   .ov-grid{grid-template-columns:1fr 1fr;}
   .ov-quick{grid-template-columns:1fr 1fr;}
 }
-
-</style>
 </head>
 <body>
+
+    <h1>${currentEvent?.name||'Event'} — Table Plan</h1>
+    <div class="subtitle">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
+    <div class="tables-grid">
+      ${tpTables.map(table => `
+        <div class="table-block">
+          <div class="table-name">${table.name}</div>
+          <div class="seats">${(table.guests||[]).length} of ${table.capacity||8} seats filled</div>
+          ${(table.guests||[]).length === 0
+            ? '<div class="empty">No guests assigned</div>'
+            : (table.guests||[]).map(gid => {
+                const g = tpGuests.find(g=>g.id===gid);
+                return g ? `<div class="guest-row"><span>${g.first_name} ${g.last_name||''}</span><span class="dietary">${g.dietary||''}</span></div>` : '';
+              }).join('')
+          }
+        </div>`).join('')}
+    </div>
+    </body></html>`;
+  const win = window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.print();
+}
+
+
+async function renderOverviewDashboard() {
+  const el = document.getElementById('overview-dashboard');
+  if (!el) return;
+
+  // Load all data needed
+  const [gData, clData, rsData, bdData] = await Promise.all([
+    sb.from('guests').select('*').eq('event_id', eventId),
+    sb.from('checklist_items').select('*').eq('event_id', eventId),
+    sb.from('runsheet_items').select('*').eq('event_id', eventId),
+    sb.from('budget_items').select('*').eq('event_id', eventId),
+  ]);
+
+  const guests     = gData.data || [];
+  const checklist  = clData.data || [];
+  const runsheet   = rsData.data || [];
+  const budget     = bdData.data || [];
+
+  // Guests
+  const totalGuests    = guests.length;
+  const confirmedGuests= guests.filter(g=>g.rsvp_status==='confirmed').length;
+  const guestPct       = totalGuests ? Math.round(confirmedGuests/totalGuests*100) : 0;
+
+  // Checklist
+  const totalCl  = checklist.length;
+  const doneCl   = checklist.filter(i=>i.status==='done').length;
+  const clPct    = totalCl ? Math.round(doneCl/totalCl*100) : 0;
+
+  // Run sheet
+  const totalRs  = runsheet.length;
+  const doneRs   = runsheet.filter(i=>i.done).length;
+  const rsPct    = totalRs ? Math.round(doneRs/totalRs*100) : 0;
+
+  // Budget
+  const expenses  = budget.filter(i=>i.item_type!=='income');
+  const totalActual = expenses.reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+  const totalPaid   = expenses.reduce((s,i)=>s+parseFloat(i.paid_amount||0),0);
+  const budgetPct   = totalActual ? Math.round(totalPaid/totalActual*100) : 0;
+  const totalIncome = budget.filter(i=>i.item_type==='income').reduce((s,i)=>s+parseFloat(i.actual_amount||0),0);
+
+  // Table plan
+  const totalSeats    = tpTables.reduce((s,t)=>s+(t.capacity||0),0);
+  const assignedSeats = tpTables.reduce((s,t)=>s+(t.guests||[]).length,0);
+  const seatsPct      = totalSeats ? Math.round(assignedSeats/totalSeats*100) : 0;
+
+  // Rooms
+  const totalRooms = currentEvent?.room_count || 0;
+
+  const fmt = n => '€'+parseFloat(n||0).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});
+
+  el.innerHTML = `
+    <div class="ov-grid">
+      <div class="ov-card" onclick="go('event-guests')">
+        <div class="ov-card-label">👥 Guests attending</div>
+        <div class="ov-card-value">${confirmedGuests}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalGuests}</span></div>
+        <div class="ov-card-sub">${guestPct}% confirmed</div>
+        <div class="ov-progress"><div class="ov-progress-fill green" style="width:${guestPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="go('event-checklist')">
+        <div class="ov-card-label">✅ Checklist</div>
+        <div class="ov-card-value">${doneCl}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalCl}</span></div>
+        <div class="ov-card-sub">${clPct}% complete</div>
+        <div class="ov-progress"><div class="ov-progress-fill" style="width:${clPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="go('event-budget')">
+        <div class="ov-card-label">💰 Budget paid</div>
+        <div class="ov-card-value">${fmt(totalPaid)}</div>
+        <div class="ov-card-sub">${budgetPct}% of ${fmt(totalActual)} actual</div>
+        <div class="ov-progress"><div class="ov-progress-fill" style="width:${Math.min(budgetPct,100)}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="go('event-budget')">
+        <div class="ov-card-label">📈 Income received</div>
+        <div class="ov-card-value">${fmt(totalIncome)}</div>
+        <div class="ov-card-sub">Total income logged</div>
+      </div>
+      <div class="ov-card" onclick="go('event-runsheet')">
+        <div class="ov-card-label">📅 Run sheet</div>
+        <div class="ov-card-value">${doneRs}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalRs}</span></div>
+        <div class="ov-card-sub">${rsPct}% complete</div>
+        <div class="ov-progress"><div class="ov-progress-fill green" style="width:${rsPct}%"></div></div>
+      </div>
+      <div class="ov-card" onclick="go('event-tableplan')">
+        <div class="ov-card-label">🪑 Seats assigned</div>
+        <div class="ov-card-value">${assignedSeats}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalSeats||'—'}</span></div>
+        <div class="ov-card-sub">${totalSeats ? seatsPct+'% filled' : 'No tables set up yet'}</div>
+        ${totalSeats ? `<div class="ov-progress"><div class="ov-progress-fill" style="width:${seatsPct}%"></div></div>` : ''}
+      </div>
+    </div>
+
+    <div class="ov-section-title">⚡ Quick actions</div>
+    <div class="ov-quick">
+      <button class="quick-action" onclick="go('event-guests');openAddGuest()"><div class="quick-action-icon">👤</div>Add a guest</button>
+      <button class="quick-action" onclick="go('event-checklist')"><div class="quick-action-icon">✅</div>View checklist</button>
+      <button class="quick-action" onclick="go('event-budget');addBudgetRow()"><div class="quick-action-icon">💰</div>Log an expense</button>
+      <button class="quick-action" onclick="go('event-runsheet');addRunsheetRow()"><div class="quick-action-icon">📅</div>Add run sheet item</button>
+      <button class="quick-action" onclick="go('event-tableplan')"><div class="quick-action-icon">🪑</div>Table plan</button>
+      <button class="quick-action" onclick="shareEvent()"><div class="quick-action-icon">🔗</div>Share with guests</button>
+    </div>`;
+}
+
+</script>
+
+
+<body>
+
 <nav>
   <div class="nav-left">
     <a href="/dashboard" class="nav-logo"><img src="octevent-logo.png" alt="Octevent"></a>
@@ -527,47 +653,7 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0;align-self:flex-start;">
       <button class="btn-sm" onclick="shareEvent()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg><span>Share</span></button>
-      <button class="btn-sm amber" onclick="showTab('settings')"><span>⚙️</span><span>Settings</span></button>
-    </div>
-  </div>
-
-  <!-- Stats -->
-  <!-- Image + stats row -->
-  <div class="event-lower-row">
-    <div class="event-cover-strip" id="event-cover-strip">
-      <img id="event-cover-img" alt="Event cover">
-    </div>
-    <div class="event-stats">
-      <div class="event-stat"><div class="event-stat-n" id="stat-guests">0</div><div class="event-stat-l">Guests</div></div>
-      <div class="event-stat"><div class="event-stat-n" id="stat-rsvp">0</div><div class="event-stat-l">RSVPs</div></div>
-      <div class="event-stat"><div class="event-stat-n" id="stat-rooms">0</div><div class="event-stat-l">Rooms</div></div>
-      <div class="event-stat"><div class="event-stat-n" id="stat-budget">€0</div><div class="event-stat-l">Budget</div></div>
-    </div>
-  </div>
-</div>
-<div class="tabs-bar">
-  <button class="tab active" onclick="showTab('overview')"><span>🏠</span>Overview</button>
-  <button class="tab" onclick="showTab('checklist')"><span>✅</span>Checklist</button>
-  <button class="tab" onclick="showTab('budget')"><span>💰</span>Budget</button>
-  <button class="tab" onclick="showTab('guests')"><span>👥</span>Guests</button>
-  <button class="tab" onclick="showTab('rooms')"><span>🛏</span>Rooms</button>
-  <button class="tab" onclick="showTab('runsheet')"><span>📅</span>Run sheet</button>
-  <button class="tab" onclick="showTab('tableplan')"><span>🪑</span>Table plan</button>
-  <button class="tab" onclick="showTab('settings')"><span>⚙️</span>Settings</button>
-</div>
-<div class="event-header" id="event-header-bar">
-  <!-- Title row -->
-  <div class="event-title-row">
-    <div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div class="event-title" id="event-title">Loading...</div>
-        <span class="event-status status-upcoming" id="event-status">Upcoming</span>
-      </div>
-      <div class="event-meta" id="event-meta"></div>
-    </div>
-    <div style="display:flex;gap:8px;flex-shrink:0;align-self:flex-start;">
-      <button class="btn-sm" onclick="shareEvent()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg><span>Share</span></button>
-      <button class="btn-sm amber" onclick="showTab('settings')"><span>⚙️</span><span>Settings</span></button>
+      <button class="btn-sm amber" onclick="go('event-settings')"><span>⚙️</span><span>Settings</span></button>
     </div>
   </div>
 
@@ -587,17 +673,18 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
 </div>
 
 <div class="tabs-bar">
-  <button class="tab" onclick="location.href='/event-overview?id='+eventId">🏠 Overview</button>
-  <button class="tab" onclick="location.href='/event-checklist?id='+eventId">✅ Checklist</button>
-  <button class="tab" onclick="location.href='/event-budget?id='+eventId">💰 Budget</button>
-  <button class="tab active" onclick="location.href='/event-guests?id='+eventId">👥 Guests</button>
-  <button class="tab" onclick="location.href='/event-rooms?id='+eventId">🛏 Rooms</button>
-  <button class="tab" onclick="location.href='/event-runsheet?id='+eventId">📅 Run sheet</button>
-  <button class="tab" onclick="location.href='/event-tableplan?id='+eventId">🪑 Table plan</button>
-  <button class="tab" onclick="location.href='/event-settings?id='+eventId">⚙️ Settings</button>
+  <button class="tab" onclick="go('event-overview')">🏠 Overview</button>
+  <button class="tab" onclick="go('event-checklist')">✅ Checklist</button>
+  <button class="tab" onclick="go('event-budget')">💰 Budget</button>
+  <button class="tab active" onclick="go('event-guests')">👥 Guests</button>
+  <button class="tab" onclick="go('event-rooms')">🛏 Rooms</button>
+  <button class="tab" onclick="go('event-runsheet')">📅 Run sheet</button>
+  <button class="tab" onclick="go('event-tableplan')">🪑 Table plan</button>
+  <button class="tab" onclick="go('event-settings')">⚙️ Settings</button>
 </div>
 <main>
-<div class="panel" id="panel-guests">
+  <!-- GUESTS -->
+  <div class="panel" id="panel-guests">
     <div class="panel-header">
       <div class="panel-title">Guest list</div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -610,9 +697,9 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
     </div>
     <div id="guests-content"><div class="spinner"></div></div>
   </div>
-</main>
 
-<!-- ADD GUEST MODAL -->
+
+</main>
 <div class="modal-overlay" id="guest-modal" onclick="if(event.target===this)closeAddGuest()">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add guest</div><button class="modal-close" onclick="closeAddGuest()">✕</button></div>
@@ -632,7 +719,6 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
     </div>
   </div>
 </div>
-
 <script>
 
 const SUPABASE_URL = 'https://esjmzvhxbwcpslutprel.supabase.co';
@@ -642,22 +728,20 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 const params = new URLSearchParams(location.search);
 const eventId = params.get('id');
 let currentEvent = null;
-
-function fmt(n) { if(!n&&n!==0)return '—'; if(parseFloat(n)===0)return '—'; return '€'+parseFloat(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+const go = page => location.href = '/' + page + '?id=' + eventId;
+function fmtDate(d) { if(!d) return '—'; const [y,m,dy]=d.split('-'); return new Date(y,m-1,dy).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function fmtTime(t) { if(!t) return '—'; const [h,m]=t.split(':'); const hr=parseInt(h); return `${hr%12||12}:${m} ${hr<12?'am':'pm'}`; }
+function fmt(n) { const v=parseFloat(n||0); return v===0?'—':'€'+v.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtSum(n) { return '€'+parseFloat(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtDate(d) { if(!d)return '—'; const [y,m,dy]=d.split('-'); return new Date(y,m-1,dy).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
-function fmtTime(t) { if(!t)return '—'; const [h,m]=t.split(':'); const hr=parseInt(h); return `${hr%12||12}:${m} ${hr<12?'am':'pm'}`; }
-function calcHours(s,f) { if(!s||!f)return '—'; const [sh,sm]=s.split(':').map(Number),[fh,fm]=f.split(':').map(Number); const d=(fh*60+fm)-(sh*60+sm); if(d<=0)return '—'; const h=Math.floor(d/60),mi=d%60; return h>0?(mi>0?`${h}h ${mi}m`:`${h}h`):`${mi}m`; }
-function shareEvent() { const url=`${location.origin}/event-guest?id=${eventId}`; if(navigator.share)navigator.share({title:currentEvent?.name,url});else{navigator.clipboard.writeText(url);alert('Link copied!');} }
-
+function calcHours(s,f) { if(!s||!f) return '—'; const [sh,sm]=s.split(':').map(Number),[fh,fm]=f.split(':').map(Number); const d=(fh*60+fm)-(sh*60+sm); if(d<=0) return '—'; const h=Math.floor(d/60),mi=d%60; return h>0?(mi>0?`${h}h ${mi}m`:`${h}h`):`${mi}m`; }
 async function loadEventHeader() {
   const {data,error} = await sb.from('events').select('*').eq('id',eventId).single();
   if (error||!data) { location.href='/dashboard'; return null; }
   currentEvent = data;
   document.title = data.name + ' — Octevent';
-  const navName=document.getElementById('nav-event-name'); if(navName)navName.textContent=data.name;
-  const titleEl=document.getElementById('event-title'); if(titleEl)titleEl.textContent=data.name;
-  const now=new Date(),ed=data.event_date?new Date(data.event_date):null;
+  const navName=document.getElementById('nav-event-name'); if(navName) navName.textContent=data.name;
+  const titleEl=document.getElementById('event-title'); if(titleEl) titleEl.textContent=data.name;
+  const now=new Date(), ed=data.event_date?new Date(data.event_date):null;
   const diff=ed?(now-ed)/86400000:-999;
   const status=diff>1?'past':diff>-1?'live':'upcoming';
   const statusEl=document.getElementById('event-status');
@@ -665,28 +749,21 @@ async function loadEventHeader() {
   const meta=[];
   if(data.event_date){const d2=data.end_date&&data.end_date!==data.event_date?` — ${fmtDate(data.end_date)}`:'';meta.push(`<div class="event-meta-item">📅 ${fmtDate(data.event_date)}${d2}</div>`);}
   const loc=[data.venue,data.city,data.country].filter(Boolean).join(', ');
-  if(loc)meta.push(`<div class="event-meta-item">📍 ${loc}</div>`);
-  if(data.event_type)meta.push(`<div class="event-meta-item">🏷 ${data.event_type.charAt(0).toUpperCase()+data.event_type.slice(1)}</div>`);
-  const metaEl=document.getElementById('event-meta'); if(metaEl)metaEl.innerHTML=meta.join('');
-  const statMap={guests:data.guest_count||0,rsvp:data.rsvp_count||0,rooms:data.room_count||0,budget:data.budget?`€${data.budget}`:'€0'};
-  Object.entries(statMap).forEach(([k,v])=>{const el=document.getElementById('stat-'+k);if(el)el.textContent=v;});
-  if(data.cover_image){
-    const strip=document.getElementById('event-cover-strip'),img=document.getElementById('event-cover-img'),lr=document.querySelector('.event-lower-row');
-    if(strip)strip.style.display='block'; if(img)img.src=data.cover_image; if(lr)lr.classList.add('has-cover');
-  }
-  const av=document.getElementById('user-avatar');
+  if(loc) meta.push(`<div class="event-meta-item">📍 ${loc}</div>`);
+  if(data.event_type) meta.push(`<div class="event-meta-item">🏷 ${data.event_type.charAt(0).toUpperCase()+data.event_type.slice(1)}</div>`);
+  const metaEl=document.getElementById('event-meta'); if(metaEl) metaEl.innerHTML=meta.join('');
+  [['guests',data.guest_count||0],['rsvp',data.rsvp_count||0],['rooms',data.room_count||0],['budget',data.budget?`€${data.budget}`:'€0']].forEach(([k,v])=>{const el=document.getElementById('stat-'+k);if(el)el.textContent=v;});
+  if(data.cover_image){const strip=document.getElementById('event-cover-strip'),img=document.getElementById('event-cover-img'),lr=document.querySelector('.event-lower-row');if(strip)strip.style.display='block';if(img)img.src=data.cover_image;if(lr)lr.classList.add('has-cover');}
   return data;
 }
-
 sb.auth.getSession().then(({ data: { session } }) => {
   if (!session) { location.href='/login'; return; }
   const name=session.user.user_metadata?.full_name||session.user.email.split('@')[0];
-  const av=document.getElementById('user-avatar'); if(av)av.textContent=name.charAt(0).toUpperCase();
+  const av=document.getElementById('user-avatar'); if(av) av.textContent=name.charAt(0).toUpperCase();
   if (!eventId) { location.href='/dashboard'; return; }
-  if (typeof initPage==='function') initPage(session);
+  initPage(session);
 });
 
-// ── GUESTS ──
 async function loadGuests() {
   const { data } = await sb.from('guests').select('*').eq('event_id', eventId).order('created_at', { ascending: true });
   allGuests = data || [];
@@ -756,12 +833,10 @@ async function addGuest() {
     document.getElementById('stat-guests').textContent = allGuests.length;
   }
 }
-
-
-async function initPage() {
-  await loadEventHeader();
-  loadGuests();
-}
+let allGuests=[];
+let tpTables=[];
+async function initPage(){await loadEventHeader();loadGuests();}
+function filterGuests(){const q=document.getElementById("guest-search").value.toLowerCase();renderGuests(allGuests.filter(g=>`${g.first_name} ${g.last_name||""} ${g.email||""}`.toLowerCase().includes(q)));}
 </script>
 </body>
 </html>

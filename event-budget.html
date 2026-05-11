@@ -613,36 +613,36 @@ async function renderOverviewDashboard() {
 
   el.innerHTML = `
     <div class="ov-grid">
-      <div class="ov-card" onclick="showTab('guests')">
+      <div class="ov-card" onclick="go('event-guests')">
         <div class="ov-card-label">👥 Guests attending</div>
         <div class="ov-card-value">${confirmedGuests}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalGuests}</span></div>
         <div class="ov-card-sub">${guestPct}% confirmed</div>
         <div class="ov-progress"><div class="ov-progress-fill green" style="width:${guestPct}%"></div></div>
       </div>
-      <div class="ov-card" onclick="showTab('checklist')">
+      <div class="ov-card" onclick="go('event-checklist')">
         <div class="ov-card-label">✅ Checklist</div>
         <div class="ov-card-value">${doneCl}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalCl}</span></div>
         <div class="ov-card-sub">${clPct}% complete</div>
         <div class="ov-progress"><div class="ov-progress-fill" style="width:${clPct}%"></div></div>
       </div>
-      <div class="ov-card" onclick="showTab('budget')">
+      <div class="ov-card" onclick="go('event-budget')">
         <div class="ov-card-label">💰 Budget paid</div>
         <div class="ov-card-value">${fmt(totalPaid)}</div>
         <div class="ov-card-sub">${budgetPct}% of ${fmt(totalActual)} actual</div>
         <div class="ov-progress"><div class="ov-progress-fill" style="width:${Math.min(budgetPct,100)}%"></div></div>
       </div>
-      <div class="ov-card" onclick="showTab('budget')">
+      <div class="ov-card" onclick="go('event-budget')">
         <div class="ov-card-label">📈 Income received</div>
         <div class="ov-card-value">${fmt(totalIncome)}</div>
         <div class="ov-card-sub">Total income logged</div>
       </div>
-      <div class="ov-card" onclick="showTab('runsheet')">
+      <div class="ov-card" onclick="go('event-runsheet')">
         <div class="ov-card-label">📅 Run sheet</div>
         <div class="ov-card-value">${doneRs}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalRs}</span></div>
         <div class="ov-card-sub">${rsPct}% complete</div>
         <div class="ov-progress"><div class="ov-progress-fill green" style="width:${rsPct}%"></div></div>
       </div>
-      <div class="ov-card" onclick="showTab('tableplan')">
+      <div class="ov-card" onclick="go('event-tableplan')">
         <div class="ov-card-label">🪑 Seats assigned</div>
         <div class="ov-card-value">${assignedSeats}<span style="font-size:1rem;color:var(--ink3);font-weight:400;"> / ${totalSeats||'—'}</span></div>
         <div class="ov-card-sub">${totalSeats ? seatsPct+'% filled' : 'No tables set up yet'}</div>
@@ -652,11 +652,11 @@ async function renderOverviewDashboard() {
 
     <div class="ov-section-title">⚡ Quick actions</div>
     <div class="ov-quick">
-      <button class="quick-action" onclick="showTab('guests');openAddGuest()"><div class="quick-action-icon">👤</div>Add a guest</button>
-      <button class="quick-action" onclick="showTab('checklist')"><div class="quick-action-icon">✅</div>View checklist</button>
-      <button class="quick-action" onclick="showTab('budget');addBudgetRow()"><div class="quick-action-icon">💰</div>Log an expense</button>
-      <button class="quick-action" onclick="showTab('runsheet');addRunsheetRow()"><div class="quick-action-icon">📅</div>Add run sheet item</button>
-      <button class="quick-action" onclick="showTab('tableplan')"><div class="quick-action-icon">🪑</div>Table plan</button>
+      <button class="quick-action" onclick="go('event-guests');openAddGuest()"><div class="quick-action-icon">👤</div>Add a guest</button>
+      <button class="quick-action" onclick="go('event-checklist')"><div class="quick-action-icon">✅</div>View checklist</button>
+      <button class="quick-action" onclick="go('event-budget');addBudgetRow()"><div class="quick-action-icon">💰</div>Log an expense</button>
+      <button class="quick-action" onclick="go('event-runsheet');addRunsheetRow()"><div class="quick-action-icon">📅</div>Add run sheet item</button>
+      <button class="quick-action" onclick="go('event-tableplan')"><div class="quick-action-icon">🪑</div>Table plan</button>
       <button class="quick-action" onclick="shareEvent()"><div class="quick-action-icon">🔗</div>Share with guests</button>
     </div>`;
 }
@@ -1181,7 +1181,7 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0;align-self:flex-start;">
       <button class="btn-sm" onclick="shareEvent()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg><span>Share</span></button>
-      <button class="btn-sm amber" onclick="showTab('settings')"><span>⚙️</span><span>Settings</span></button>
+      <button class="btn-sm amber" onclick="go('event-settings')"><span>⚙️</span><span>Settings</span></button>
     </div>
   </div>
 
@@ -1200,14 +1200,14 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
   </div>
 </div>
 <div class="tabs-bar">
-  <button class="tab active" onclick="showTab('overview')"><span>🏠</span>Overview</button>
-  <button class="tab" onclick="showTab('checklist')"><span>✅</span>Checklist</button>
-  <button class="tab" onclick="showTab('budget')"><span>💰</span>Budget</button>
-  <button class="tab" onclick="showTab('guests')"><span>👥</span>Guests</button>
-  <button class="tab" onclick="showTab('rooms')"><span>🛏</span>Rooms</button>
-  <button class="tab" onclick="showTab('runsheet')"><span>📅</span>Run sheet</button>
-  <button class="tab" onclick="showTab('tableplan')"><span>🪑</span>Table plan</button>
-  <button class="tab" onclick="showTab('settings')"><span>⚙️</span>Settings</button>
+  <button class="tab active" onclick="go('event-overview')"><span>🏠</span>Overview</button>
+  <button class="tab" onclick="go('event-checklist')"><span>✅</span>Checklist</button>
+  <button class="tab" onclick="go('event-budget')"><span>💰</span>Budget</button>
+  <button class="tab" onclick="go('event-guests')"><span>👥</span>Guests</button>
+  <button class="tab" onclick="go('event-rooms')"><span>🛏</span>Rooms</button>
+  <button class="tab" onclick="go('event-runsheet')"><span>📅</span>Run sheet</button>
+  <button class="tab" onclick="go('event-tableplan')"><span>🪑</span>Table plan</button>
+  <button class="tab" onclick="go('event-settings')"><span>⚙️</span>Settings</button>
 </div>
 
 <div class="tabs-bar">
