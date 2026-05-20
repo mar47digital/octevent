@@ -1441,6 +1441,277 @@ async function renderOverviewDashboard() {
     </div>`;
 }
 
+
+// ── ROOMS ──
+let allRooms = [];
+let roomSortField = 'sort_order';
+let roomSortDir = 1;
+
+const ROOM_TYPES = {
+  single:'Single',double:'Double',twin:'Twin',triple:'Triple',
+  suite:'Suite',dorm:'Dormitory',villa:'Villa',cottage:'Cottage',other:'Other'
+};
+const ROOM_STATUS = {available:'Available',reserved:'Reserved',paid:'Paid'};
+const ROOM_STATUS_CLASS = {available:'paid-yes',reserved:'paid-partial',paid:'paid-yes'};
+const ROOM_STATUS_STYLE = {
+  available:'background:#f0f7f4;color:#2d6a4f;',
+  reserved:'background:#fff8e6;color:#c98a00;',
+  paid:'background:#f0f7f4;color:#2d6a4f;font-weight:700;'
+};
+
+async function loadRooms() {
+  const {data} = await sb.from('rooms').select('*, guests(first_name,last_name)')
+    .eq('event_id', eventId).order('sort_order',{ascending:true}).order('created_at',{ascending:true});
+  allRooms = data || [];
+  renderRooms();
+}
+
+function updateRoomSummary() {
+  const total = allRooms.length;
+  if (!total) { document.getElementById('rooms-summary').style.display='none'; return; }
+  document.getElementById('rooms-summary').style.display='grid';
+  const available = allRooms.filter(r=>r.status==='available').length;
+  const reserved  = allRooms.filter(r=>r.status==='reserved').length;
+  const paid      = allRooms.filter(r=>r.status==='paid').length;
+  const capacity  = allRooms.reduce((s,r)=>s+(r.capacity||0),0);
+  const income    = allRooms.reduce((s,r)=>s+(parseFloat(r.price_per_night||0)*(r.nights||1)),0);
+  document.getElementById('r-total').textContent    = total;
+  document.getElementById('r-available').textContent= available;
+  document.getElementById('r-reserved').textContent = reserved;
+  document.getElementById('r-paid').textContent     = paid;
+  document.getElementById('r-capacity').textContent = capacity;
+  document.getElementById('r-income').textContent   = '€'+income.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+  // Update header stat
+  document.getElementById('stat-rooms').textContent = total;
+  sb.from('events').update({room_count:total}).eq('id',eventId);
+}
+
+function renderRooms() {
+  updateRoomSummary();
+  const wrap = document.getElementById('rooms-wrap');
+  const mCards = document.getElementById('rooms-mobile-cards');
+
+  if (!allRooms.length) {
+    wrap.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🛏</div>
+      <h3>No rooms yet</h3>
+      <p>Add rooms so guests can be assigned or reserve their own space.</p>
+      <button class="btn-primary" onclick="addRoom()">+ Add first room</button>
+    </div>`;
+    mCards.innerHTML = '';
+    return;
+  }
+
+  let sorted = [...allRooms];
+  if (roomSortField !== 'sort_order') {
+    sorted.sort((a,b)=>{
+      const av=a[roomSortField]||'', bv=b[roomSortField]||'';
+      return (isNaN(parseFloat(av))?av.toString().localeCompare(bv.toString()):parseFloat(av)-parseFloat(bv))*roomSortDir;
+    });
+  }
+
+  const TH = (f,l,num) => `<th class="${num?'num ':''} sortable" data-field="${f}" onclick="sortRooms('${f}')">${l} <span class="sort-icon">↕</span></th>`;
+
+  wrap.innerHTML = `<table><thead><tr>
+    ${TH('name','Room name')}
+    ${TH('type','Type')}
+    ${TH('capacity','Capacity',true)}
+    ${TH('price_per_night','Price/night',true)}
+    ${TH('nights','Nights',true)}
+    <th class="num">Total</th>
+    ${TH('status','Status')}
+    <th>Assigned guest</th>
+    <th>Notes</th>
+    <th></th>
+  </tr></thead><tbody id="rooms-tbody"></tbody>
+  <tfoot>
+    <tr id="rooms-footer" style="background:var(--cream);border-top:2px solid var(--rule);"></tr>
+  </tfoot></table>`;
+
+  const tbody = document.getElementById('rooms-tbody');
+  sorted.forEach(room => tbody.appendChild(buildRoomRow(room)));
+
+  // Footer totals
+  const totalIncome = allRooms.reduce((s,r)=>s+(parseFloat(r.price_per_night||0)*(r.nights||1)),0);
+  const totalCap = allRooms.reduce((s,r)=>s+(r.capacity||0),0);
+  document.getElementById('rooms-footer').innerHTML = `
+    <td><strong>Totals</strong></td><td></td>
+    <td class="num"><strong>${totalCap}</strong></td>
+    <td class="num"></td><td class="num"></td>
+    <td class="num"><strong>€${totalIncome.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
+    <td colspan="4"></td>`;
+
+  // Update sort indicators
+  setTimeout(()=>{
+    document.querySelectorAll('#rooms-wrap th.sortable').forEach(th=>{
+      th.classList.remove('sort-asc','sort-desc');
+      if(th.dataset.field===roomSortField) th.classList.add(roomSortDir===1?'sort-asc':'sort-desc');
+    });
+    document.getElementById('room-sort-reset').style.display = roomSortField!=='sort_order'?'inline-flex':'none';
+  },10);
+
+  // Mobile cards
+  mCards.innerHTML = sorted.map(room=>{
+    const total = (parseFloat(room.price_per_night||0)*(room.nights||1));
+    const guest = room.guests ? `${room.guests.first_name} ${room.guests.last_name||''}`.trim() : '—';
+    return `<div class="budget-card-row">
+      <div class="budget-card-row-header" style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem;flex-wrap:wrap;">
+        <strong style="font-size:0.95rem;">${room.name||'Unnamed room'}</strong>
+        <span style="font-size:0.7rem;padding:2px 9px;border-radius:20px;${ROOM_STATUS_STYLE[room.status||'available']}">${ROOM_STATUS[room.status||'available']}</span>
+        <span style="font-size:0.72rem;color:var(--ink3);">${ROOM_TYPES[room.type||'double']}</span>
+      </div>
+      <div class="budget-card-row-amounts">
+        <div class="budget-card-row-amount"><div class="budget-card-row-amount-label">Capacity</div><div class="budget-card-row-amount-value">${room.capacity||1}</div></div>
+        <div class="budget-card-row-amount"><div class="budget-card-row-amount-label">Per night</div><div class="budget-card-row-amount-value">€${parseFloat(room.price_per_night||0).toFixed(2)}</div></div>
+        <div class="budget-card-row-amount"><div class="budget-card-row-amount-label">Total</div><div class="budget-card-row-amount-value">€${total.toFixed(2)}</div></div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--ink2);margin-top:0.4rem;">👤 ${guest}</div>
+      ${room.notes?`<div style="font-size:0.76rem;color:var(--ink3);margin-top:3px;">${room.notes}</div>`:''}
+      <div style="display:flex;justify-content:flex-end;margin-top:0.6rem;">
+        <button onclick="deleteRoom('${room.id}')" style="font-size:0.7rem;padding:2px 8px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;color:#c0392b;font-family:'DM Sans',sans-serif;">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildRoomRow(room) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = room.id;
+  const total = (parseFloat(room.price_per_night||0)*(room.nights||1));
+  const guest = room.guests ? `${room.guests.first_name} ${room.guests.last_name||''}`.trim() : '—';
+
+  const COLS = [
+    {f:'name',t:'text'},
+    {f:'type',t:'room-type'},
+    {f:'capacity',t:'num'},
+    {f:'price_per_night',t:'num'},
+    {f:'nights',t:'num'},
+  ];
+
+  COLS.forEach(({f,t})=>{
+    const td = document.createElement('td');
+    if(t==='num') td.className='num';
+    renderRoomCell(td,room,f,t);
+    td.style.cursor='pointer'; td.title='Click to edit';
+    td.addEventListener('click',()=>editRoomCell(td,room,f,t));
+    tr.appendChild(td);
+  });
+
+  // Total (computed)
+  const totalTd = document.createElement('td');
+  totalTd.className='num'; totalTd.style.cursor='default';
+  totalTd.textContent = total>0?'€'+total.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  tr.appendChild(totalTd);
+
+  // Status
+  const statusTd = document.createElement('td');
+  renderRoomCell(statusTd,room,'status','room-status');
+  statusTd.style.cursor='pointer'; statusTd.title='Click to change';
+  statusTd.addEventListener('click',()=>editRoomCell(statusTd,room,'status','room-status'));
+  tr.appendChild(statusTd);
+
+  // Assigned guest
+  const guestTd = document.createElement('td');
+  guestTd.style.cursor='pointer'; guestTd.title='Click to assign guest';
+  renderRoomCell(guestTd,room,'guest_id','room-guest');
+  guestTd.addEventListener('click',()=>editRoomCell(guestTd,room,'guest_id','room-guest'));
+  tr.appendChild(guestTd);
+
+  // Notes
+  const notesTd = document.createElement('td');
+  renderRoomCell(notesTd,room,'notes','text');
+  notesTd.style.cursor='pointer'; notesTd.title='Click to edit';
+  notesTd.addEventListener('click',()=>editRoomCell(notesTd,room,'notes','text'));
+  tr.appendChild(notesTd);
+
+  // Delete
+  const del = document.createElement('td');
+  del.innerHTML=`<button class="row-del" onclick="deleteRoom('${room.id}')">Delete</button>`;
+  tr.appendChild(del);
+  return tr;
+}
+
+function renderRoomCell(td,room,f,t) {
+  if(t==='room-type') td.innerHTML=`<span style="font-size:0.78rem;">${ROOM_TYPES[room[f]||'double']}</span>`;
+  else if(t==='room-status') td.innerHTML=`<span style="font-size:0.68rem;font-weight:700;padding:2px 9px;border-radius:20px;${ROOM_STATUS_STYLE[room[f]||'available']}">${ROOM_STATUS[room[f]||'available']}</span>`;
+  else if(t==='room-guest') {
+    const g=allGuests.find(g=>g.id===room.guest_id);
+    td.textContent=g?`${g.first_name} ${g.last_name||''}`.trim():'— Unassigned';
+    td.style.color=g?'var(--ink)':'var(--ink3)';
+  }
+  else if(t==='num') td.textContent=parseFloat(room[f]||0)>0?room[f]==='price_per_night'?'€'+parseFloat(room[f]).toFixed(2):room[f]:'—';
+  else td.textContent=room[f]||'—';
+}
+
+function editRoomCell(td,room,f,t) {
+  if(td.classList.contains('editing')) return;
+  td.classList.add('editing');
+  let input;
+  if(t==='room-type') {
+    input=document.createElement('select'); input.className='inline-select';
+    Object.entries(ROOM_TYPES).forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===(room[f]||'double'))o.selected=true;input.appendChild(o);});
+  } else if(t==='room-status') {
+    input=document.createElement('select'); input.className='inline-select';
+    Object.entries(ROOM_STATUS).forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===(room[f]||'available'))o.selected=true;input.appendChild(o);});
+  } else if(t==='room-guest') {
+    input=document.createElement('select'); input.className='inline-select';
+    const none=document.createElement('option'); none.value=''; none.textContent='— Unassigned'; if(!room[f])none.selected=true; input.appendChild(none);
+    allGuests.forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=`${g.first_name} ${g.last_name||''}`.trim();if(g.id===room[f])o.selected=true;input.appendChild(o);});
+  } else {
+    input=document.createElement('input'); input.className='inline-input';
+    input.type=t==='num'?'number':'text'; input.value=room[f]||'';
+    if(t==='num'){input.step='0.01';input.min='0';}
+  }
+  td.innerHTML=''; td.appendChild(input); input.focus();
+  if(input.select) input.select();
+
+  let saved=false;
+  async function save(){
+    if(saved)return; saved=true;
+    const val=t==='num'?(parseFloat(input.value)||0):input.value.trim()||null;
+    room[f]=val;
+    td.classList.remove('editing');
+    renderRoomCell(td,room,f,t);
+    // Update total cell if price or nights changed
+    if(f==='price_per_night'||f==='nights'){
+      const row=td.closest('tr');
+      if(row){const cells=row.querySelectorAll('td');if(cells[5]){const tot=parseFloat(room.price_per_night||0)*(room.nights||1);cells[5].textContent=tot>0?'€'+tot.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}}
+    }
+    updateRoomSummary();
+    await sb.from('rooms').update({[f]:val}).eq('id',room.id);
+  }
+  input.addEventListener('blur',save);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}if(e.key==='Escape'){saved=true;td.classList.remove('editing');renderRoomCell(td,room,f,t);}});
+}
+
+async function addRoom() {
+  const {data,error}=await sb.from('rooms').insert([{
+    event_id:eventId, name:'New room', type:'double', capacity:2,
+    price_per_night:0, nights:1, notes:'', status:'available', sort_order:allRooms.length
+  }]).select('*, guests(first_name,last_name)').single();
+  if(!error&&data){
+    allRooms.push(data);
+    renderRooms();
+    setTimeout(()=>{
+      const newRow=document.querySelector('#rooms-tbody tr[data-id="'+data.id+'"]');
+      if(newRow){newRow.scrollIntoView({behavior:'smooth',block:'center'});const cells=newRow.querySelectorAll('td');if(cells[0])cells[0].click();}
+    },80);
+  }
+}
+
+async function deleteRoom(id){
+  if(!confirm('Delete this room?'))return;
+  await sb.from('rooms').delete().eq('id',id);
+  allRooms=allRooms.filter(r=>r.id!==id);
+  renderRooms();
+}
+
+function sortRooms(f){
+  if(roomSortField===f)roomSortDir*=-1;else{roomSortField=f;roomSortDir=1;}
+  renderRooms();
+}
+function resetRoomSort(){roomSortField='sort_order';roomSortDir=1;renderRooms();}
+
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -2057,7 +2328,33 @@ table.runsheet-table tr.add-row:hover td{background:var(--amber-light);color:var
 
   <!-- ROOMS -->
   <div class="panel" id="panel-rooms">
-    <div class="coming-soon"><div class="coming-soon-icon">🛏</div><h3>Room management</h3><p>Upload rooms with photos, set pricing and let guests reserve their own room.</p><div class="coming-badge">Coming soon — Pro feature</div></div>
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-title">Rooms</div>
+        <button class="btn-sm amber" onclick="addRoom()">＋ Add room</button>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center;">
+        <button class="btn-sm" id="room-sort-reset" onclick="resetRoomSort()" style="display:none;">↺ Reset sort</button>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="budget-summary" id="rooms-summary" style="display:none;">
+      <div class="budget-card"><div class="budget-card-label">Total rooms</div><div class="budget-card-value" id="r-total">0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Available</div><div class="budget-card-value green" id="r-available">0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Reserved</div><div class="budget-card-value amber" id="r-reserved">0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Paid</div><div class="budget-card-value green" id="r-paid">0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Total capacity</div><div class="budget-card-value" id="r-capacity">0</div></div>
+      <div class="budget-card"><div class="budget-card-label">Expected income</div><div class="budget-card-value" id="r-income">€0</div></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap table-wrap-scroll" id="rooms-wrap">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Mobile cards -->
+    <div id="rooms-mobile-cards" class="budget-cards"></div>
   </div>
 
   <!-- BUDGET -->
@@ -3110,6 +3407,7 @@ function showTab(name) {
   if (name==='checklist') loadChecklist();
   if (name==='runsheet') loadRunsheet();
   if (name==='tableplan') loadTablePlan();
+  if (name==='rooms') loadRooms();
   if (name==='settings') setTimeout(() => initDragDrop('settings-photo-area','settings-photo-input','settings-photo-preview','settings-photo-placeholder'), 100);
 }
 
@@ -4551,6 +4849,277 @@ async function renderOverviewDashboard() {
       <button class="quick-action" onclick="shareEvent()"><div class="quick-action-icon">🔗</div>Share with guests</button>
     </div>`;
 }
+
+
+// ── ROOMS ──
+let allRooms = [];
+let roomSortField = 'sort_order';
+let roomSortDir = 1;
+
+const ROOM_TYPES = {
+  single:'Single',double:'Double',twin:'Twin',triple:'Triple',
+  suite:'Suite',dorm:'Dormitory',villa:'Villa',cottage:'Cottage',other:'Other'
+};
+const ROOM_STATUS = {available:'Available',reserved:'Reserved',paid:'Paid'};
+const ROOM_STATUS_CLASS = {available:'paid-yes',reserved:'paid-partial',paid:'paid-yes'};
+const ROOM_STATUS_STYLE = {
+  available:'background:#f0f7f4;color:#2d6a4f;',
+  reserved:'background:#fff8e6;color:#c98a00;',
+  paid:'background:#f0f7f4;color:#2d6a4f;font-weight:700;'
+};
+
+async function loadRooms() {
+  const {data} = await sb.from('rooms').select('*, guests(first_name,last_name)')
+    .eq('event_id', eventId).order('sort_order',{ascending:true}).order('created_at',{ascending:true});
+  allRooms = data || [];
+  renderRooms();
+}
+
+function updateRoomSummary() {
+  const total = allRooms.length;
+  if (!total) { document.getElementById('rooms-summary').style.display='none'; return; }
+  document.getElementById('rooms-summary').style.display='grid';
+  const available = allRooms.filter(r=>r.status==='available').length;
+  const reserved  = allRooms.filter(r=>r.status==='reserved').length;
+  const paid      = allRooms.filter(r=>r.status==='paid').length;
+  const capacity  = allRooms.reduce((s,r)=>s+(r.capacity||0),0);
+  const income    = allRooms.reduce((s,r)=>s+(parseFloat(r.price_per_night||0)*(r.nights||1)),0);
+  document.getElementById('r-total').textContent    = total;
+  document.getElementById('r-available').textContent= available;
+  document.getElementById('r-reserved').textContent = reserved;
+  document.getElementById('r-paid').textContent     = paid;
+  document.getElementById('r-capacity').textContent = capacity;
+  document.getElementById('r-income').textContent   = '€'+income.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+  // Update header stat
+  document.getElementById('stat-rooms').textContent = total;
+  sb.from('events').update({room_count:total}).eq('id',eventId);
+}
+
+function renderRooms() {
+  updateRoomSummary();
+  const wrap = document.getElementById('rooms-wrap');
+  const mCards = document.getElementById('rooms-mobile-cards');
+
+  if (!allRooms.length) {
+    wrap.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🛏</div>
+      <h3>No rooms yet</h3>
+      <p>Add rooms so guests can be assigned or reserve their own space.</p>
+      <button class="btn-primary" onclick="addRoom()">+ Add first room</button>
+    </div>`;
+    mCards.innerHTML = '';
+    return;
+  }
+
+  let sorted = [...allRooms];
+  if (roomSortField !== 'sort_order') {
+    sorted.sort((a,b)=>{
+      const av=a[roomSortField]||'', bv=b[roomSortField]||'';
+      return (isNaN(parseFloat(av))?av.toString().localeCompare(bv.toString()):parseFloat(av)-parseFloat(bv))*roomSortDir;
+    });
+  }
+
+  const TH = (f,l,num) => `<th class="${num?'num ':''} sortable" data-field="${f}" onclick="sortRooms('${f}')">${l} <span class="sort-icon">↕</span></th>`;
+
+  wrap.innerHTML = `<table><thead><tr>
+    ${TH('name','Room name')}
+    ${TH('type','Type')}
+    ${TH('capacity','Capacity',true)}
+    ${TH('price_per_night','Price/night',true)}
+    ${TH('nights','Nights',true)}
+    <th class="num">Total</th>
+    ${TH('status','Status')}
+    <th>Assigned guest</th>
+    <th>Notes</th>
+    <th></th>
+  </tr></thead><tbody id="rooms-tbody"></tbody>
+  <tfoot>
+    <tr id="rooms-footer" style="background:var(--cream);border-top:2px solid var(--rule);"></tr>
+  </tfoot></table>`;
+
+  const tbody = document.getElementById('rooms-tbody');
+  sorted.forEach(room => tbody.appendChild(buildRoomRow(room)));
+
+  // Footer totals
+  const totalIncome = allRooms.reduce((s,r)=>s+(parseFloat(r.price_per_night||0)*(r.nights||1)),0);
+  const totalCap = allRooms.reduce((s,r)=>s+(r.capacity||0),0);
+  document.getElementById('rooms-footer').innerHTML = `
+    <td><strong>Totals</strong></td><td></td>
+    <td class="num"><strong>${totalCap}</strong></td>
+    <td class="num"></td><td class="num"></td>
+    <td class="num"><strong>€${totalIncome.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
+    <td colspan="4"></td>`;
+
+  // Update sort indicators
+  setTimeout(()=>{
+    document.querySelectorAll('#rooms-wrap th.sortable').forEach(th=>{
+      th.classList.remove('sort-asc','sort-desc');
+      if(th.dataset.field===roomSortField) th.classList.add(roomSortDir===1?'sort-asc':'sort-desc');
+    });
+    document.getElementById('room-sort-reset').style.display = roomSortField!=='sort_order'?'inline-flex':'none';
+  },10);
+
+  // Mobile cards
+  mCards.innerHTML = sorted.map(room=>{
+    const total = (parseFloat(room.price_per_night||0)*(room.nights||1));
+    const guest = room.guests ? `${room.guests.first_name} ${room.guests.last_name||''}`.trim() : '—';
+    return `<div class="budget-card-row">
+      <div class="budget-card-row-header" style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem;flex-wrap:wrap;">
+        <strong style="font-size:0.95rem;">${room.name||'Unnamed room'}</strong>
+        <span style="font-size:0.7rem;padding:2px 9px;border-radius:20px;${ROOM_STATUS_STYLE[room.status||'available']}">${ROOM_STATUS[room.status||'available']}</span>
+        <span style="font-size:0.72rem;color:var(--ink3);">${ROOM_TYPES[room.type||'double']}</span>
+      </div>
+      <div class="budget-card-row-amounts">
+        <div class="budget-card-row-amount"><div class="budget-card-row-amount-label">Capacity</div><div class="budget-card-row-amount-value">${room.capacity||1}</div></div>
+        <div class="budget-card-row-amount"><div class="budget-card-row-amount-label">Per night</div><div class="budget-card-row-amount-value">€${parseFloat(room.price_per_night||0).toFixed(2)}</div></div>
+        <div class="budget-card-row-amount"><div class="budget-card-row-amount-label">Total</div><div class="budget-card-row-amount-value">€${total.toFixed(2)}</div></div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--ink2);margin-top:0.4rem;">👤 ${guest}</div>
+      ${room.notes?`<div style="font-size:0.76rem;color:var(--ink3);margin-top:3px;">${room.notes}</div>`:''}
+      <div style="display:flex;justify-content:flex-end;margin-top:0.6rem;">
+        <button onclick="deleteRoom('${room.id}')" style="font-size:0.7rem;padding:2px 8px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;color:#c0392b;font-family:'DM Sans',sans-serif;">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildRoomRow(room) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = room.id;
+  const total = (parseFloat(room.price_per_night||0)*(room.nights||1));
+  const guest = room.guests ? `${room.guests.first_name} ${room.guests.last_name||''}`.trim() : '—';
+
+  const COLS = [
+    {f:'name',t:'text'},
+    {f:'type',t:'room-type'},
+    {f:'capacity',t:'num'},
+    {f:'price_per_night',t:'num'},
+    {f:'nights',t:'num'},
+  ];
+
+  COLS.forEach(({f,t})=>{
+    const td = document.createElement('td');
+    if(t==='num') td.className='num';
+    renderRoomCell(td,room,f,t);
+    td.style.cursor='pointer'; td.title='Click to edit';
+    td.addEventListener('click',()=>editRoomCell(td,room,f,t));
+    tr.appendChild(td);
+  });
+
+  // Total (computed)
+  const totalTd = document.createElement('td');
+  totalTd.className='num'; totalTd.style.cursor='default';
+  totalTd.textContent = total>0?'€'+total.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  tr.appendChild(totalTd);
+
+  // Status
+  const statusTd = document.createElement('td');
+  renderRoomCell(statusTd,room,'status','room-status');
+  statusTd.style.cursor='pointer'; statusTd.title='Click to change';
+  statusTd.addEventListener('click',()=>editRoomCell(statusTd,room,'status','room-status'));
+  tr.appendChild(statusTd);
+
+  // Assigned guest
+  const guestTd = document.createElement('td');
+  guestTd.style.cursor='pointer'; guestTd.title='Click to assign guest';
+  renderRoomCell(guestTd,room,'guest_id','room-guest');
+  guestTd.addEventListener('click',()=>editRoomCell(guestTd,room,'guest_id','room-guest'));
+  tr.appendChild(guestTd);
+
+  // Notes
+  const notesTd = document.createElement('td');
+  renderRoomCell(notesTd,room,'notes','text');
+  notesTd.style.cursor='pointer'; notesTd.title='Click to edit';
+  notesTd.addEventListener('click',()=>editRoomCell(notesTd,room,'notes','text'));
+  tr.appendChild(notesTd);
+
+  // Delete
+  const del = document.createElement('td');
+  del.innerHTML=`<button class="row-del" onclick="deleteRoom('${room.id}')">Delete</button>`;
+  tr.appendChild(del);
+  return tr;
+}
+
+function renderRoomCell(td,room,f,t) {
+  if(t==='room-type') td.innerHTML=`<span style="font-size:0.78rem;">${ROOM_TYPES[room[f]||'double']}</span>`;
+  else if(t==='room-status') td.innerHTML=`<span style="font-size:0.68rem;font-weight:700;padding:2px 9px;border-radius:20px;${ROOM_STATUS_STYLE[room[f]||'available']}">${ROOM_STATUS[room[f]||'available']}</span>`;
+  else if(t==='room-guest') {
+    const g=allGuests.find(g=>g.id===room.guest_id);
+    td.textContent=g?`${g.first_name} ${g.last_name||''}`.trim():'— Unassigned';
+    td.style.color=g?'var(--ink)':'var(--ink3)';
+  }
+  else if(t==='num') td.textContent=parseFloat(room[f]||0)>0?room[f]==='price_per_night'?'€'+parseFloat(room[f]).toFixed(2):room[f]:'—';
+  else td.textContent=room[f]||'—';
+}
+
+function editRoomCell(td,room,f,t) {
+  if(td.classList.contains('editing')) return;
+  td.classList.add('editing');
+  let input;
+  if(t==='room-type') {
+    input=document.createElement('select'); input.className='inline-select';
+    Object.entries(ROOM_TYPES).forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===(room[f]||'double'))o.selected=true;input.appendChild(o);});
+  } else if(t==='room-status') {
+    input=document.createElement('select'); input.className='inline-select';
+    Object.entries(ROOM_STATUS).forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===(room[f]||'available'))o.selected=true;input.appendChild(o);});
+  } else if(t==='room-guest') {
+    input=document.createElement('select'); input.className='inline-select';
+    const none=document.createElement('option'); none.value=''; none.textContent='— Unassigned'; if(!room[f])none.selected=true; input.appendChild(none);
+    allGuests.forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=`${g.first_name} ${g.last_name||''}`.trim();if(g.id===room[f])o.selected=true;input.appendChild(o);});
+  } else {
+    input=document.createElement('input'); input.className='inline-input';
+    input.type=t==='num'?'number':'text'; input.value=room[f]||'';
+    if(t==='num'){input.step='0.01';input.min='0';}
+  }
+  td.innerHTML=''; td.appendChild(input); input.focus();
+  if(input.select) input.select();
+
+  let saved=false;
+  async function save(){
+    if(saved)return; saved=true;
+    const val=t==='num'?(parseFloat(input.value)||0):input.value.trim()||null;
+    room[f]=val;
+    td.classList.remove('editing');
+    renderRoomCell(td,room,f,t);
+    // Update total cell if price or nights changed
+    if(f==='price_per_night'||f==='nights'){
+      const row=td.closest('tr');
+      if(row){const cells=row.querySelectorAll('td');if(cells[5]){const tot=parseFloat(room.price_per_night||0)*(room.nights||1);cells[5].textContent=tot>0?'€'+tot.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}}
+    }
+    updateRoomSummary();
+    await sb.from('rooms').update({[f]:val}).eq('id',room.id);
+  }
+  input.addEventListener('blur',save);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}if(e.key==='Escape'){saved=true;td.classList.remove('editing');renderRoomCell(td,room,f,t);}});
+}
+
+async function addRoom() {
+  const {data,error}=await sb.from('rooms').insert([{
+    event_id:eventId, name:'New room', type:'double', capacity:2,
+    price_per_night:0, nights:1, notes:'', status:'available', sort_order:allRooms.length
+  }]).select('*, guests(first_name,last_name)').single();
+  if(!error&&data){
+    allRooms.push(data);
+    renderRooms();
+    setTimeout(()=>{
+      const newRow=document.querySelector('#rooms-tbody tr[data-id="'+data.id+'"]');
+      if(newRow){newRow.scrollIntoView({behavior:'smooth',block:'center'});const cells=newRow.querySelectorAll('td');if(cells[0])cells[0].click();}
+    },80);
+  }
+}
+
+async function deleteRoom(id){
+  if(!confirm('Delete this room?'))return;
+  await sb.from('rooms').delete().eq('id',id);
+  allRooms=allRooms.filter(r=>r.id!==id);
+  renderRooms();
+}
+
+function sortRooms(f){
+  if(roomSortField===f)roomSortDir*=-1;else{roomSortField=f;roomSortDir=1;}
+  renderRooms();
+}
+function resetRoomSort(){roomSortField='sort_order';roomSortDir=1;renderRooms();}
 
 </script>
 
