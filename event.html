@@ -2906,13 +2906,7 @@ function refreshCell(td, item, field, type) {
 function buildBudgetRow(item) {
   const tr = document.createElement('tr');
   tr.dataset.id = item.id;
-  // Up/down arrow cell
-  const moveTd = document.createElement('td');
-  moveTd.style.cssText = 'width:36px;padding:0 2px;white-space:nowrap;cursor:default;';
-  moveTd.innerHTML = `
-    <button onclick="moveBudgetRow('${item.id}',-1)" title="Move up" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.8rem;padding:1px 3px;line-height:1;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink3)'">▲</button>
-    <button onclick="moveBudgetRow('${item.id}',1)" title="Move down" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.8rem;padding:1px 3px;line-height:1;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink3)'">▼</button>`;
-  tr.appendChild(moveTd);
+
   const cols = [
     {field:'item_type',type:'itype'},
     {field:'category',type:'cat'},
@@ -2935,7 +2929,8 @@ function buildBudgetRow(item) {
     tr.appendChild(td);
   });
   const del = document.createElement('td');
-  del.innerHTML = `<button class="row-del" onclick="deleteBudgetItem('${item.id}')">Delete</button>`;
+  del.style.whiteSpace='nowrap';
+  del.innerHTML = `<button onclick="moveBudgetRow('${item.id}',-1)" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.85rem;padding:1px 4px;">▲</button><button onclick="moveBudgetRow('${item.id}',1)" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.85rem;padding:1px 4px;">▼</button> <button class="row-del" onclick="deleteBudgetItem('${item.id}')">Delete</button>`;
   tr.appendChild(del);
   return tr;
 }
