@@ -1341,6 +1341,7 @@ function printTablePlan() {
       <strong style="color:var(--ink2);">Preview</strong> — first data row:
       <div id="import-preview" style="margin-top:0.4rem;font-family:monospace;font-size:0.72rem;"></div>
     </div>
+    <div id="import-rsvp-hint" style="display:none;background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.78rem;color:var(--ink3);"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
       <button class="btn-primary" onclick="runImport()">Import guests</button>
@@ -2902,6 +2903,29 @@ async function importGuests(e) {
     previewEl.textContent = _importRows[0].map((v,i) => `[${_importHeaders[i]||i}]: ${v||'—'}`).join('  |  ');
   }
 
+  // Show unique RSVP values found in CSV
+  const rsvpColIdx = bestMatch('rsvp_status');
+  if (rsvpColIdx !== '') {
+    const uniqueVals = [...new Set(_importRows.map(r=>(r[rsvpColIdx]||'').trim()).filter(Boolean))];
+    if (uniqueVals.length) {
+      const rsvpMap = {
+        'confirmed':'confirmed','yes':'confirmed','y':'confirmed','attending':'confirmed','coming':'confirmed','accepted':'confirmed','1':'confirmed',
+        'declined':'declined','no':'declined','n':'declined','not attending':'declined','0':'declined',
+        'pending':'pending','maybe':'pending','tbc':'pending',
+      };
+      const rsvpHint = document.getElementById('import-rsvp-hint');
+      if (rsvpHint) {
+        rsvpHint.innerHTML = '<strong style="color:var(--ink2);">RSVP values found:</strong> ' +
+          uniqueVals.map(v => {
+            const mapped = rsvpMap[v.toLowerCase()] || 'pending';
+            const col = mapped==='confirmed'?'#2d6a4f':mapped==='declined'?'#c0392b':'#c98a00';
+            return `<span style="font-size:0.72rem;margin-left:6px;">"${v}" → <strong style="color:${col};">${mapped}</strong></span>`;
+          }).join('');
+        rsvpHint.style.display = 'block';
+      }
+    }
+  }
+
   document.getElementById('import-modal').classList.add('open');
 }
 
@@ -2918,7 +2942,21 @@ async function runImport() {
     const firstName = (r[firstCol] || '').trim();
     if (!firstName) return null;
     const rsvpRaw = getCol('rsvp_status') > -1 ? (r[getCol('rsvp_status')] || '').trim().toLowerCase() : 'pending';
-    const validRsvp = ['confirmed','pending','declined'].includes(rsvpRaw) ? rsvpRaw : 'pending';
+    // Map common values to confirmed/pending/declined
+    const rsvpMap = {
+      // Confirmed
+      'confirmed':'confirmed','yes':'confirmed','y':'confirmed','attending':'confirmed',
+      'coming':'confirmed','going':'confirmed','accepted':'confirmed','accept':'confirmed',
+      'will attend':'confirmed','attending':'confirmed','1':'confirmed','true':'confirmed',
+      // Declined
+      'declined':'declined','no':'declined','n':'declined','not attending':'declined',
+      'not coming':'declined','declined':'declined','rejected':'declined','refuse':'declined',
+      'wont attend':'declined','0':'declined','false':'declined',
+      // Pending
+      'pending':'pending','maybe':'pending','unsure':'pending','tbc':'pending',
+      'to be confirmed':'pending','awaiting':'pending','unknown':'pending','':'pending',
+    };
+    const validRsvp = rsvpMap[rsvpRaw] || 'pending';
     return {
       event_id:    eventId,
       first_name:  firstName,
@@ -4775,6 +4813,7 @@ function printTablePlan() {
       <strong style="color:var(--ink2);">Preview</strong> — first data row:
       <div id="import-preview" style="margin-top:0.4rem;font-family:monospace;font-size:0.72rem;"></div>
     </div>
+    <div id="import-rsvp-hint" style="display:none;background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.78rem;color:var(--ink3);"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
       <button class="btn-primary" onclick="runImport()">Import guests</button>
@@ -5353,6 +5392,7 @@ function resetRoomSort(){roomSortField='sort_order';roomSortDir=1;renderRooms();
       <strong style="color:var(--ink2);">Preview</strong> — first data row:
       <div id="import-preview" style="margin-top:0.4rem;font-family:monospace;font-size:0.72rem;"></div>
     </div>
+    <div id="import-rsvp-hint" style="display:none;background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.78rem;color:var(--ink3);"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
       <button class="btn-primary" onclick="runImport()">Import guests</button>
