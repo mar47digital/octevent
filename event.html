@@ -62,7 +62,7 @@ async function saveMobileBudget() {
 
 // ── CHECKLIST ──
 let allChecklistItems = [];
-let clHideDone = false;
+let clHideDone = true;
 let checklistSortField = 'stage';
 let checklistSortDir = 1;
 
@@ -1527,6 +1527,7 @@ function renderRooms() {
   const TH = (f,l,num) => `<th class="${num?'num ':''} sortable" data-field="${f}" onclick="sortRooms('${f}')">${l} <span class="sort-icon">↕</span></th>`;
 
   wrap.innerHTML = `<table><thead><tr>
+    ${TH('accommodation','Accommodation')}
     ${TH('name','Room name')}
     ${TH('type','Type')}
     ${TH('capacity','Capacity',true)}
@@ -1549,7 +1550,7 @@ function renderRooms() {
   const totalIncome = allRooms.reduce((s,r)=>s+(parseFloat(r.price_per_night||0)*(r.nights||1)),0);
   const totalCap = allRooms.reduce((s,r)=>s+(r.capacity||0),0);
   document.getElementById('rooms-footer').innerHTML = `
-    <td><strong>Totals</strong></td><td></td>
+    <td colspan="2"><strong>Totals</strong></td><td></td>
     <td class="num"><strong>${totalCap}</strong></td>
     <td class="num"></td><td class="num"></td>
     <td class="num"><strong>€${totalIncome.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
@@ -1595,6 +1596,7 @@ function buildRoomRow(room) {
   const guest = room.guests ? `${room.guests.first_name} ${room.guests.last_name||''}`.trim() : '—';
 
   const COLS = [
+    {f:'accommodation',t:'text'},
     {f:'name',t:'text'},
     {f:'type',t:'room-type'},
     {f:'capacity',t:'num'},
@@ -1700,7 +1702,7 @@ function editRoomCell(td,room,f,t) {
 
 async function addRoom() {
   const {data,error}=await sb.from('rooms').insert([{
-    event_id:eventId, name:'New room', type:'double', capacity:2,
+    event_id:eventId, accommodation:'', name:'New room', type:'double', capacity:2,
     price_per_night:0, nights:1, notes:'', status:'available', sort_order:allRooms.length
   }]).select('*, guests(first_name,last_name)').single();
   if(!error&&data){
@@ -3536,7 +3538,7 @@ async function saveMobileBudget() {
 
 // ── CHECKLIST ──
 let allChecklistItems = [];
-let clHideDone = false;
+let clHideDone = true;
 let checklistSortField = 'stage';
 let checklistSortDir = 1;
 
@@ -4999,6 +5001,7 @@ function renderRooms() {
   const TH = (f,l,num) => `<th class="${num?'num ':''} sortable" data-field="${f}" onclick="sortRooms('${f}')">${l} <span class="sort-icon">↕</span></th>`;
 
   wrap.innerHTML = `<table><thead><tr>
+    ${TH('accommodation','Accommodation')}
     ${TH('name','Room name')}
     ${TH('type','Type')}
     ${TH('capacity','Capacity',true)}
@@ -5021,7 +5024,7 @@ function renderRooms() {
   const totalIncome = allRooms.reduce((s,r)=>s+(parseFloat(r.price_per_night||0)*(r.nights||1)),0);
   const totalCap = allRooms.reduce((s,r)=>s+(r.capacity||0),0);
   document.getElementById('rooms-footer').innerHTML = `
-    <td><strong>Totals</strong></td><td></td>
+    <td colspan="2"><strong>Totals</strong></td><td></td>
     <td class="num"><strong>${totalCap}</strong></td>
     <td class="num"></td><td class="num"></td>
     <td class="num"><strong>€${totalIncome.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
@@ -5067,6 +5070,7 @@ function buildRoomRow(room) {
   const guest = room.guests ? `${room.guests.first_name} ${room.guests.last_name||''}`.trim() : '—';
 
   const COLS = [
+    {f:'accommodation',t:'text'},
     {f:'name',t:'text'},
     {f:'type',t:'room-type'},
     {f:'capacity',t:'num'},
@@ -5172,7 +5176,7 @@ function editRoomCell(td,room,f,t) {
 
 async function addRoom() {
   const {data,error}=await sb.from('rooms').insert([{
-    event_id:eventId, name:'New room', type:'double', capacity:2,
+    event_id:eventId, accommodation:'', name:'New room', type:'double', capacity:2,
     price_per_night:0, nights:1, notes:'', status:'available', sort_order:allRooms.length
   }]).select('*, guests(first_name,last_name)').single();
   if(!error&&data){
