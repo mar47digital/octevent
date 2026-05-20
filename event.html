@@ -958,9 +958,8 @@ let tpDragOffsetX = 0;
 let tpDragOffsetY = 0;
 
 async function loadTablePlan() {
-  // Load guests
-  const { data: gData } = await sb.from('guests').select('*').eq('event_id', eventId);
-  tpGuests = gData || [];
+  // Use already-loaded guests
+  tpGuests = allGuests;
 
   // Load tables from event
   const { data: evData } = await sb.from('events').select('table_plan').eq('id', eventId).single();
@@ -1218,6 +1217,20 @@ async function saveTablePlan() {
   if (btn) { btn.textContent='✓ Saved'; btn.disabled=false; setTimeout(()=>btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save plan`,2000); }
 }
 
+
+
+function assignRoomFromGuestList(guestId, roomId) {
+  // Remove guest from any existing room
+  allRooms.forEach(r => { if(r.guest_id===guestId) { r.guest_id=null; sb.from('rooms').update({guest_id:null,status:'available'}).eq('id',r.id); } });
+  if (roomId) {
+    const room = allRooms.find(r=>r.id===roomId);
+    if (room) {
+      room.guest_id = guestId;
+      room.status = 'reserved';
+      sb.from('rooms').update({guest_id:guestId,status:'reserved'}).eq('id',roomId);
+    }
+  }
+}
 
 function assignGuestFromGuestList(guestId, tableId) {
   // Remove guest from all tables first
@@ -2554,13 +2567,14 @@ let sortField = 'category';
 let sortDir = 1;
 
 // ── AUTH ──
-sb.auth.getSession().then(({ data: { session } }) => {
+sb.auth.getSession().then(async ({ data: { session } }) => {
   if (!session) { window.location.href = '/login'; return; }
   const name = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
   document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
   if (!eventId) { window.location.href = '/dashboard'; return; }
   loadEvent();
-  loadGuests();
+  await loadGuests();
+  loadRooms();
 });
 
 // ── EVENT ──
@@ -2733,7 +2747,7 @@ function renderGuests(guests) {
       <th style="min-width:140px;">Name</th>
       <th style="min-width:80px;">RSVP</th>
       <th style="min-width:120px;">Table</th>
-      <th style="min-width:60px;">Room</th>
+      <th style="min-width:120px;">Room</th>
       <th style="min-width:100px;">Dietary</th>
       <th style="min-width:120px;">Notes</th>
       <th style="width:60px;"></th>
@@ -2756,7 +2770,12 @@ function renderGuests(guests) {
             ${tableOptions}
           </select>
         </td>
-        <td><span style="font-size:0.78rem;color:var(--ink3);">—</span></td>
+        <td>
+          <select style="font-size:0.75rem;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;font-family:'DM Sans',sans-serif;outline:none;max-width:120px;" onchange="assignRoomFromGuestList('${g.id}',this.value)">
+            <option value="">— Room —</option>
+            ${allRooms.map(r=>`<option value="${r.id}" ${r.guest_id===g.id?'selected':''}>${r.name}</option>`).join('')}
+          </select>
+        </td>
         <td style="font-size:0.78rem;">${g.dietary||'—'}</td>
         <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.notes||'—'}</td>
         <td><button onclick="deleteGuest('${g.id}')" style="font-size:0.7rem;padding:2px 8px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;color:#c0392b;font-family:'DM Sans',sans-serif;">Delete</button></td>
@@ -3406,8 +3425,14 @@ function showTab(name) {
   if (name==='budget') loadBudget();
   if (name==='checklist') loadChecklist();
   if (name==='runsheet') loadRunsheet();
-  if (name==='tableplan') loadTablePlan();
-  if (name==='rooms') loadRooms();
+  if (name==='tableplan') {
+    if (!allGuests.length) await loadGuests();
+    loadTablePlan();
+  }
+  if (name==='rooms') {
+    if (!allGuests.length) await loadGuests();
+    loadRooms();
+  }
   if (name==='settings') setTimeout(() => initDragDrop('settings-photo-area','settings-photo-input','settings-photo-preview','settings-photo-placeholder'), 100);
 }
 
@@ -4369,9 +4394,8 @@ let tpDragOffsetX = 0;
 let tpDragOffsetY = 0;
 
 async function loadTablePlan() {
-  // Load guests
-  const { data: gData } = await sb.from('guests').select('*').eq('event_id', eventId);
-  tpGuests = gData || [];
+  // Use already-loaded guests
+  tpGuests = allGuests;
 
   // Load tables from event
   const { data: evData } = await sb.from('events').select('table_plan').eq('id', eventId).single();
@@ -4629,6 +4653,20 @@ async function saveTablePlan() {
   if (btn) { btn.textContent='✓ Saved'; btn.disabled=false; setTimeout(()=>btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save plan`,2000); }
 }
 
+
+
+function assignRoomFromGuestList(guestId, roomId) {
+  // Remove guest from any existing room
+  allRooms.forEach(r => { if(r.guest_id===guestId) { r.guest_id=null; sb.from('rooms').update({guest_id:null,status:'available'}).eq('id',r.id); } });
+  if (roomId) {
+    const room = allRooms.find(r=>r.id===roomId);
+    if (room) {
+      room.guest_id = guestId;
+      room.status = 'reserved';
+      sb.from('rooms').update({guest_id:guestId,status:'reserved'}).eq('id',roomId);
+    }
+  }
+}
 
 function assignGuestFromGuestList(guestId, tableId) {
   // Remove guest from all tables first
