@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octevent — Rooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--amber:#F5A800;--amber-light:#FFF8E6;--amber-dark:#C98A00;--ink:#18181A;--ink2:#555;--ink3:#999;--cream:#FAFAF7;--rule:#ECEAE4;--green:#2d6a4f;--red:#c0392b;}
+html,body{min-height:100%;background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--ink);}
+/* NAV */
+nav{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo img{height:34px;width:auto;}
+.nav-breadcrumb{display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--ink3);}
+.nav-breadcrumb a{color:var(--ink3);text-decoration:none;}.nav-breadcrumb a:hover{color:var(--ink);}
+.nav-breadcrumb span{color:var(--ink);font-weight:500;}
+.nav-right{display:flex;align-items:center;gap:8px;}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;cursor:default;}
+/* EVENT HEADER */
+.event-header{background:#fff;border-bottom:1px solid var(--rule);padding:1.25rem 2rem;}
+.event-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:0.75rem;}
+.event-title{font-family:'Nunito',sans-serif;font-size:1.6rem;font-weight:800;line-height:1.1;}
+.event-status{font-size:0.65rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 10px;border-radius:100px;}
+.status-upcoming{background:var(--amber-light);color:var(--amber-dark);}
+.status-live{background:#f0f7f4;color:var(--green);}
+.status-past{background:var(--rule);color:var(--ink3);}
+.event-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:0.8rem;color:var(--ink3);}
+.event-lower-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-top:0.75rem;}
+.event-cover-strip{display:none;grid-row:1/3;overflow:hidden;}
+.event-cover-strip img{width:100%;height:100%;object-fit:cover;}
+.event-lower-row.has-cover{grid-template-columns:200px 1fr 1fr 1fr 1fr;}
+.event-stat{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.75rem;min-height:75px;}
+.event-stat-n{font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;}
+.event-stat-l{font-size:0.62rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
+/* TABS */
+.tabs-bar{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;display:flex;overflow-x:auto;}
+.tab{padding:0.85rem 1rem;font-size:0.82rem;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color 0.15s;}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--ink);border-bottom-color:var(--amber);}
+/* MAIN */
+main{max-width:100%;padding:1.5rem 2rem;}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:0.45rem 0.9rem;border-radius:100px;font-size:0.8rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);text-decoration:none;}
+.btn:hover{border-color:var(--ink);color:var(--ink);}
+.btn.amber{background:var(--amber);border-color:var(--amber);color:var(--ink);font-weight:600;}
+.btn.amber:hover{background:var(--amber-dark);border-color:var(--amber-dark);}
+.btn.danger{color:var(--red);border-color:#fdf0f0;}.btn.danger:hover{background:#fdf0f0;}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+/* PANEL HEADER */
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;}
+.panel-header-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.panel-title{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
+/* TABLE */
+.table-wrap{background:#fff;border:1px solid var(--rule);border-radius:12px;overflow:hidden;}
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead{background:var(--cream);}
+th{padding:0.6rem 0.8rem;text-align:left;font-size:0.67rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--rule);white-space:nowrap;}
+th.num,td.num{text-align:right;}
+td{padding:0.7rem 0.8rem;font-size:0.81rem;border-bottom:1px solid var(--rule);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--amber-light);}
+.add-row td{cursor:pointer;color:var(--ink3);border-top:2px solid var(--rule);}
+.add-row:hover td{background:var(--amber-light);color:var(--ink);}
+/* INLINE EDIT */
+td.editing{padding:2px!important;background:#fff!important;}
+.inline-input{width:100%;padding:4px 7px;border:2px solid var(--amber);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:0.81rem;color:var(--ink);outline:none;background:#fff;}
+.inline-select{width:100%;padding:4px 5px;border:2px solid var(--amber);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:0.77rem;color:var(--ink);outline:none;background:#fff;cursor:pointer;}
+/* COLOURS */
+.green{color:var(--green)!important;}.red{color:var(--red)!important;}
+/* BADGES */
+.badge{display:inline-block;font-size:0.63rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;}
+/* ROW DELETE */
+.row-del{font-size:0.7rem;padding:2px 7px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ink2);opacity:0;transition:opacity 0.12s;}
+tr:hover .row-del{opacity:1;}
+.row-del:hover{border-color:var(--red);color:var(--red);}
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:3rem 2rem;background:#fff;border:1px solid var(--rule);border-radius:12px;}
+.empty-state .icon{font-size:2rem;margin-bottom:0.6rem;opacity:0.4;}
+.empty-state h3{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.3rem;}
+.empty-state p{font-size:0.82rem;color:var(--ink3);margin-bottom:1rem;font-weight:300;}
+/* SPINNER */
+.spinner{width:26px;height:26px;border:3px solid var(--rule);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;margin:2.5rem auto;display:block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:480px;padding:1.5rem;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;}
+.modal-title{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;}
+.modal-close{width:28px;height:28px;border-radius:50%;background:var(--cream);border:none;cursor:pointer;font-size:0.9rem;}
+.modal-close:hover{background:var(--rule);}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.2rem;}
+/* FORM */
+.field{margin-bottom:0.85rem;}
+.field label{display:block;font-size:0.76rem;font-weight:500;color:var(--ink2);margin-bottom:0.3rem;}
+.field input,.field select,.field textarea{width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--rule);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:var(--ink);background:#fff;outline:none;transition:border-color 0.2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);}
+.field textarea{resize:vertical;min-height:70px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* BTN PRIMARY */
+.btn-primary{padding:0.6rem 1.25rem;border-radius:100px;background:var(--amber);color:var(--ink);border:none;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;}
+.btn-primary:hover{background:var(--amber-dark);color:#fff;}
+.btn-cancel{padding:0.6rem 1.1rem;border-radius:100px;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:0.82rem;cursor:pointer;}
+/* PROGRESS */
+.progress-wrap{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;}
+.progress-label{display:flex;justify-content:space-between;font-size:0.78rem;color:var(--ink2);margin-bottom:0.35rem;}
+.progress-bar{height:6px;background:var(--rule);border-radius:100px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--amber);border-radius:100px;transition:width 0.4s;}
+/* SUMMARY CARDS */
+.summary-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:1.1rem;}
+.s-card{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:0.8rem 1rem;}
+.s-card-label{font-size:0.65rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.25rem;}
+.s-card-value{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
+.s-card-value.green{color:var(--green);}.s-card-value.red{color:var(--red);}.s-card-value.amber{color:var(--amber-dark);}
+/* RESPONSIVE */
+@media(max-width:768px){
+  nav{padding:0 1rem;}.nav-breadcrumb{display:none;}
+  .event-header{padding:1rem;}
+  main{padding:1rem;}
+  .tabs-bar{padding:0 0.5rem;}.tab{font-size:0.72rem;padding:0.75rem 0.6rem;}
+  .summary-cards{grid-template-columns:1fr 1fr;}
+  .field-row{grid-template-columns:1fr;}
+}
+
+</style>
+</head>
+<body>
+<nav>
+  <div style="display:flex;align-items:center;gap:0.9rem;">
+    <a href="/dashboard" class="nav-logo"><img src="/octevent-logo.png" alt="Octevent"></a>
+    <div class="nav-breadcrumb">
+      <a href="/dashboard">My Events</a>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span id="nav-event-name">Loading...</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-avatar" id="user-avatar">?</div>
+    <a href="/dashboard" class="btn">← All events</a>
+  </div>
+</nav>
+<div class="event-header">
+  <div class="event-header-top">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <div class="event-title" id="event-title">Loading...</div>
+        <span class="event-status status-upcoming" id="event-status">Upcoming</span>
+      </div>
+      <div class="event-meta" id="event-meta"></div>
+    </div>
+    <div style="display:flex;gap:7px;flex-shrink:0;">
+      <button class="btn" onclick="go('event-settings')">⚙️ Settings</button>
+    </div>
+  </div>
+  <div class="event-lower-row">
+    <div class="event-cover-strip" id="event-cover-strip"><img id="event-cover-img" alt=""></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-guests">0</div><div class="event-stat-l">Guests</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-rsvp">0</div><div class="event-stat-l">RSVPs</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-rooms">0</div><div class="event-stat-l">Rooms</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-budget">€0</div><div class="event-stat-l">Budget</div></div>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab" onclick="go('event-overview')">🏠 Overview</button>
+  <button class="tab" onclick="go('event-checklist')">✅ Checklist</button>
+  <button class="tab" onclick="go('event-budget')">💰 Budget</button>
+  <button class="tab" onclick="go('event-guests')">👥 Guests</button>
+  <button class="tab active" onclick="go('event-rooms')">🛏 Rooms</button>
+  <button class="tab" onclick="go('event-runsheet')">📅 Run sheet</button>
+  <button class="tab" onclick="go('event-tableplan')">🪑 Table plan</button>
+  <button class="tab" onclick="go('event-settings')">⚙️ Settings</button>
+</div>
+<main>
+
+<div class="panel-header">
+  <div class="panel-header-left">
+    <div class="panel-title">Rooms</div>
+    <button class="btn amber" onclick="addRoom()">＋ Add room</button>
+  </div>
+</div>
+<div class="summary-cards" id="r-summary" style="display:none;">
+  <div class="s-card"><div class="s-card-label">Total rooms</div><div class="s-card-value" id="r-total">0</div></div>
+  <div class="s-card"><div class="s-card-label">Available</div><div class="s-card-value green" id="r-avail">0</div></div>
+  <div class="s-card"><div class="s-card-label">Reserved</div><div class="s-card-value amber" id="r-res">0</div></div>
+  <div class="s-card"><div class="s-card-label">Total capacity</div><div class="s-card-value" id="r-cap">0</div></div>
+  <div class="s-card"><div class="s-card-label">Expected income</div><div class="s-card-value green" id="r-inc">€0</div></div>
+</div>
+<div id="r-content"><div class="spinner"></div></div>
+
+</main>
+
+<script>
+// ── OCTEVENT SHARED ──
+const SUPABASE_URL = 'https://esjmzvhxbwcpslutprel.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzam16dmh4YndjcHNsdXRwcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzcxNjAsImV4cCI6MjA5Mzc1MzE2MH0.fsr1_P_ZB68SaiK00GPXvJLQUePM4eLght_CaAYOeF0';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const params = new URLSearchParams(location.search);
+const eventId = params.get('id');
+let currentEvent = null;
+
+// ── NAVIGATION ──
+const PAGES = {
+  overview:  'event-overview',
+  checklist: 'event-checklist',
+  budget:    'event-budget',
+  guests:    'event-guests',
+  rooms:     'event-rooms',
+  runsheet:  'event-runsheet',
+  tableplan: 'event-tableplan',
+  settings:  'event-settings',
+};
+function go(page) {
+  location.href = '/' + page + '?id=' + eventId;
+}
+
+// ── UTILITIES ──
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,dy] = d.split('-');
+  return new Date(y, m-1, dy).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+}
+function fmtTime(t) {
+  if (!t) return '—';
+  const [h,m] = t.split(':');
+  const hr = parseInt(h);
+  return (hr%12||12) + ':' + m + ' ' + (hr<12?'am':'pm');
+}
+function fmtEuro(n) {
+  const v = parseFloat(n||0);
+  if (v === 0) return '—';
+  return '€' + v.toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtSum(n) {
+  return '€' + parseFloat(n||0).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function calcHours(s, f) {
+  if (!s || !f) return '—';
+  const [sh,sm] = s.split(':').map(Number);
+  const [fh,fm] = f.split(':').map(Number);
+  const d = (fh*60+fm) - (sh*60+sm);
+  if (d <= 0) return '—';
+  const h = Math.floor(d/60), mi = d%60;
+  return h > 0 ? (mi > 0 ? h+'h '+mi+'m' : h+'h') : mi+'m';
+}
+
+// ── EVENT HEADER ──
+async function loadEventHeader() {
+  const {data, error} = await sb.from('events').select('*').eq('id', eventId).single();
+  if (error || !data) { location.href = '/dashboard'; return null; }
+  currentEvent = data;
+  renderEventHeader(data);
+  return data;
+}
+
+function renderEventHeader(ev) {
+  document.title = ev.name + ' — Octevent';
+  const navName = document.getElementById('nav-event-name');
+  if (navName) navName.textContent = ev.name;
+  const titleEl = document.getElementById('event-title');
+  if (titleEl) titleEl.textContent = ev.name;
+  const now = new Date();
+  const ed = ev.event_date ? new Date(ev.event_date) : null;
+  const diff = ed ? (now - ed) / 86400000 : -999;
+  const status = diff > 1 ? 'past' : diff > -1 ? 'live' : 'upcoming';
+  const statusEl = document.getElementById('event-status');
+  if (statusEl) {
+    statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    statusEl.className = 'event-status status-' + status;
+  }
+  const meta = [];
+  if (ev.event_date) {
+    const d2 = ev.end_date && ev.end_date !== ev.event_date ? ' — ' + fmtDate(ev.end_date) : '';
+    meta.push('<span>📅 ' + fmtDate(ev.event_date) + d2 + '</span>');
+  }
+  const loc = [ev.venue, ev.city, ev.country].filter(Boolean).join(', ');
+  if (loc) meta.push('<span>📍 ' + loc + '</span>');
+  if (ev.event_type) meta.push('<span>🏷 ' + ev.event_type.charAt(0).toUpperCase() + ev.event_type.slice(1) + '</span>');
+  const metaEl = document.getElementById('event-meta');
+  if (metaEl) metaEl.innerHTML = meta.join('');
+  const stats = {guests: ev.guest_count||0, rsvp: ev.rsvp_count||0, rooms: ev.room_count||0, budget: ev.budget ? '€'+ev.budget : '€0'};
+  Object.entries(stats).forEach(([k,v]) => { const el = document.getElementById('stat-'+k); if (el) el.textContent = v; });
+  if (ev.cover_image) {
+    const strip = document.getElementById('event-cover-strip');
+    const img = document.getElementById('event-cover-img');
+    const lr = document.querySelector('.event-lower-row');
+    if (strip) strip.style.display = 'block';
+    if (img) img.src = ev.cover_image;
+    if (lr) lr.classList.add('has-cover');
+  }
+}
+
+// ── AUTH ──
+async function initAuth(callback) {
+  const {data: {session}} = await sb.auth.getSession();
+  if (!session) { location.href = '/login'; return; }
+  if (!eventId) { location.href = '/dashboard'; return; }
+  const name = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+  const av = document.getElementById('user-avatar');
+  if (av) av.textContent = name.charAt(0).toUpperCase();
+  if (typeof callback === 'function') await callback(session);
+}
+
+
+let allRooms=[], allGuests=[];
+const ROOM_TYPES={single:'Single',double:'Double',twin:'Twin',triple:'Triple',suite:'Suite',dorm:'Dormitory',villa:'Villa',cottage:'Cottage',other:'Other'};
+const ROOM_STATUS={available:'Available',reserved:'Reserved',paid:'Paid'};
+const ROOM_STATUS_STYLE={available:'background:#f0f7f4;color:var(--green);',reserved:'background:var(--amber-light);color:var(--amber-dark);',paid:'background:#f0f7f4;color:var(--green);font-weight:700;'};
+
+async function initPage(){
+  await loadEventHeader();
+  const [rd,gd]=await Promise.all([
+    sb.from('rooms').select('*').eq('event_id',eventId).order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
+    sb.from('guests').select('id,first_name,last_name').eq('event_id',eventId)
+  ]);
+  allRooms=rd.data||[]; allGuests=gd.data||[];
+  render();
+}
+
+function updateSummary(){
+  const total=allRooms.length;
+  if(!total){document.getElementById('r-summary').style.display='none';return;}
+  document.getElementById('r-summary').style.display='grid';
+  document.getElementById('r-total').textContent=total;
+  document.getElementById('r-avail').textContent=allRooms.filter(r=>r.status==='available').length;
+  document.getElementById('r-res').textContent=allRooms.filter(r=>r.status!=='available').length;
+  document.getElementById('r-cap').textContent=allRooms.reduce((s,r)=>s+(r.capacity||0),0);
+  const inc=allRooms.reduce((s,r)=>s+(parseFloat(r.price_per_night||0)*(r.nights||1)),0);
+  document.getElementById('r-inc').textContent=fmtSum(inc);
+  document.getElementById('stat-rooms').textContent=total;
+  sb.from('events').update({room_count:total}).eq('id',eventId);
+}
+
+function render(){
+  updateSummary();
+  const el=document.getElementById('r-content');
+  if(!allRooms.length){el.innerHTML='<div class="empty-state"><div class="icon">🛏</div><h3>No rooms yet</h3><p>Add rooms to manage accommodation for your event.</p><button class="btn amber" onclick="addRoom()">+ Add first room</button></div>';return;}
+  const totalInc=allRooms.reduce((s,r)=>s+(parseFloat(r.price_per_night||0)*(r.nights||1)),0);
+  const totalCap=allRooms.reduce((s,r)=>s+(r.capacity||0),0);
+  el.innerHTML=`<div class="table-wrap table-scroll"><table>
+    <thead><tr><th>Accommodation</th><th>Room name</th><th>Type</th><th class="num">Capacity</th><th class="num">Price/night</th><th class="num">Nights</th><th class="num">Total</th><th>Status</th><th>Assigned guest</th><th>Notes</th><th></th></tr></thead>
+    <tbody>${allRooms.map(room=>{
+      const total=parseFloat(room.price_per_night||0)*(room.nights||1);
+      const g=allGuests.find(g=>g.id===room.guest_id);
+      return `<tr data-id="${room.id}">
+        ${['accommodation','name'].map(f=>`<td data-id="${room.id}" data-field="${f}" data-type="text" style="cursor:pointer;">${room[f]||'—'}</td>`).join('')}
+        <td data-id="${room.id}" data-field="type" data-type="room-type" style="cursor:pointer;"><span style="font-size:0.78rem;">${ROOM_TYPES[room.type||'double']}</span></td>
+        ${['capacity','price_per_night','nights'].map(f=>`<td class="num" data-id="${room.id}" data-field="${f}" data-type="num" style="cursor:pointer;">${f==='price_per_night'?fmtEuro(room[f]):parseFloat(room[f]||0)||'—'}</td>`).join('')}
+        <td class="num">${total>0?fmtEuro(total):'—'}</td>
+        <td data-id="${room.id}" data-field="status" data-type="room-status" style="cursor:pointer;"><span class="badge" style="${ROOM_STATUS_STYLE[room.status||'available']}">${ROOM_STATUS[room.status||'available']}</span></td>
+        <td data-id="${room.id}" data-field="guest_id" data-type="room-guest" style="cursor:pointer;font-size:0.78rem;color:${g?'var(--ink)':'var(--ink3)'};">${g?g.first_name+' '+(g.last_name||''):'— Unassigned'}</td>
+        <td data-id="${room.id}" data-field="notes" data-type="text" style="cursor:pointer;font-size:0.78rem;">${room.notes||'—'}</td>
+        <td><button class="row-del" onclick="deleteRoom('${room.id}')">Delete</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+    <tfoot><tr style="background:var(--cream);border-top:2px solid var(--rule);">
+      <td colspan="3"><strong>Totals</strong></td>
+      <td class="num"><strong>${totalCap}</strong></td>
+      <td colspan="2"></td>
+      <td class="num"><strong>${fmtSum(totalInc)}</strong></td>
+      <td colspan="4"></td>
+    </tr></tfoot>
+  </table></div>`;
+  el.querySelectorAll('td[data-field]').forEach(td=>td.addEventListener('click',()=>editCell(td)));
+}
+
+function editCell(td){
+  if(td.classList.contains('editing'))return;
+  const id=td.dataset.id,field=td.dataset.field,type=td.dataset.type;
+  const room=allRooms.find(r=>r.id===id); if(!room)return;
+  td.classList.add('editing');
+  let input;
+  if(type==='room-type'){input=document.createElement('select');input.className='inline-select';Object.entries(ROOM_TYPES).forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===(room[field]||'double'))o.selected=true;input.appendChild(o);});}
+  else if(type==='room-status'){input=document.createElement('select');input.className='inline-select';Object.entries(ROOM_STATUS).forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===(room[field]||'available'))o.selected=true;input.appendChild(o);});}
+  else if(type==='room-guest'){input=document.createElement('select');input.className='inline-select';const none=document.createElement('option');none.value='';none.textContent='— Unassigned';if(!room[field])none.selected=true;input.appendChild(none);allGuests.forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.first_name+' '+(g.last_name||'');if(g.id===room[field])o.selected=true;input.appendChild(o);});}
+  else{input=document.createElement('input');input.className='inline-input';input.type=type==='num'?'number':'text';input.value=room[field]||'';if(type==='num'){input.step='0.01';input.min='0';}}
+  td.innerHTML='';td.appendChild(input);input.focus();if(input.select)input.select();
+  let saved=false;
+  async function save(){if(saved)return;saved=true;const val=type==='num'?parseFloat(input.value)||0:input.value.trim()||null;room[field]=val;td.classList.remove('editing');render();await sb.from('rooms').update({[field]:val}).eq('id',id);}
+  input.addEventListener('blur',save);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}if(e.key==='Escape'){saved=true;td.classList.remove('editing');render();}});
+}
+
+async function addRoom(){
+  const{data,error}=await sb.from('rooms').insert([{event_id:eventId,accommodation:'',name:'New room',type:'double',capacity:2,price_per_night:0,nights:1,notes:'',status:'available',sort_order:allRooms.length}]).select().single();
+  if(!error&&data){allRooms.push(data);render();setTimeout(()=>{const r=document.querySelector('tr[data-id="'+data.id+'"]');if(r){r.scrollIntoView({behavior:'smooth',block:'center'});const c=r.querySelector('td[data-field="name"]');if(c)c.click();}},80);}
+}
+
+async function deleteRoom(id){
+  if(!confirm('Delete this room?'))return;
+  await sb.from('rooms').delete().eq('id',id);
+  allRooms=allRooms.filter(r=>r.id!==id);
+  render();
+}
+
+initAuth(initPage);
+</script>
+</body>
+</html>

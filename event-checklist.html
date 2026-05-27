@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octevent — Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--amber:#F5A800;--amber-light:#FFF8E6;--amber-dark:#C98A00;--ink:#18181A;--ink2:#555;--ink3:#999;--cream:#FAFAF7;--rule:#ECEAE4;--green:#2d6a4f;--red:#c0392b;}
+html,body{min-height:100%;background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--ink);}
+/* NAV */
+nav{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo img{height:34px;width:auto;}
+.nav-breadcrumb{display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--ink3);}
+.nav-breadcrumb a{color:var(--ink3);text-decoration:none;}.nav-breadcrumb a:hover{color:var(--ink);}
+.nav-breadcrumb span{color:var(--ink);font-weight:500;}
+.nav-right{display:flex;align-items:center;gap:8px;}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;cursor:default;}
+/* EVENT HEADER */
+.event-header{background:#fff;border-bottom:1px solid var(--rule);padding:1.25rem 2rem;}
+.event-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:0.75rem;}
+.event-title{font-family:'Nunito',sans-serif;font-size:1.6rem;font-weight:800;line-height:1.1;}
+.event-status{font-size:0.65rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 10px;border-radius:100px;}
+.status-upcoming{background:var(--amber-light);color:var(--amber-dark);}
+.status-live{background:#f0f7f4;color:var(--green);}
+.status-past{background:var(--rule);color:var(--ink3);}
+.event-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:0.8rem;color:var(--ink3);}
+.event-lower-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-top:0.75rem;}
+.event-cover-strip{display:none;grid-row:1/3;overflow:hidden;}
+.event-cover-strip img{width:100%;height:100%;object-fit:cover;}
+.event-lower-row.has-cover{grid-template-columns:200px 1fr 1fr 1fr 1fr;}
+.event-stat{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.75rem;min-height:75px;}
+.event-stat-n{font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;}
+.event-stat-l{font-size:0.62rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
+/* TABS */
+.tabs-bar{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;display:flex;overflow-x:auto;}
+.tab{padding:0.85rem 1rem;font-size:0.82rem;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color 0.15s;}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--ink);border-bottom-color:var(--amber);}
+/* MAIN */
+main{max-width:100%;padding:1.5rem 2rem;}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:0.45rem 0.9rem;border-radius:100px;font-size:0.8rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);text-decoration:none;}
+.btn:hover{border-color:var(--ink);color:var(--ink);}
+.btn.amber{background:var(--amber);border-color:var(--amber);color:var(--ink);font-weight:600;}
+.btn.amber:hover{background:var(--amber-dark);border-color:var(--amber-dark);}
+.btn.danger{color:var(--red);border-color:#fdf0f0;}.btn.danger:hover{background:#fdf0f0;}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+/* PANEL HEADER */
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;}
+.panel-header-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.panel-title{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
+/* TABLE */
+.table-wrap{background:#fff;border:1px solid var(--rule);border-radius:12px;overflow:hidden;}
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead{background:var(--cream);}
+th{padding:0.6rem 0.8rem;text-align:left;font-size:0.67rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--rule);white-space:nowrap;}
+th.num,td.num{text-align:right;}
+td{padding:0.7rem 0.8rem;font-size:0.81rem;border-bottom:1px solid var(--rule);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--amber-light);}
+.add-row td{cursor:pointer;color:var(--ink3);border-top:2px solid var(--rule);}
+.add-row:hover td{background:var(--amber-light);color:var(--ink);}
+/* INLINE EDIT */
+td.editing{padding:2px!important;background:#fff!important;}
+.inline-input{width:100%;padding:4px 7px;border:2px solid var(--amber);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:0.81rem;color:var(--ink);outline:none;background:#fff;}
+.inline-select{width:100%;padding:4px 5px;border:2px solid var(--amber);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:0.77rem;color:var(--ink);outline:none;background:#fff;cursor:pointer;}
+/* COLOURS */
+.green{color:var(--green)!important;}.red{color:var(--red)!important;}
+/* BADGES */
+.badge{display:inline-block;font-size:0.63rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;}
+/* ROW DELETE */
+.row-del{font-size:0.7rem;padding:2px 7px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ink2);opacity:0;transition:opacity 0.12s;}
+tr:hover .row-del{opacity:1;}
+.row-del:hover{border-color:var(--red);color:var(--red);}
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:3rem 2rem;background:#fff;border:1px solid var(--rule);border-radius:12px;}
+.empty-state .icon{font-size:2rem;margin-bottom:0.6rem;opacity:0.4;}
+.empty-state h3{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.3rem;}
+.empty-state p{font-size:0.82rem;color:var(--ink3);margin-bottom:1rem;font-weight:300;}
+/* SPINNER */
+.spinner{width:26px;height:26px;border:3px solid var(--rule);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;margin:2.5rem auto;display:block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:480px;padding:1.5rem;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;}
+.modal-title{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;}
+.modal-close{width:28px;height:28px;border-radius:50%;background:var(--cream);border:none;cursor:pointer;font-size:0.9rem;}
+.modal-close:hover{background:var(--rule);}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.2rem;}
+/* FORM */
+.field{margin-bottom:0.85rem;}
+.field label{display:block;font-size:0.76rem;font-weight:500;color:var(--ink2);margin-bottom:0.3rem;}
+.field input,.field select,.field textarea{width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--rule);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:var(--ink);background:#fff;outline:none;transition:border-color 0.2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);}
+.field textarea{resize:vertical;min-height:70px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* BTN PRIMARY */
+.btn-primary{padding:0.6rem 1.25rem;border-radius:100px;background:var(--amber);color:var(--ink);border:none;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;}
+.btn-primary:hover{background:var(--amber-dark);color:#fff;}
+.btn-cancel{padding:0.6rem 1.1rem;border-radius:100px;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:0.82rem;cursor:pointer;}
+/* PROGRESS */
+.progress-wrap{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;}
+.progress-label{display:flex;justify-content:space-between;font-size:0.78rem;color:var(--ink2);margin-bottom:0.35rem;}
+.progress-bar{height:6px;background:var(--rule);border-radius:100px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--amber);border-radius:100px;transition:width 0.4s;}
+/* SUMMARY CARDS */
+.summary-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:1.1rem;}
+.s-card{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:0.8rem 1rem;}
+.s-card-label{font-size:0.65rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.25rem;}
+.s-card-value{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
+.s-card-value.green{color:var(--green);}.s-card-value.red{color:var(--red);}.s-card-value.amber{color:var(--amber-dark);}
+/* RESPONSIVE */
+@media(max-width:768px){
+  nav{padding:0 1rem;}.nav-breadcrumb{display:none;}
+  .event-header{padding:1rem;}
+  main{padding:1rem;}
+  .tabs-bar{padding:0 0.5rem;}.tab{font-size:0.72rem;padding:0.75rem 0.6rem;}
+  .summary-cards{grid-template-columns:1fr 1fr;}
+  .field-row{grid-template-columns:1fr;}
+}
+
+</style>
+</head>
+<body>
+<nav>
+  <div style="display:flex;align-items:center;gap:0.9rem;">
+    <a href="/dashboard" class="nav-logo"><img src="/octevent-logo.png" alt="Octevent"></a>
+    <div class="nav-breadcrumb">
+      <a href="/dashboard">My Events</a>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span id="nav-event-name">Loading...</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-avatar" id="user-avatar">?</div>
+    <a href="/dashboard" class="btn">← All events</a>
+  </div>
+</nav>
+<div class="event-header">
+  <div class="event-header-top">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <div class="event-title" id="event-title">Loading...</div>
+        <span class="event-status status-upcoming" id="event-status">Upcoming</span>
+      </div>
+      <div class="event-meta" id="event-meta"></div>
+    </div>
+    <div style="display:flex;gap:7px;flex-shrink:0;">
+      <button class="btn" onclick="go('event-settings')">⚙️ Settings</button>
+    </div>
+  </div>
+  <div class="event-lower-row">
+    <div class="event-cover-strip" id="event-cover-strip"><img id="event-cover-img" alt=""></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-guests">0</div><div class="event-stat-l">Guests</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-rsvp">0</div><div class="event-stat-l">RSVPs</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-rooms">0</div><div class="event-stat-l">Rooms</div></div>
+    <div class="event-stat"><div class="event-stat-n" id="stat-budget">€0</div><div class="event-stat-l">Budget</div></div>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab" onclick="go('event-overview')">🏠 Overview</button>
+  <button class="tab active" onclick="go('event-checklist')">✅ Checklist</button>
+  <button class="tab" onclick="go('event-budget')">💰 Budget</button>
+  <button class="tab" onclick="go('event-guests')">👥 Guests</button>
+  <button class="tab" onclick="go('event-rooms')">🛏 Rooms</button>
+  <button class="tab" onclick="go('event-runsheet')">📅 Run sheet</button>
+  <button class="tab" onclick="go('event-tableplan')">🪑 Table plan</button>
+  <button class="tab" onclick="go('event-settings')">⚙️ Settings</button>
+</div>
+<main>
+
+<div class="panel-header">
+  <div class="panel-header-left">
+    <div class="panel-title">Checklist</div>
+    <button class="btn" id="cl-hide-btn" onclick="toggleHide()">Show all</button>
+    <button class="btn" onclick="openTemplateModal()">📋 Template</button>
+    <button class="btn danger" id="cl-reset-btn" onclick="resetAll()" style="display:none;">🗑 Reset</button>
+  </div>
+  <button class="btn" id="cl-add-btn" onclick="addTask()">＋ Add task</button>
+</div>
+<div class="progress-wrap" id="cl-progress" style="display:none;">
+  <div class="progress-label"><span id="cl-prog-text"></span><span id="cl-prog-pct"></span></div>
+  <div class="progress-bar"><div class="progress-fill" id="cl-prog-fill"></div></div>
+</div>
+<div id="cl-content"><div class="spinner"></div></div>
+
+</main>
+
+<div class="modal-overlay" id="template-modal" onclick="if(event.target===this)closeTemplateModal()">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header"><div class="modal-title">Choose a template</div><button class="modal-close" onclick="closeTemplateModal()">✕</button></div>
+    <p style="font-size:0.81rem;color:var(--ink3);margin-bottom:1.1rem;">Tasks will be added to your existing checklist.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+      <div onclick="loadTemplate('wedding')" style="border:1.5px solid var(--rule);border-radius:11px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.18s;" onmouseover="this.style.borderColor='var(--amber)';this.style.background='var(--amber-light)'" onmouseout="this.style.borderColor='var(--rule)';this.style.background=''"><div style="font-size:1.4rem;margin-bottom:0.3rem;">💍</div><div style="font-weight:700;font-size:0.85rem;">Wedding</div><div style="font-size:0.72rem;color:var(--ink3);">33 tasks</div></div>
+      <div onclick="loadTemplate('corporate')" style="border:1.5px solid var(--rule);border-radius:11px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.18s;" onmouseover="this.style.borderColor='var(--amber)';this.style.background='var(--amber-light)'" onmouseout="this.style.borderColor='var(--rule)';this.style.background=''"><div style="font-size:1.4rem;margin-bottom:0.3rem;">💼</div><div style="font-weight:700;font-size:0.85rem;">Corporate</div><div style="font-size:0.72rem;color:var(--ink3);">25 tasks</div></div>
+      <div onclick="loadTemplate('private_party')" style="border:1.5px solid var(--rule);border-radius:11px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.18s;" onmouseover="this.style.borderColor='var(--amber)';this.style.background='var(--amber-light)'" onmouseout="this.style.borderColor='var(--rule)';this.style.background=''"><div style="font-size:1.4rem;margin-bottom:0.3rem;">🎉</div><div style="font-weight:700;font-size:0.85rem;">Private party</div><div style="font-size:0.72rem;color:var(--ink3);">19 tasks</div></div>
+      <div onclick="loadTemplate('retreat')" style="border:1.5px solid var(--rule);border-radius:11px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.18s;" onmouseover="this.style.borderColor='var(--amber)';this.style.background='var(--amber-light)'" onmouseout="this.style.borderColor='var(--rule)';this.style.background=''"><div style="font-size:1.4rem;margin-bottom:0.3rem;">🌿</div><div style="font-weight:700;font-size:0.85rem;">Retreat</div><div style="font-size:0.72rem;color:var(--ink3);">18 tasks</div></div>
+      <div onclick="loadTemplate('group_holiday')" style="border:1.5px solid var(--rule);border-radius:11px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.18s;" onmouseover="this.style.borderColor='var(--amber)';this.style.background='var(--amber-light)'" onmouseout="this.style.borderColor='var(--rule)';this.style.background=''"><div style="font-size:1.4rem;margin-bottom:0.3rem;">✈️</div><div style="font-weight:700;font-size:0.85rem;">Group holiday</div><div style="font-size:0.72rem;color:var(--ink3);">16 tasks</div></div>
+      <div onclick="addTask();closeTemplateModal()" style="border:1.5px solid var(--rule);border-radius:11px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.18s;" onmouseover="this.style.borderColor='var(--amber)';this.style.background='var(--amber-light)'" onmouseout="this.style.borderColor='var(--rule)';this.style.background=''"><div style="font-size:1.4rem;margin-bottom:0.3rem;">✏️</div><div style="font-weight:700;font-size:0.85rem;">From scratch</div><div style="font-size:0.72rem;color:var(--ink3);">Build your own</div></div>
+    </div>
+    <div style="text-align:center;margin-top:1rem;"><button class="btn-cancel" onclick="closeTemplateModal()">Cancel</button></div>
+  </div>
+</div>
+
+<script>
+// ── OCTEVENT SHARED ──
+const SUPABASE_URL = 'https://esjmzvhxbwcpslutprel.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzam16dmh4YndjcHNsdXRwcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzcxNjAsImV4cCI6MjA5Mzc1MzE2MH0.fsr1_P_ZB68SaiK00GPXvJLQUePM4eLght_CaAYOeF0';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const params = new URLSearchParams(location.search);
+const eventId = params.get('id');
+let currentEvent = null;
+
+// ── NAVIGATION ──
+const PAGES = {
+  overview:  'event-overview',
+  checklist: 'event-checklist',
+  budget:    'event-budget',
+  guests:    'event-guests',
+  rooms:     'event-rooms',
+  runsheet:  'event-runsheet',
+  tableplan: 'event-tableplan',
+  settings:  'event-settings',
+};
+function go(page) {
+  location.href = '/' + page + '?id=' + eventId;
+}
+
+// ── UTILITIES ──
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,dy] = d.split('-');
+  return new Date(y, m-1, dy).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+}
+function fmtTime(t) {
+  if (!t) return '—';
+  const [h,m] = t.split(':');
+  const hr = parseInt(h);
+  return (hr%12||12) + ':' + m + ' ' + (hr<12?'am':'pm');
+}
+function fmtEuro(n) {
+  const v = parseFloat(n||0);
+  if (v === 0) return '—';
+  return '€' + v.toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtSum(n) {
+  return '€' + parseFloat(n||0).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function calcHours(s, f) {
+  if (!s || !f) return '—';
+  const [sh,sm] = s.split(':').map(Number);
+  const [fh,fm] = f.split(':').map(Number);
+  const d = (fh*60+fm) - (sh*60+sm);
+  if (d <= 0) return '—';
+  const h = Math.floor(d/60), mi = d%60;
+  return h > 0 ? (mi > 0 ? h+'h '+mi+'m' : h+'h') : mi+'m';
+}
+
+// ── EVENT HEADER ──
+async function loadEventHeader() {
+  const {data, error} = await sb.from('events').select('*').eq('id', eventId).single();
+  if (error || !data) { location.href = '/dashboard'; return null; }
+  currentEvent = data;
+  renderEventHeader(data);
+  return data;
+}
+
+function renderEventHeader(ev) {
+  document.title = ev.name + ' — Octevent';
+  const navName = document.getElementById('nav-event-name');
+  if (navName) navName.textContent = ev.name;
+  const titleEl = document.getElementById('event-title');
+  if (titleEl) titleEl.textContent = ev.name;
+  const now = new Date();
+  const ed = ev.event_date ? new Date(ev.event_date) : null;
+  const diff = ed ? (now - ed) / 86400000 : -999;
+  const status = diff > 1 ? 'past' : diff > -1 ? 'live' : 'upcoming';
+  const statusEl = document.getElementById('event-status');
+  if (statusEl) {
+    statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    statusEl.className = 'event-status status-' + status;
+  }
+  const meta = [];
+  if (ev.event_date) {
+    const d2 = ev.end_date && ev.end_date !== ev.event_date ? ' — ' + fmtDate(ev.end_date) : '';
+    meta.push('<span>📅 ' + fmtDate(ev.event_date) + d2 + '</span>');
+  }
+  const loc = [ev.venue, ev.city, ev.country].filter(Boolean).join(', ');
+  if (loc) meta.push('<span>📍 ' + loc + '</span>');
+  if (ev.event_type) meta.push('<span>🏷 ' + ev.event_type.charAt(0).toUpperCase() + ev.event_type.slice(1) + '</span>');
+  const metaEl = document.getElementById('event-meta');
+  if (metaEl) metaEl.innerHTML = meta.join('');
+  const stats = {guests: ev.guest_count||0, rsvp: ev.rsvp_count||0, rooms: ev.room_count||0, budget: ev.budget ? '€'+ev.budget : '€0'};
+  Object.entries(stats).forEach(([k,v]) => { const el = document.getElementById('stat-'+k); if (el) el.textContent = v; });
+  if (ev.cover_image) {
+    const strip = document.getElementById('event-cover-strip');
+    const img = document.getElementById('event-cover-img');
+    const lr = document.querySelector('.event-lower-row');
+    if (strip) strip.style.display = 'block';
+    if (img) img.src = ev.cover_image;
+    if (lr) lr.classList.add('has-cover');
+  }
+}
+
+// ── AUTH ──
+async function initAuth(callback) {
+  const {data: {session}} = await sb.auth.getSession();
+  if (!session) { location.href = '/login'; return; }
+  if (!eventId) { location.href = '/dashboard'; return; }
+  const name = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+  const av = document.getElementById('user-avatar');
+  if (av) av.textContent = name.charAt(0).toUpperCase();
+  if (typeof callback === 'function') await callback(session);
+}
+
+
+let allItems = [], hideDone = true;
+
+const STAGE_ORDER = ['planning','booking','confirmed','on_the_day','post_event'];
+const STAGE_LABELS = {planning:'Planning',booking:'Booking',confirmed:'Confirmed',on_the_day:'On the day',post_event:'Post event'};
+const STATUS_LABELS = {not_started:'Not started',in_progress:'In progress',done:'Done',blocked:'Blocked'};
+const STATUS_STYLES = {
+  not_started:'background:var(--rule);color:var(--ink3);',
+  in_progress:'background:#e8f0fd;color:#1a3fa8;',
+  done:'background:#f0f7f4;color:var(--green);',
+  blocked:'background:#fdf0f0;color:var(--red);'
+};
+const STAGE_STYLES = {
+  planning:'background:#e8f0fd;color:#1a3fa8;',
+  booking:'background:#fdf6ec;color:#92600a;',
+  confirmed:'background:#f0f7f4;color:var(--green);',
+  on_the_day:'background:var(--amber-light);color:var(--amber-dark);',
+  post_event:'background:var(--rule);color:var(--ink3);'
+};
+
+const TEMPLATES = {
+  wedding:[
+    {stage:'planning',category:'Budget',task:'Set overall wedding budget'},
+    {stage:'planning',category:'Venue',task:'Research and visit wedding venues'},
+    {stage:'planning',category:'Venue',task:'Book ceremony and reception venue'},
+    {stage:'planning',category:'Guests',task:'Draft initial guest list'},
+    {stage:'planning',category:'Catering',task:'Research wedding caterers'},
+    {stage:'planning',category:'Flowers',task:'Research florists'},
+    {stage:'planning',category:'Music',task:'Research bands and DJs'},
+    {stage:'planning',category:'Photography',task:'Research photographers'},
+    {stage:'planning',category:'Attire',task:'Begin wedding dress and suit search'},
+    {stage:'booking',category:'Catering',task:'Book wedding caterer'},
+    {stage:'booking',category:'Music',task:'Book band or DJ'},
+    {stage:'booking',category:'Photography',task:'Book photographer'},
+    {stage:'booking',category:'Flowers',task:'Book florist'},
+    {stage:'booking',category:'Attire',task:'Order wedding dress and suits'},
+    {stage:'booking',category:'Transport',task:'Book wedding cars'},
+    {stage:'booking',category:'Accommodation',task:'Arrange accommodation for wedding party'},
+    {stage:'booking',category:'Guests',task:'Send formal invitations'},
+    {stage:'booking',category:'Cake',task:'Book wedding cake maker'},
+    {stage:'booking',category:'Hair & Makeup',task:'Book hair and makeup artists'},
+    {stage:'confirmed',category:'Guests',task:'Chase outstanding RSVPs'},
+    {stage:'confirmed',category:'Guests',task:'Collect dietary requirements'},
+    {stage:'confirmed',category:'Catering',task:'Confirm final guest numbers with caterer'},
+    {stage:'confirmed',category:'Venue',task:'Final venue walkthrough'},
+    {stage:'confirmed',category:'Seating',task:'Create seating plan'},
+    {stage:'confirmed',category:'General',task:'Create detailed run sheet'},
+    {stage:'on_the_day',category:'Venue',task:'Oversee venue and decor setup'},
+    {stage:'on_the_day',category:'Photography',task:'Brief photographer on key shots'},
+    {stage:'on_the_day',category:'Catering',task:'Brief catering team'},
+    {stage:'on_the_day',category:'General',task:'Welcome guests'},
+    {stage:'post_event',category:'Finance',task:'Settle all outstanding invoices'},
+    {stage:'post_event',category:'Guests',task:'Send thank you cards'},
+    {stage:'post_event',category:'General',task:'Return hired items'},
+  ],
+  corporate:[
+    {stage:'planning',category:'Budget',task:'Set event budget and get approval'},
+    {stage:'planning',category:'Objectives',task:'Define event objectives and KPIs'},
+    {stage:'planning',category:'Venue',task:'Research and shortlist venues'},
+    {stage:'planning',category:'Venue',task:'Book venue and sign contract'},
+    {stage:'planning',category:'Speakers',task:'Identify and invite keynote speakers'},
+    {stage:'planning',category:'Catering',task:'Research catering options'},
+    {stage:'planning',category:'AV',task:'Identify AV and tech requirements'},
+    {stage:'booking',category:'Catering',task:'Book catering supplier'},
+    {stage:'booking',category:'AV',task:'Book AV company and equipment'},
+    {stage:'booking',category:'Photography',task:'Book event photographer'},
+    {stage:'booking',category:'Marketing',task:'Launch event registration'},
+    {stage:'booking',category:'Speakers',task:'Confirm speaker topics and requirements'},
+    {stage:'confirmed',category:'Attendees',task:'Send joining instructions'},
+    {stage:'confirmed',category:'Speakers',task:'Send final briefing to speakers'},
+    {stage:'confirmed',category:'Catering',task:'Confirm final numbers with caterer'},
+    {stage:'confirmed',category:'Venue',task:'Final venue walkthrough'},
+    {stage:'confirmed',category:'AV',task:'Tech rehearsal with AV team'},
+    {stage:'confirmed',category:'General',task:'Finalise run of show'},
+    {stage:'on_the_day',category:'Venue',task:'Oversee venue setup and branding'},
+    {stage:'on_the_day',category:'Registration',task:'Manage attendee registration'},
+    {stage:'on_the_day',category:'Speakers',task:'Welcome and brief speakers'},
+    {stage:'on_the_day',category:'AV',task:'Monitor AV throughout event'},
+    {stage:'post_event',category:'Finance',task:'Settle all supplier invoices'},
+    {stage:'post_event',category:'Attendees',task:'Send post-event survey'},
+    {stage:'post_event',category:'General',task:'Review against KPIs and write report'},
+  ],
+  private_party:[
+    {stage:'planning',category:'Budget',task:'Set overall event budget'},
+    {stage:'planning',category:'Venue',task:'Research and shortlist venues'},
+    {stage:'planning',category:'Venue',task:'Confirm venue and sign contract'},
+    {stage:'planning',category:'Guests',task:'Create initial guest list'},
+    {stage:'booking',category:'Guests',task:'Send invitations'},
+    {stage:'booking',category:'Catering',task:'Book catering supplier'},
+    {stage:'booking',category:'Entertainment',task:'Book DJ or entertainment'},
+    {stage:'booking',category:'Decor',task:'Book florist or decorator'},
+    {stage:'booking',category:'Photography',task:'Book photographer'},
+    {stage:'confirmed',category:'Guests',task:'Chase outstanding RSVPs'},
+    {stage:'confirmed',category:'Guests',task:'Collect dietary requirements'},
+    {stage:'confirmed',category:'Catering',task:'Confirm final numbers with caterer'},
+    {stage:'confirmed',category:'Venue',task:'Final walkthrough of venue'},
+    {stage:'confirmed',category:'General',task:'Create run sheet for the day'},
+    {stage:'on_the_day',category:'Venue',task:'Oversee venue setup'},
+    {stage:'on_the_day',category:'Catering',task:'Brief catering team'},
+    {stage:'on_the_day',category:'Guests',task:'Welcome guests on arrival'},
+    {stage:'post_event',category:'Finance',task:'Settle final invoices'},
+    {stage:'post_event',category:'Guests',task:'Send thank you messages'},
+  ],
+  retreat:[
+    {stage:'planning',category:'Budget',task:'Set retreat budget'},
+    {stage:'planning',category:'Venue',task:'Research retreat venues'},
+    {stage:'planning',category:'Venue',task:'Book venue and accommodation'},
+    {stage:'planning',category:'Guests',task:'Confirm participant list'},
+    {stage:'planning',category:'Programme',task:'Design retreat programme and schedule'},
+    {stage:'booking',category:'Facilitators',task:'Book facilitators and coaches'},
+    {stage:'booking',category:'Catering',task:'Book catering or meal delivery'},
+    {stage:'booking',category:'Activities',task:'Book activities and excursions'},
+    {stage:'booking',category:'Transport',task:'Arrange group transport'},
+    {stage:'confirmed',category:'Guests',task:'Send pre-retreat information pack'},
+    {stage:'confirmed',category:'Guests',task:'Collect dietary requirements and health notes'},
+    {stage:'confirmed',category:'Programme',task:'Finalise daily schedule'},
+    {stage:'on_the_day',category:'Venue',task:'Oversee arrival setup'},
+    {stage:'on_the_day',category:'Guests',task:'Welcome guests and room allocation'},
+    {stage:'on_the_day',category:'Programme',task:'Run daily schedule'},
+    {stage:'post_event',category:'Finance',task:'Settle all supplier invoices'},
+    {stage:'post_event',category:'Guests',task:'Send thank you and follow-up resources'},
+    {stage:'post_event',category:'General',task:'Gather feedback from participants'},
+  ],
+  group_holiday:[
+    {stage:'planning',category:'Budget',task:'Set group budget and agree cost sharing'},
+    {stage:'planning',category:'Destination',task:'Research and agree destination'},
+    {stage:'planning',category:'Accommodation',task:'Book accommodation'},
+    {stage:'planning',category:'Guests',task:'Confirm final guest list'},
+    {stage:'booking',category:'Travel',task:'Book group flights or transport'},
+    {stage:'booking',category:'Activities',task:'Research and book group activities'},
+    {stage:'booking',category:'Transfers',task:'Book airport transfers'},
+    {stage:'booking',category:'Insurance',task:'Arrange travel insurance'},
+    {stage:'confirmed',category:'Guests',task:'Share travel details with all guests'},
+    {stage:'confirmed',category:'Guests',task:'Collect dietary requirements'},
+    {stage:'confirmed',category:'Accommodation',task:'Confirm room allocation'},
+    {stage:'confirmed',category:'General',task:'Share final itinerary with group'},
+    {stage:'on_the_day',category:'Travel',task:'Coordinate group travel and check-in'},
+    {stage:'on_the_day',category:'Activities',task:'Coordinate daily activities'},
+    {stage:'post_event',category:'Finance',task:'Settle any outstanding shared costs'},
+    {stage:'post_event',category:'Guests',task:'Share photos with group'},
+  ],
+};
+
+async function initPage() {
+  await loadEventHeader();
+  await load();
+}
+
+async function load() {
+  const {data} = await sb.from('checklist_items').select('*').eq('event_id',eventId).order('created_at',{ascending:true});
+  allItems = data||[];
+  render();
+}
+
+function render() {
+  const total = allItems.length;
+  const done = allItems.filter(i=>i.status==='done').length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const prog = document.getElementById('cl-progress');
+  if (total) {
+    prog.style.display='block';
+    document.getElementById('cl-prog-text').textContent = done+' of '+total+' complete';
+    document.getElementById('cl-prog-pct').textContent = pct+'%';
+    document.getElementById('cl-prog-fill').style.width = pct+'%';
+  } else { prog.style.display='none'; }
+  document.getElementById('cl-reset-btn').style.display = total?'inline-flex':'none';
+
+  const hideBtn = document.getElementById('cl-hide-btn');
+  hideBtn.textContent = hideDone ? 'Show all' : 'Hide completed';
+  hideBtn.style.background = hideDone ? 'var(--amber-light)' : '';
+  hideBtn.style.borderColor = hideDone ? 'var(--amber)' : '';
+  hideBtn.style.color = hideDone ? 'var(--amber-dark)' : '';
+
+  const sorted = [...allItems].sort((a,b)=>(STAGE_ORDER.indexOf(a.stage||'planning')-STAGE_ORDER.indexOf(b.stage||'planning')));
+  const visible = hideDone ? sorted.filter(i=>i.status!=='done') : sorted;
+  const el = document.getElementById('cl-content');
+
+  if (!total) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">✅</div><h3>No tasks yet</h3><p>Add tasks manually or load a template.</p><button class="btn amber" onclick="openTemplateModal()">📋 Choose template</button></div>`;
+    return;
+  }
+
+  const TH = (l) => `<th>${l}</th>`;
+  el.innerHTML = `<div class="table-wrap table-scroll"><table>
+    <thead><tr>${TH('Stage')}${TH('Category')}${TH('Task')}<th style="width:40px;text-align:center;">Done</th>${TH('Status')}${TH('Who')}${TH('Deadline')}<th></th></tr></thead>
+    <tbody>${visible.map(item=>`<tr class="${item.status==='done'?'done-row':''}">
+      <td><span class="badge" style="${STAGE_STYLES[item.stage||'planning']}">${STAGE_LABELS[item.stage||'planning']}</span></td>
+      <td style="font-size:0.78rem;color:var(--ink3);">${item.category||'—'}</td>
+      <td style="${item.status==='done'?'text-decoration:line-through;opacity:0.5;':''}">${item.task||'—'}</td>
+      <td style="text-align:center;">
+        <div onclick="toggleDone('${item.id}','${item.status}')" style="width:18px;height:18px;border-radius:4px;border:2px solid ${item.status==='done'?'var(--amber)':'var(--rule)'};background:${item.status==='done'?'var(--amber)':'#fff'};cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:11px;font-weight:700;">${item.status==='done'?'✓':''}</div>
+      </td>
+      <td><span class="badge" style="${STATUS_STYLES[item.status||'not_started']}">${STATUS_LABELS[item.status||'not_started']}</span></td>
+      <td style="font-size:0.78rem;">${item.who||'—'}</td>
+      <td style="font-size:0.78rem;">${fmtDate(item.deadline)}</td>
+      <td><button class="row-del" onclick="deleteItem('${item.id}')">Delete</button></td>
+    </tr>`).join('')}
+    </tbody>
+    <tfoot><tr class="add-row" onclick="addTask()"><td colspan="8">＋ Add task</td></tr></tfoot>
+  </table></div>`;
+}
+
+async function toggleDone(id, status) {
+  const ns = status==='done'?'not_started':'done';
+  const item = allItems.find(i=>i.id===id);
+  if (item) item.status=ns;
+  render();
+  await sb.from('checklist_items').update({status:ns}).eq('id',id);
+}
+
+async function addTask() {
+  const {data,error} = await sb.from('checklist_items').insert([{
+    event_id:eventId,stage:'planning',category:'',task:'',status:'not_started',who:'',deadline:null
+  }]).select().single();
+  if (!error&&data) { allItems.push(data); render(); }
+}
+
+async function deleteItem(id) {
+  if (!confirm('Delete this task?')) return;
+  await sb.from('checklist_items').delete().eq('id',id);
+  allItems = allItems.filter(i=>i.id!==id);
+  render();
+}
+
+async function resetAll() {
+  if (!confirm('Delete all tasks? This cannot be undone.')) return;
+  await sb.from('checklist_items').delete().eq('event_id',eventId);
+  allItems=[];
+  render();
+}
+
+function toggleHide() { hideDone=!hideDone; render(); }
+
+function openTemplateModal() { document.getElementById('template-modal').classList.add('open'); }
+function closeTemplateModal() { document.getElementById('template-modal').classList.remove('open'); }
+
+async function loadTemplate(type) {
+  closeTemplateModal();
+  if (allItems.length && !confirm('Add template tasks to your existing checklist?')) return;
+  const tmpl = TEMPLATES[type];
+  if (!tmpl) return;
+  const {data,error} = await sb.from('checklist_items').insert(tmpl.map(t=>({...t,event_id:eventId,status:'not_started'}))).select();
+  if (!error&&data) { allItems=[...allItems,...data]; render(); }
+}
+
+initAuth(initPage);
+</script>
+</body>
+</html>
