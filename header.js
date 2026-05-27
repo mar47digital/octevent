@@ -49,6 +49,8 @@ const OctHeader = {
     .oc-stat-n{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;}
     .oc-stat-l{font-size:0.58rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
     .oc-mobile-stats{display:contents;}
+    .hide-mobile{display:inline-flex;}
+    @media(max-width:768px){.hide-mobile{display:none!important;}}
     /* TABS */
     .oc-tabs{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;display:flex;overflow-x:auto;}
     .oc-tab{padding:0.85rem 1rem;font-size:0.82rem;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color 0.15s;}
@@ -116,6 +118,25 @@ const OctHeader = {
     .s-card-label{font-size:0.65rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.25rem;}
     .s-card-value{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
     .s-card-value.green{color:var(--green);}.s-card-value.red{color:var(--red);}.s-card-value.amber{color:var(--amber-dark);}
+
+    /* MOBILE NAV DRAWER */
+    .oc-burger{display:none;background:none;border:none;cursor:pointer;padding:6px;font-size:1.3rem;color:var(--ink);line-height:1;}
+    .oc-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;}
+    .oc-drawer-overlay.open{display:block;}
+    .oc-drawer{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#fff;z-index:301;transition:left 0.25s ease;box-shadow:4px 0 24px rgba(0,0,0,0.12);display:flex;flex-direction:column;}
+    .oc-drawer.open{left:0;}
+    .oc-drawer-header{padding:1.25rem 1.25rem 0.75rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;}
+    .oc-drawer-logo img{height:28px;width:auto;}
+    .oc-drawer-close{background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--ink3);padding:4px;}
+    .oc-drawer-event{padding:0.75rem 1.25rem;font-size:0.8rem;color:var(--ink3);border-bottom:1px solid var(--rule);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .oc-drawer-nav{flex:1;overflow-y:auto;padding:0.5rem 0;}
+    .oc-drawer-tab{display:flex;align-items:center;width:100%;padding:0.85rem 1.25rem;font-size:0.92rem;font-weight:500;color:var(--ink2);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;transition:background 0.15s;border-left:3px solid transparent;}
+    .oc-drawer-tab:hover{background:var(--cream);color:var(--ink);}
+    .oc-drawer-tab.active{color:var(--ink);background:var(--amber-light);border-left-color:var(--amber);font-weight:600;}
+    @media(max-width:768px){
+      .oc-burger{display:block;}
+      .oc-tabs{display:none!important;}
+    }
     @media(max-width:768px){
       .oc-nav{padding:0 1rem;}.oc-breadcrumb{display:none;}
       .oc-event-header{padding:1rem;}
@@ -142,6 +163,18 @@ const OctHeader = {
     location.href = '/' + page + '?id=' + (new URLSearchParams(location.search).get('id'));
   },
 
+  openDrawer() {
+    document.getElementById('oc-drawer').classList.add('open');
+    document.getElementById('oc-drawer-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  },
+
+  closeDrawer() {
+    document.getElementById('oc-drawer').classList.remove('open');
+    document.getElementById('oc-drawer-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  },
+
   inject(activeTab) {
     // Inject CSS
     const style = document.createElement('style');
@@ -159,6 +192,14 @@ const OctHeader = {
       `<button class="oc-tab${t.key===activeTab?' active':''}" onclick="OctHeader.go('event-${t.key}')">${t.label}</button>`
     ).join('');
 
+    // Build drawer nav
+    const drawerNav = document.getElementById('oc-drawer-nav');
+    if (drawerNav) {
+      drawerNav.innerHTML = this.TABS.map(t =>
+        `<button class="oc-drawer-tab${t.key===activeTab?' active':''}" onclick="OctHeader.closeDrawer();OctHeader.go('event-${t.key}')">${t.label}</button>`
+      ).join('');
+    }
+
     // Inject header HTML
     const el = document.getElementById('app-header');
     if (!el) return;
@@ -174,9 +215,19 @@ const OctHeader = {
         </div>
         <div class="oc-nav-right">
           <div class="oc-avatar" id="oc-avatar">?</div>
-          <a href="/dashboard" class="btn">← All events</a>
+          <a href="/dashboard" class="btn hide-mobile">← All events</a>
+          <button class="oc-burger" onclick="OctHeader.openDrawer()" aria-label="Menu">&#9776;</button>
         </div>
       </nav>
+      <div class="oc-drawer-overlay" id="oc-drawer-overlay" onclick="OctHeader.closeDrawer()"></div>
+      <div class="oc-drawer" id="oc-drawer">
+        <div class="oc-drawer-header">
+          <a href="/dashboard" class="oc-drawer-logo"><img src="/octevent-logo.png" alt="Octevent"></a>
+          <button class="oc-drawer-close" onclick="OctHeader.closeDrawer()">&#x2715;</button>
+        </div>
+        <div class="oc-drawer-event" id="oc-drawer-event-name">Loading...</div>
+        <div class="oc-drawer-nav" id="oc-drawer-nav"></div>
+      </div>
       <div class="oc-event-header">
         <div class="oc-event-top">
           <div>
@@ -212,6 +263,8 @@ const OctHeader = {
 
     document.title = ev.name + ' — Octevent';
 
+    const drawerName = document.getElementById('oc-drawer-event-name');
+    if (drawerName) drawerName.textContent = ev.name;
     const nameEl = document.getElementById('oc-event-name');
     const titleEl = document.getElementById('oc-event-title');
     if (nameEl) nameEl.textContent = ev.name;
