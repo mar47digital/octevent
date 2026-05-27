@@ -43,9 +43,9 @@ const OctHeader = {
     .oc-event-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:0.8rem;color:var(--ink3);}
     .oc-stats-row{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-top:0.75rem;grid-template-columns:1fr 1fr 1fr 1fr;}
     .oc-stats-row.has-cover{grid-template-columns:1fr 1fr 1fr 1fr 1fr;}
-    .oc-cover{display:none;overflow:hidden;}
+    .oc-cover{display:none;overflow:hidden;height:120px;}
     .oc-cover img{width:100%;height:100%;object-fit:cover;display:block;}
-    .oc-stat{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.6rem;min-height:60px;}
+    .oc-stat{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.6rem;height:120px;}
     .oc-stat-n{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;}
     .oc-stat-l{font-size:0.58rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
     /* TABS */
@@ -236,7 +236,7 @@ const OctHeader = {
     const coverImg = document.getElementById('oc-cover-img');
     if (ev.cover_image && cover && coverImg && statsRow) {
       coverImg.src = ev.cover_image;
-      cover.style.display = 'block'; cover.style.minHeight = '60px';
+      cover.style.display = 'block';
       statsRow.classList.add('has-cover');
     }
 
