@@ -205,7 +205,8 @@ const OctHeader = {
     if (!el) return;
     el.innerHTML = `
       <nav class="oc-nav">
-        <div style="display:flex;align-items:center;gap:0.9rem;">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <button class="oc-burger" onclick="OctHeader.openDrawer()" aria-label="Menu">&#9776;</button>
           <a href="/dashboard" class="oc-nav-logo"><img src="/octevent-logo.png" alt="Octevent"></a>
           <div class="oc-breadcrumb">
             <a href="/dashboard">My Events</a>
@@ -216,7 +217,6 @@ const OctHeader = {
         <div class="oc-nav-right">
           <div class="oc-avatar" id="oc-avatar">?</div>
           <a href="/dashboard" class="btn hide-mobile">← All events</a>
-          <button class="oc-burger" onclick="OctHeader.openDrawer()" aria-label="Menu">&#9776;</button>
         </div>
       </nav>
       <div class="oc-drawer-overlay" id="oc-drawer-overlay" onclick="OctHeader.closeDrawer()"></div>
