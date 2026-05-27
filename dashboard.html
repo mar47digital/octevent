@@ -619,7 +619,7 @@ function renderEvents(events) {
       ? `<img src="${ev.cover_image}" alt="${ev.name}">`
       : '';
     return `
-    <a class="event-card" href="/event.html?id=${ev.id}" style="animation-delay:${i * 0.06}s">
+    <a class="event-card" href="/event-overview?id=${ev.id}" style="animation-delay:${i * 0.06}s">
       <div class="card-image ${grad}">
         ${imgHtml}
         <span class="card-status status-${status}">${status}</span>
@@ -759,7 +759,7 @@ async function handleCreateEvent() {
   }
 
   closeModal();
-  window.location.href = `/event.html?id=${data.id}`;
+  window.location.href = `/event-overview?id=${data.id}`;
 }
 
 async function signOut() {
