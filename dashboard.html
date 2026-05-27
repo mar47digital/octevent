@@ -565,6 +565,11 @@ sb.auth.getSession().then(({ data: { session } }) => {
   const name = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
   document.getElementById('user-name').textContent = name;
   document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greetName = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+  const greetEl = document.getElementById('dashboard-greeting');
+  if (greetEl) greetEl.textContent = greet + ', ' + greetName + '.';
   loadEvents();
 });
 
