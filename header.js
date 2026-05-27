@@ -42,12 +42,12 @@ const OctHeader = {
     .oc-status-past{background:var(--rule);color:var(--ink3);}
     .oc-event-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:0.8rem;color:var(--ink3);}
     .oc-stats-row{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-top:0.75rem;grid-template-columns:1fr 1fr 1fr 1fr;}
-    .oc-stats-row.has-cover{grid-template-columns:240px 1fr 1fr 1fr 1fr;}
-    .oc-cover{display:none;overflow:hidden;aspect-ratio:4/3;}
+    .oc-stats-row.has-cover{grid-template-columns:1fr 1fr 1fr 1fr 1fr;}
+    .oc-cover{display:none;overflow:hidden;}
     .oc-cover img{width:100%;height:100%;object-fit:cover;display:block;}
-    .oc-stat{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.75rem;min-height:75px;}
-    .oc-stat-n{font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;}
-    .oc-stat-l{font-size:0.62rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
+    .oc-stat{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.6rem;min-height:60px;}
+    .oc-stat-n{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;}
+    .oc-stat-l{font-size:0.58rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
     /* TABS */
     .oc-tabs{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;display:flex;overflow-x:auto;}
     .oc-tab{padding:0.85rem 1rem;font-size:0.82rem;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color 0.15s;}
@@ -236,7 +236,7 @@ const OctHeader = {
     const coverImg = document.getElementById('oc-cover-img');
     if (ev.cover_image && cover && coverImg && statsRow) {
       coverImg.src = ev.cover_image;
-      cover.style.display = 'block';
+      cover.style.display = 'block'; cover.style.minHeight = '60px';
       statsRow.classList.add('has-cover');
     }
 
@@ -251,15 +251,29 @@ const OctHeader = {
       else { daysEl.textContent = 'Past'; daysEl.style.color='var(--ink3)'; }
     }
 
-    const budgetEl = document.getElementById('stat-budget');
-    if (budgetEl) budgetEl.textContent = ev.budget ? '€'+ev.budget : '€0';
+    // Load live stats from actual tables
+    const [gRes, rRes, bRes] = await Promise.all([
+      sb.from('guests').select('rsvp_status').eq('event_id', eventId),
+      sb.from('rooms').select('status').eq('event_id', eventId),
+      sb.from('budget_items').select('actual_amount').eq('event_id', eventId),
+    ]);
 
-    const confirmed = ev.rsvp_count || 0;
+    const guests = gRes.data || [];
+    const rooms  = rRes.data || [];
+    const budget = bRes.data || [];
+
+    const confirmed = guests.filter(g => g.rsvp_status === 'confirmed').length;
+    const bookedRooms = rooms.filter(r => r.status !== 'available').length;
+    const totalBudget = budget.reduce((s,i) => s + parseFloat(i.actual_amount||0), 0);
+
     const guestEl = document.getElementById('stat-guests');
-    if (guestEl) guestEl.textContent = confirmed;
+    if (guestEl) guestEl.textContent = confirmed + ' / ' + guests.length;
 
     const roomsEl = document.getElementById('stat-rooms');
-    if (roomsEl) roomsEl.textContent = ev.room_count || 0;
+    if (roomsEl) roomsEl.textContent = bookedRooms + ' / ' + rooms.length;
+
+    const budgetEl = document.getElementById('stat-budget');
+    if (budgetEl) budgetEl.textContent = totalBudget > 0 ? '€'+totalBudget.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}) : '€0';
 
     return ev;
   },
