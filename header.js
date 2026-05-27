@@ -192,17 +192,10 @@ const OctHeader = {
       `<button class="oc-tab${t.key===activeTab?' active':''}" onclick="OctHeader.go('event-${t.key}')">${t.label}</button>`
     ).join('');
 
-    // Build drawer nav
-    const drawerNav = document.getElementById('oc-drawer-nav');
-    if (drawerNav) {
-      drawerNav.innerHTML = this.TABS.map(t =>
-        `<button class="oc-drawer-tab${t.key===activeTab?' active':''}" onclick="OctHeader.closeDrawer();OctHeader.go('event-${t.key}')">${t.label}</button>`
-      ).join('');
-    }
-
     // Inject header HTML
     const el = document.getElementById('app-header');
     if (!el) return;
+    const _activeTab = activeTab;
     el.innerHTML = `
       <nav class="oc-nav">
         <div style="display:flex;align-items:center;gap:0.75rem;">
@@ -250,6 +243,20 @@ const OctHeader = {
         </div>
       </div>
       <div class="oc-tabs">${tabsHtml}</div>`;
+
+    // Populate drawer nav now that DOM exists
+    const drawerNav = document.getElementById('oc-drawer-nav');
+    if (drawerNav) {
+      const self = this;
+      drawerNav.innerHTML = '';
+      this.TABS.forEach(function(t) {
+        var btn = document.createElement('button');
+        btn.className = 'oc-drawer-tab' + (t.key===_activeTab?' active':'');
+        btn.textContent = t.label;
+        btn.onclick = function() { OctHeader.closeDrawer(); OctHeader.go('event-'+t.key); };
+        drawerNav.appendChild(btn);
+      });
+    }
   },
 
   async load() {
