@@ -48,6 +48,7 @@ const OctHeader = {
     .oc-stat{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.6rem;height:120px;}
     .oc-stat-n{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;}
     .oc-stat-l{font-size:0.58rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
+    .oc-mobile-stats{display:contents;}
     /* TABS */
     .oc-tabs{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;display:flex;overflow-x:auto;}
     .oc-tab{padding:0.85rem 1rem;font-size:0.82rem;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color 0.15s;}
@@ -119,8 +120,13 @@ const OctHeader = {
       .oc-nav{padding:0 1rem;}.oc-breadcrumb{display:none;}
       .oc-event-header{padding:1rem;}
       .oc-event-title{font-size:1.3rem;}
-      .oc-stats-row,.oc-stats-row.has-cover{grid-template-columns:1fr 1fr!important;}
-      .oc-cover{display:none!important;}
+      .oc-stats-row{display:flex!important;flex-direction:column!important;}
+      .oc-stats-row.has-cover{display:flex!important;flex-direction:column!important;}
+      .oc-cover{display:block!important;width:100%!important;height:100px!important;order:-1;}
+      .oc-cover img{width:100%;height:100px;object-fit:cover;object-position:center;}
+      .oc-mobile-stats{display:grid;grid-template-columns:1fr 1fr;width:100%;background:var(--rule);gap:1px;}
+      .oc-stat{height:auto!important;min-height:65px!important;padding:0.65rem!important;}
+      .oc-stat-n{font-size:1rem!important;}
       .oc-tabs{padding:0 0.5rem;}.oc-tab{font-size:0.72rem;padding:0.75rem 0.5rem;}
       main{padding:1rem 0.85rem;}
       .summary-cards{grid-template-columns:1fr 1fr;}
@@ -184,10 +190,12 @@ const OctHeader = {
         </div>
         <div class="oc-stats-row" id="oc-stats-row">
           <div class="oc-cover" id="oc-cover"><img id="oc-cover-img" alt=""></div>
-          <div class="oc-stat"><div class="oc-stat-n" id="stat-guests">0</div><div class="oc-stat-l">Guests confirmed</div></div>
-          <div class="oc-stat"><div class="oc-stat-n" id="stat-rooms">0</div><div class="oc-stat-l">Rooms booked</div></div>
-          <div class="oc-stat"><div class="oc-stat-n" id="stat-budget">€0</div><div class="oc-stat-l">Total budget</div></div>
-          <div class="oc-stat"><div class="oc-stat-n" id="stat-days">—</div><div class="oc-stat-l">Days to event</div></div>
+          <div class="oc-mobile-stats">
+            <div class="oc-stat"><div class="oc-stat-n" id="stat-guests">0</div><div class="oc-stat-l">Guests confirmed</div></div>
+            <div class="oc-stat"><div class="oc-stat-n" id="stat-rooms">0</div><div class="oc-stat-l">Rooms booked</div></div>
+            <div class="oc-stat"><div class="oc-stat-n" id="stat-budget">€0</div><div class="oc-stat-l">Total budget</div></div>
+            <div class="oc-stat"><div class="oc-stat-n" id="stat-days">—</div><div class="oc-stat-l">Days to event</div></div>
+          </div>
         </div>
       </div>
       <div class="oc-tabs">${tabsHtml}</div>`;
