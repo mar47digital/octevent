@@ -209,7 +209,7 @@ const OctHeader = {
         </div>
         <div class="oc-nav-right">
           <div class="oc-avatar" id="oc-avatar">?</div>
-          <a href="/dashboard" class="btn hide-mobile">← All events</a>
+          <a href="/dashboard" class="btn hide-mobile">Dashboard</a>
         </div>
       </nav>
       <div class="oc-drawer-overlay" id="oc-drawer-overlay" onclick="OctHeader.closeDrawer()"></div>
@@ -220,6 +220,12 @@ const OctHeader = {
         </div>
         <div class="oc-drawer-event" id="oc-drawer-event-name">Loading...</div>
         <div class="oc-drawer-nav" id="oc-drawer-nav"></div>
+        <div style="border-top:1px solid var(--rule);padding:0.75rem 1.25rem;">
+          <a href="/dashboard" style="display:flex;align-items:center;gap:10px;font-size:0.88rem;font-weight:500;color:var(--ink2);text-decoration:none;padding:0.5rem 0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Dashboard
+          </a>
+        </div>
       </div>
       <div class="oc-event-header">
         <div class="oc-event-top">
