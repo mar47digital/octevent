@@ -1,17 +1,15 @@
 {
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/event-overview(.*)", "dest": "/event-overview.html$1" },
-    { "src": "/event-checklist(.*)", "dest": "/event-checklist.html$1" },
-    { "src": "/event-budget(.*)", "dest": "/event-budget.html$1" },
-    { "src": "/event-guests(.*)", "dest": "/event-guests.html$1" },
-    { "src": "/event-rooms(.*)", "dest": "/event-rooms.html$1" },
-    { "src": "/event-runsheet(.*)", "dest": "/event-runsheet.html$1" },
-    { "src": "/event-tableplan(.*)", "dest": "/event-tableplan.html$1" },
-    { "src": "/event-settings(.*)", "dest": "/event-settings.html$1" },
-    { "src": "/event(.*)", "dest": "/event-overview.html$1" },
-    { "src": "/dashboard(.*)", "dest": "/dashboard.html$1" },
-    { "src": "/login(.*)", "dest": "/login.html$1" },
-    { "src": "/", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/event-overview", "destination": "/event-overview.html" },
+    { "source": "/event-checklist", "destination": "/event-checklist.html" },
+    { "source": "/event-budget", "destination": "/event-budget.html" },
+    { "source": "/event-guests", "destination": "/event-guests.html" },
+    { "source": "/event-rooms", "destination": "/event-rooms.html" },
+    { "source": "/event-runsheet", "destination": "/event-runsheet.html" },
+    { "source": "/event-tableplan", "destination": "/event-tableplan.html" },
+    { "source": "/event-settings", "destination": "/event-settings.html" },
+    { "source": "/event", "destination": "/event-overview.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/login", "destination": "/login.html" }
   ]
 }
