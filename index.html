@@ -3,156 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Octevent — Event planning, without the chaos</title>
-<meta name="description" content="Octevent is the all-in-one event planning platform for planners and individuals. Guest lists, budgets, run sheets, table plans and more.">
+<title>Octevent — One platform. Every event.</title>
+<meta name="description" content="Octevent is the all-in-one event planning platform. Guest lists, budgets, rooms, run sheets and a guest booking site — all in one place.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
   --amber:#F5A800;--amber-light:#FFF8E6;--amber-dark:#C98A00;
-  --ink:#18181A;--ink2:#555;--ink3:#999;--cream:#FAFAF7;--rule:#ECEAE4;
+  --ink:#18181A;--ink2:#4A4A4F;--ink3:#9A9AA0;
+  --cream:#FAFAF7;--rule:#ECEAE4;--white:#fff;
   --green:#2d6a4f;
 }
 html{scroll-behavior:smooth;}
-body{font-family:'DM Sans',sans-serif;color:var(--ink);background:#fff;overflow-x:hidden;}
+body{font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--white);overflow-x:hidden;}
 
 /* ── NAV ── */
-nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;overflow:hidden;}
-.nav-logo img{height:36px;}
-.nav-links{display:flex;align-items:center;gap:2rem;font-size:0.88rem;}
-.nav-links a{color:var(--ink2);text-decoration:none;font-weight:500;transition:color 0.15s;}
+nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--rule);padding:0 2.5rem;height:66px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo img{height:34px;width:auto;}
+.nav-links{display:flex;align-items:center;gap:2rem;font-size:0.88rem;font-weight:500;}
+.nav-links a{color:var(--ink2);text-decoration:none;transition:color 0.15s;}
 .nav-links a:hover{color:var(--ink);}
 .nav-cta{display:flex;align-items:center;gap:10px;}
-.btn-outline{padding:0.55rem 1.1rem;border-radius:100px;border:1.5px solid var(--rule);background:transparent;color:var(--ink);font-size:0.83rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;transition:all 0.15s;}
-.btn-outline:hover{border-color:var(--ink);}
-.btn-amber{padding:0.6rem 1.3rem;border-radius:100px;background:var(--amber);border:none;color:var(--ink);font-size:0.83rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;transition:all 0.15s;}
-.btn-amber:hover{background:var(--amber-dark);color:#fff;}
+.btn-ghost{padding:0.5rem 1.1rem;border-radius:100px;border:1.5px solid var(--rule);background:transparent;color:var(--ink);font-size:0.83rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;transition:all 0.15s;}
+.btn-ghost:hover{border-color:var(--ink);}
+.btn-amber{padding:0.55rem 1.3rem;border-radius:100px;background:var(--amber);border:none;color:var(--ink);font-size:0.83rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;transition:all 0.18s;display:inline-block;}
+.btn-amber:hover{background:var(--amber-dark);transform:translateY(-1px);}
 
 /* ── HERO ── */
-.hero{padding:6rem 2rem 5rem;text-align:center;max-width:860px;margin:0 auto;}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;background:var(--amber-light);color:var(--amber-dark);font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:1.5rem;}
-.hero h1{font-family:'Nunito',sans-serif;font-size:clamp(2.5rem,6vw,4rem);font-weight:800;line-height:1.1;margin-bottom:1.25rem;letter-spacing:-0.02em;}
-.hero h1 em{font-style:normal;color:var(--amber-dark);}
-.hero-sub{font-size:1.1rem;color:var(--ink2);font-weight:300;line-height:1.6;max-width:580px;margin:0 auto 2.5rem;}
-.hero-capture{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--rule);border-radius:100px;padding:6px 6px 6px 1.25rem;max-width:440px;margin:0 auto;box-shadow:0 4px 24px rgba(0,0,0,0.06);transition:border-color 0.2s;}
-.hero-capture:focus-within{border-color:var(--amber);}
-.hero-capture input{flex:1;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--ink);background:transparent;}
-.hero-capture input::placeholder{color:var(--ink3);}
-.hero-success{display:none;font-size:0.88rem;font-weight:500;color:var(--green);margin-top:0.75rem;}
-.hero-picker{display:none;margin-top:1.5rem;}
-.hero-picker p{font-size:0.82rem;color:var(--ink3);margin-bottom:0.75rem;}
-.feat-opts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
-.feat-opt{padding:6px 14px;border-radius:100px;border:1.5px solid var(--rule);background:#fff;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
-.feat-opt:hover,.feat-opt.selected{border-color:var(--amber);background:var(--amber-light);color:var(--amber-dark);}
-.feat-submit{display:none;margin-top:1rem;}
-.feat-thanks{display:none;font-size:0.82rem;color:var(--green);margin-top:0.75rem;}
-.hero-note{font-size:0.75rem;color:var(--ink3);margin-top:0.9rem;}
+.hero{padding:6rem 2.5rem 5rem;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;}
+.hero-left{}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:var(--amber-light);color:var(--amber-dark);font-size:0.74rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:1.5rem;}
+.hero h1{font-family:'Nunito',sans-serif;font-size:clamp(2.6rem,5vw,3.8rem);font-weight:900;line-height:1.08;letter-spacing:-0.03em;margin-bottom:1.25rem;}
+.hero h1 em{font-style:italic;color:var(--amber-dark);}
+.hero-sub{font-size:1.05rem;color:var(--ink2);font-weight:300;line-height:1.65;max-width:460px;margin-bottom:2.25rem;}
+.hero-cta-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.hero-note{font-size:0.75rem;color:var(--ink3);margin-top:0.85rem;}
 
-/* ── LOGOS STRIP ── */
-.strip{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:var(--cream);padding:1.25rem 2rem;text-align:center;}
-.strip p{font-size:0.75rem;color:var(--ink3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.75rem;}
-.strip-items{display:flex;align-items:center;justify-content:center;gap:2.5rem;flex-wrap:wrap;}
-.strip-item{font-size:0.82rem;color:var(--ink2);font-weight:500;opacity:0.7;}
+/* Hero visual — eight arms concept */
+.hero-right{position:relative;height:420px;display:flex;align-items:center;justify-content:center;}
+.arms-visual{position:relative;width:320px;height:320px;}
+.arm-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 8px 32px rgba(245,168,0,0.35);}
+.arm-center img{height:44px;width:auto;}
+.arm-node{position:absolute;width:62px;height:62px;background:#fff;border:1.5px solid var(--rule);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:0.58rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);transition:all 0.2s;}
+.arm-node:hover{border-color:var(--amber);transform:scale(1.08);box-shadow:0 6px 24px rgba(245,168,0,0.2);}
+.arm-node .icon{font-size:1.1rem;line-height:1;}
+.arm-line{position:absolute;top:50%;left:50%;transform-origin:0 0;height:1px;background:linear-gradient(90deg,var(--amber),transparent);opacity:0.4;z-index:0;}
+
+/* ── SECTION SHARED ── */
+section{padding:5rem 2.5rem;}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber-dark);margin-bottom:0.75rem;}
+.section-title{font-family:'Nunito',sans-serif;font-size:clamp(1.9rem,4vw,2.8rem);font-weight:800;line-height:1.12;letter-spacing:-0.02em;margin-bottom:1rem;}
+.section-sub{font-size:1rem;color:var(--ink2);font-weight:300;line-height:1.6;max-width:540px;}
+
+/* ── USE CASES ── */
+.use-cases{background:var(--cream);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);}
+.use-cases-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:3rem;}
+.uc-card{background:#fff;border:1px solid var(--rule);border-radius:18px;padding:2rem;transition:all 0.2s;position:relative;overflow:hidden;}
+.uc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--amber);transform:scaleX(0);transform-origin:left;transition:transform 0.3s;}
+.uc-card:hover{border-color:var(--rule);box-shadow:0 8px 32px rgba(0,0,0,0.08);transform:translateY(-2px);}
+.uc-card:hover::before{transform:scaleX(1);}
+.uc-icon{font-size:2rem;margin-bottom:1rem;}
+.uc-label{font-size:0.68rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--amber-dark);margin-bottom:0.6rem;}
+.uc-hook{font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:800;line-height:1.3;margin-bottom:0.75rem;color:var(--ink);}
+.uc-desc{font-size:0.83rem;color:var(--ink2);line-height:1.6;font-weight:300;margin-bottom:1.1rem;}
+.uc-features{display:flex;flex-wrap:wrap;gap:6px;}
+.uc-feature{font-size:0.69rem;font-weight:600;padding:3px 10px;border-radius:100px;background:var(--amber-light);color:var(--amber-dark);}
 
 /* ── FEATURES ── */
-.features{padding:5rem 2rem;max-width:1100px;margin:0 auto;}
-.section-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber-dark);margin-bottom:0.75rem;}
-.section-title{font-family:'Nunito',sans-serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;line-height:1.15;margin-bottom:1rem;}
-.section-sub{font-size:1rem;color:var(--ink2);font-weight:300;line-height:1.6;max-width:520px;}
-.features-intro{margin-bottom:3.5rem;}
-.feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
-.feat-card{border:1px solid var(--rule);border-radius:16px;padding:1.5rem;background:#fff;transition:all 0.2s;}
-.feat-card:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.06);}
-.feat-icon{font-size:1.75rem;margin-bottom:0.9rem;}
-.feat-name{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.4rem;}
-.feat-desc{font-size:0.82rem;color:var(--ink2);line-height:1.55;font-weight:300;}
-.feat-badge{display:inline-block;margin-top:0.75rem;font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 10px;border-radius:100px;}
-.badge-free{background:var(--amber-light);color:var(--amber-dark);}
-.badge-pro{background:#f0f0fd;color:#4a4aab;}
-.badge-addon{background:#f0f7f4;color:var(--green);}
+.features-grid{margin-top:3.5rem;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.feat-card{padding:1.5rem 1.25rem;border:1px solid var(--rule);border-radius:14px;background:#fff;transition:all 0.18s;}
+.feat-card:hover{border-color:var(--amber);box-shadow:0 4px 20px rgba(245,168,0,0.12);transform:translateY(-2px);}
+.feat-num{font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;color:var(--amber);letter-spacing:0.08em;margin-bottom:0.5rem;}
+.feat-icon{font-size:1.6rem;margin-bottom:0.6rem;}
+.feat-name{font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;margin-bottom:0.3rem;}
+.feat-desc{font-size:0.78rem;color:var(--ink2);line-height:1.5;font-weight:300;}
+.feat-card.guest-site{background:var(--ink);border-color:var(--ink);color:#fff;}
+.feat-card.guest-site .feat-num{color:var(--amber);}
+.feat-card.guest-site .feat-name{color:#fff;}
+.feat-card.guest-site .feat-desc{color:rgba(255,255,255,0.65);}
+.feat-badge{display:inline-block;margin-top:0.75rem;font-size:0.63rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px;background:var(--amber);color:var(--ink);}
 
 /* ── HOW IT WORKS ── */
-.how{padding:5rem 2rem;background:var(--cream);border-top:1px solid var(--rule);}
-.how-inner{max-width:960px;margin:0 auto;}
-.how-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:3rem;}
-.how-step{text-align:center;}
-.how-step-num{width:48px;height:48px;border-radius:50%;background:var(--amber);font-family:'Nunito',sans-serif;font-weight:800;font-size:1.2rem;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;}
-.how-step h3{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.4rem;}
-.how-step p{font-size:0.83rem;color:var(--ink2);line-height:1.55;font-weight:300;}
+.how{background:var(--cream);border-top:1px solid var(--rule);}
+.how-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2.5rem;margin-top:3.5rem;position:relative;}
+.how-steps::before{content:'';position:absolute;top:28px;left:calc(16% + 1rem);right:calc(16% + 1rem);height:1px;background:linear-gradient(90deg,var(--amber),var(--amber-light),var(--amber));opacity:0.4;}
+.how-step{text-align:center;position:relative;}
+.how-num{width:56px;height:56px;border-radius:50%;background:var(--amber);font-family:'Nunito',sans-serif;font-weight:900;font-size:1.3rem;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;box-shadow:0 4px 16px rgba(245,168,0,0.3);position:relative;z-index:1;}
+.how-step h3{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.5rem;}
+.how-step p{font-size:0.83rem;color:var(--ink2);line-height:1.6;font-weight:300;}
 
-/* ── FOR WHO ── */
-.forwho{padding:5rem 2rem;max-width:1100px;margin:0 auto;}
-.forwho-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:3rem;}
-.who-card{border:1px solid var(--rule);border-radius:16px;padding:1.75rem;background:#fff;}
-.who-icon{font-size:2rem;margin-bottom:0.75rem;}
-.who-title{font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:800;margin-bottom:0.5rem;}
-.who-desc{font-size:0.83rem;color:var(--ink2);line-height:1.6;font-weight:300;}
-.who-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:1rem;}
-.who-tag{font-size:0.68rem;padding:3px 10px;border-radius:100px;background:var(--cream);color:var(--ink2);font-weight:500;}
-
-/* ── PRICING ── */
-.pricing{padding:5rem 2rem;border-top:1px solid var(--rule);}
-.pricing-inner{max-width:960px;margin:0 auto;}
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:3rem;}
-.p-card{border:1px solid var(--rule);border-radius:20px;padding:2rem;display:flex;flex-direction:column;background:#fff;position:relative;}
-.p-card.featured{border-color:var(--amber);box-shadow:0 8px 32px rgba(245,168,0,0.15);}
-.p-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--amber);color:var(--ink);font-size:0.68rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:4px 14px;border-radius:100px;white-space:nowrap;}
-.p-name{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:0.25rem;}
-.p-price{font-family:'Nunito',sans-serif;font-size:2.2rem;font-weight:800;line-height:1;margin:0.75rem 0 0.25rem;}
-.p-price span{font-size:0.9rem;font-weight:400;color:var(--ink3);}
-.p-desc{font-size:0.82rem;color:var(--ink2);font-weight:300;margin-bottom:1.5rem;line-height:1.5;}
-.p-divider{height:1px;background:var(--rule);margin:1.25rem 0;}
-.p-features{list-style:none;display:flex;flex-direction:column;gap:0.6rem;flex:1;}
-.p-features li{font-size:0.82rem;display:flex;align-items:flex-start;gap:8px;line-height:1.4;}
-.p-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px;}
-.p-features li.muted{color:var(--ink3);}
-.p-features li.muted::before{content:'—';color:var(--rule);}
-.p-cta{margin-top:1.75rem;}
-.p-cta .btn-amber{width:100%;text-align:center;display:block;padding:0.75rem;}
-.p-cta .btn-outline{width:100%;text-align:center;display:block;padding:0.75rem;}
-
-/* ── QUOTE ── */
-.quote-band{background:var(--ink);color:#fff;padding:4rem 2rem;text-align:center;}
-.quote-band blockquote{font-family:'Nunito',sans-serif;font-size:clamp(1.2rem,3vw,1.6rem);font-weight:700;font-style:italic;max-width:700px;margin:0 auto 1rem;line-height:1.4;}
-.quote-band cite{font-size:0.82rem;color:rgba(255,255,255,0.6);}
-.quote-stats{display:flex;align-items:center;justify-content:center;gap:3rem;margin-top:2.5rem;flex-wrap:wrap;}
-.quote-stat-n{font-family:'Nunito',sans-serif;font-size:1.8rem;font-weight:800;color:var(--amber);}
-.quote-stat-l{font-size:0.75rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
-
-/* ── CTA ── */
-.cta-band{padding:6rem 2rem;text-align:center;background:var(--cream);border-top:1px solid var(--rule);}
-.cta-band h2{font-family:'Nunito',sans-serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;margin-bottom:0.9rem;}
-.cta-band p{font-size:1rem;color:var(--ink2);font-weight:300;max-width:480px;margin:0 auto 2rem;}
-.cta-capture{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--rule);border-radius:100px;padding:6px 6px 6px 1.25rem;max-width:420px;margin:0 auto;box-shadow:0 4px 24px rgba(0,0,0,0.06);transition:border-color 0.2s;}
-.cta-capture:focus-within{border-color:var(--amber);}
-.cta-capture input{flex:1;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--ink);background:transparent;}
+/* ── WAITLIST ── */
+.waitlist{border-top:1px solid var(--rule);}
+.waitlist-inner{max-width:560px;margin:0 auto;text-align:center;}
+.waitlist-inner .section-title{margin-bottom:0.5rem;}
+.waitlist-inner .section-sub{margin:0 auto 2.5rem;}
+.wl-form{background:var(--cream);border:1px solid var(--rule);border-radius:20px;padding:2.25rem;text-align:left;}
+.wl-field{margin-bottom:1rem;}
+.wl-field label{display:block;font-size:0.77rem;font-weight:600;color:var(--ink2);margin-bottom:0.35rem;}
+.wl-field input,.wl-field select{width:100%;padding:0.75rem 1rem;border:1.5px solid var(--rule);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--ink);background:#fff;outline:none;transition:border-color 0.2s;appearance:none;}
+.wl-field input:focus,.wl-field select:focus{border-color:var(--amber);}
+.wl-submit{width:100%;padding:0.85rem;border-radius:10px;background:var(--amber);border:none;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.18s;margin-top:0.5rem;}
+.wl-submit:hover{background:var(--amber-dark);color:#fff;transform:translateY(-1px);}
+.wl-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.wl-note{font-size:0.73rem;color:var(--ink3);text-align:center;margin-top:0.85rem;}
+.wl-success{display:none;text-align:center;padding:2rem;}
+.wl-success-icon{font-size:2.5rem;margin-bottom:0.75rem;}
+.wl-success h3{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:0.4rem;}
+.wl-success p{font-size:0.85rem;color:var(--ink2);font-weight:300;}
 
 /* ── FOOTER ── */
-footer{border-top:1px solid var(--rule);padding:2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
-.footer-logo img{height:28px;}
-.footer-links{display:flex;gap:1.5rem;font-size:0.8rem;}
-.footer-links a{color:var(--ink3);text-decoration:none;transition:color 0.15s;}
+footer{border-top:1px solid var(--rule);padding:2rem 2.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+.footer-logo img{height:28px;width:auto;}
+.footer-tagline{font-size:0.78rem;color:var(--ink3);}
+.footer-links{display:flex;gap:1.5rem;}
+.footer-links a{font-size:0.78rem;color:var(--ink3);text-decoration:none;transition:color 0.15s;}
 .footer-links a:hover{color:var(--ink);}
-.footer-copy{font-size:0.78rem;color:var(--ink3);}
 
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
-  .feat-grid{grid-template-columns:repeat(2,1fr);}
-  .pricing-grid{grid-template-columns:1fr;}
-  .how-steps{grid-template-columns:1fr;}
-  .forwho-grid{grid-template-columns:1fr;}
+  .hero{grid-template-columns:1fr;gap:3rem;padding:4rem 1.5rem 3rem;text-align:center;}
+  .hero-sub{margin:0 auto 2rem;}
+  .hero-cta-row{justify-content:center;}
+  .hero-right{height:300px;}
+  .arms-visual{width:260px;height:260px;}
+  .use-cases-grid{grid-template-columns:1fr;}
+  .features-grid{grid-template-columns:repeat(2,1fr);}
+  .how-steps{grid-template-columns:1fr;gap:2rem;}
+  .how-steps::before{display:none;}
+  nav{padding:0 1.25rem;}.nav-links{display:none;}
+  section{padding:3.5rem 1.5rem;}
 }
-@media(max-width:640px){
-  nav{padding:0 1rem;}
-  .nav-links{display:none;}
-  .hero{padding:4rem 1.25rem 3rem;}
-  .features,.forwho{padding:3.5rem 1.25rem;}
-  .how{padding:3.5rem 1.25rem;}
-  .pricing{padding:3.5rem 1.25rem;}
-  .feat-grid{grid-template-columns:1fr;}
-  .cta-band{padding:4rem 1.25rem;}
-  .quote-stats{gap:2rem;}
+@media(max-width:480px){
+  .features-grid{grid-template-columns:1fr;}
+  footer{flex-direction:column;align-items:flex-start;gap:0.75rem;}
 }
 </style>
 </head>
@@ -160,385 +145,322 @@ footer{border-top:1px solid var(--rule);padding:2rem;display:flex;align-items:ce
 
 <!-- NAV -->
 <nav>
-  <a href="/"><img src="octevent-logo.png" alt="Octevent" style="height:36px;width:auto;display:block;"></a>
+  <a href="/"><img src="octevent-logo.png" alt="Octevent"></a>
   <div class="nav-links">
+    <a href="#use-cases">Who it's for</a>
     <a href="#features">Features</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#who">Who it's for</a>
+    <a href="#how">How it works</a>
   </div>
   <div class="nav-cta">
-    <a href="/login" class="btn-outline">Log in</a>
-    <a href="#hero-capture" class="btn-amber">Join waitlist</a>
+    <a href="/login" class="btn-ghost">Log in</a>
+    <a href="#waitlist" class="btn-amber">Join waitlist</a>
   </div>
 </nav>
 
 <!-- HERO -->
-<section class="hero" id="hero">
-  <div class="hero-eyebrow">🎉 Now in beta</div>
-  <h1>Event planning,<br>without <em>the chaos</em></h1>
-  <p class="hero-sub">From guest lists and budgets to run sheets and table plans — Octevent handles every moving part of your event in one place. No spreadsheets. No WhatsApp threads.</p>
-
-  <div class="hero-capture" id="hero-capture">
-    <input type="email" id="hero-email" placeholder="your@email.com">
-    <button class="btn-amber" onclick="signup('hero-email','hero-success')">Join waitlist</button>
+<section style="padding:0;">
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Now in beta</div>
+    <h1>One platform.<br><em>Every event.</em></h1>
+    <p class="hero-sub">Whether you're a professional planner, a villa host, or organising a group holiday — Octevent gives you everything you need in one place.</p>
+    <div class="hero-cta-row">
+      <a href="#waitlist" class="btn-amber" style="padding:0.75rem 1.75rem;font-size:0.9rem;">Join the waitlist</a>
+      <a href="#features" class="btn-ghost">See what's inside</a>
+    </div>
+    <p class="hero-note">Free to join &middot; No credit card &middot; Early access</p>
   </div>
-  <div class="hero-success" id="hero-success">🎉 You're on the list!</div>
-  <p class="hero-note">Free to join · No credit card · Cancel anytime</p>
 
-  <div class="hero-picker" id="hero-picker">
-    <p>One quick question — which feature do you need most?</p>
-    <div class="feat-opts" id="hero-picker-opts">
-      <button class="feat-opt" onclick="pickFeature(this,'hero')">Guest list & RSVP</button>
-      <button class="feat-opt" onclick="pickFeature(this,'hero')">Budget tracker</button>
-      <button class="feat-opt" onclick="pickFeature(this,'hero')">Room booking</button>
-      <button class="feat-opt" onclick="pickFeature(this,'hero')">Run sheet</button>
-      <button class="feat-opt" onclick="pickFeature(this,'hero')">Table plan</button>
-      <button class="feat-opt" onclick="pickFeature(this,'hero')">Guest site</button>
+  <!-- Eight arms visual -->
+  <div class="hero-right">
+    <div class="arms-visual" id="arms-visual">
+      <div class="arm-center">
+        <img src="octevent-logo-white.png.png" alt="Octevent" onerror="this.parentElement.innerHTML='<span style=\'font-family:Nunito,sans-serif;font-weight:900;font-size:1.1rem;color:var(--ink);\'>oct</span>'">
+      </div>
     </div>
-    <div class="feat-submit">
-      <button class="btn-amber" onclick="submitFeature('hero')">Tell us →</button>
+  </div>
+</div>
+</section>
+
+<!-- USE CASES -->
+<section class="use-cases" id="use-cases">
+  <div class="section-inner">
+    <div class="section-label">Who it's for</div>
+    <h2 class="section-title">Built for every kind of event</h2>
+    <p class="section-sub">One tool, every scenario. Octevent works the way you need it to — whatever you're planning.</p>
+
+    <div class="use-cases-grid">
+
+      <div class="uc-card">
+        <div class="uc-icon">✈️</div>
+        <div class="uc-label">Group Holidays</div>
+        <div class="uc-hook">"Splitting costs, assigning rooms, chasing payments — sound familiar?"</div>
+        <p class="uc-desc">Stop managing group trips over WhatsApp. Collect RSVPs, allocate rooms, track the budget and let guests pay their share — all in one link.</p>
+        <div class="uc-features">
+          <span class="uc-feature">Room allocation</span>
+          <span class="uc-feature">Guest payments</span>
+          <span class="uc-feature">Budget tracker</span>
+          <span class="uc-feature">Guest list</span>
+        </div>
+      </div>
+
+      <div class="uc-card">
+        <div class="uc-icon">🌿</div>
+        <div class="uc-label">Retreats & Villa Hosting</div>
+        <div class="uc-hook">"Your venue is ready. Now manage who's staying, what they're paying, and what happens when."</div>
+        <p class="uc-desc">Run your retreat like a pro. Publish your guest site, let guests browse and book rooms, collect payment, and run the programme from a live run sheet.</p>
+        <div class="uc-features">
+          <span class="uc-feature">Room booking & payment</span>
+          <span class="uc-feature">Guest site</span>
+          <span class="uc-feature">Run sheet</span>
+          <span class="uc-feature">Checklist</span>
+        </div>
+      </div>
+
+      <div class="uc-card">
+        <div class="uc-icon">💍</div>
+        <div class="uc-label">Weddings & Celebrations</div>
+        <div class="uc-hook">"Every detail matters. Keep them all in one place."</div>
+        <p class="uc-desc">From first enquiry to final invoice. Manage your guest list, seating plan, run sheet and budget — and let guests RSVP through your own event page.</p>
+        <div class="uc-features">
+          <span class="uc-feature">Guest list & seating</span>
+          <span class="uc-feature">RSVP via guest site</span>
+          <span class="uc-feature">Budget tracker</span>
+          <span class="uc-feature">Run sheet</span>
+        </div>
+      </div>
+
+      <div class="uc-card">
+        <div class="uc-icon">🏢</div>
+        <div class="uc-label">Corporate Offsites & Events</div>
+        <div class="uc-hook">"Professional events need a professional tool — without the enterprise price tag."</div>
+        <p class="uc-desc">Keep your team aligned and your event on track. Checklists, run sheets, attendee management and budget tracking — built for people who run things properly.</p>
+        <div class="uc-features">
+          <span class="uc-feature">Checklist</span>
+          <span class="uc-feature">Run sheet</span>
+          <span class="uc-feature">Attendee management</span>
+          <span class="uc-feature">Budget tracking</span>
+        </div>
+      </div>
+
     </div>
-    <div class="feat-thanks" id="hero-thanks">Thanks! That's really helpful 🙏</div>
   </div>
 </section>
 
-<!-- STRIP -->
-<div class="strip">
-  <p>Built for</p>
-  <div class="strip-items">
-    <span class="strip-item">Wedding planners</span>
-    <span class="strip-item">Corporate event managers</span>
-    <span class="strip-item">Retreat organisers</span>
-    <span class="strip-item">Villa hosts</span>
-    <span class="strip-item">Private party planners</span>
-    <span class="strip-item">Group holiday organisers</span>
-  </div>
-</div>
-
 <!-- FEATURES -->
-<section class="features" id="features">
-  <div class="features-intro">
-    <div class="section-label">Features</div>
-    <h2 class="section-title">Eight arms.<br>One platform.</h2>
-    <p class="section-sub">Everything a great event needs — from first idea to final invoice — in one clean, connected workspace.</p>
-  </div>
-  <div class="feat-grid">
-    <div class="feat-card">
-      <div class="feat-icon">📋</div>
-      <div class="feat-name">Event management</div>
-      <div class="feat-desc">Create and manage events with dates, venues, cover photos and all key details in one place.</div>
-      <span class="feat-badge badge-free">Free</span>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">✅</div>
-      <div class="feat-name">Smart checklist</div>
-      <div class="feat-desc">Five ready-made templates for weddings, corporate events, retreats, private parties and group holidays. Set deadlines and reminders.</div>
-      <span class="feat-badge badge-free">Free</span>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">💰</div>
-      <div class="feat-name">Budget tracker</div>
-      <div class="feat-desc">Track expenses and income with inline editing. Cost per unit, hours, quantities — with auto-calculated totals and remaining balances.</div>
-      <span class="feat-badge badge-free">Free</span>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">👥</div>
-      <div class="feat-name">Guest list</div>
-      <div class="feat-desc">Build your list, track RSVPs, import from CSV, manage dietary requirements and assign tables — all in one view.</div>
-      <span class="feat-badge badge-free">Free</span>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🛏</div>
-      <div class="feat-name">Room inventory</div>
-      <div class="feat-desc">Add rooms with photos, set pricing and let guests browse and reserve their own space directly.</div>
-      <span class="feat-badge badge-free">Free</span>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📅</div>
-      <div class="feat-name">Run sheet</div>
-      <div class="feat-desc">Build a minute-by-minute timeline for the day. Tab between cells, hide completed items, track progress on mobile.</div>
-      <span class="feat-badge badge-free">Free</span>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🪑</div>
-      <div class="feat-name">Table plan</div>
-      <div class="feat-desc">Drag guests to seats on a visual canvas. Round and rectangular tables. Export CSV or print for your team.</div>
-      <span class="feat-badge badge-free">Free</span>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🌐</div>
-      <div class="feat-name">Guest site</div>
-      <div class="feat-desc">A beautiful public event page where guests can RSVP, browse rooms and make payments — all without logging in.</div>
-      <span class="feat-badge badge-addon">Add-on</span>
+<section id="features">
+  <div class="section-inner">
+    <div class="section-label">The platform</div>
+    <h2 class="section-title">Eight tools. One platform.</h2>
+    <p class="section-sub">Every module works independently — and together. Like eight arms working in parallel, so nothing falls through the gaps.</p>
+
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-num">01</div>
+        <div class="feat-icon">🏠</div>
+        <div class="feat-name">Overview</div>
+        <p class="feat-desc">Your event at a glance. Guest confirmations, budget status, checklist progress — live.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-num">02</div>
+        <div class="feat-icon">✅</div>
+        <div class="feat-name">Checklist</div>
+        <p class="feat-desc">Pre-built templates for every event type. Add deadlines, assign owners, track progress.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-num">03</div>
+        <div class="feat-icon">💰</div>
+        <div class="feat-name">Budget</div>
+        <p class="feat-desc">Track every expense and income line. See what's paid, what's outstanding, and your net balance in real time.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-num">04</div>
+        <div class="feat-icon">👥</div>
+        <div class="feat-name">Guests</div>
+        <p class="feat-desc">Full guest CRM. Import lists, manage RSVPs, track dietary needs, assign tables and rooms.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-num">05</div>
+        <div class="feat-icon">🛏</div>
+        <div class="feat-name">Rooms</div>
+        <p class="feat-desc">Add your accommodation inventory. Assign guests to rooms and track booking and payment status.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-num">06</div>
+        <div class="feat-icon">📅</div>
+        <div class="feat-name">Run Sheet</div>
+        <p class="feat-desc">Build a minute-by-minute timeline for the day. Check items off in real time, on any device.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-num">07</div>
+        <div class="feat-icon">🪑</div>
+        <div class="feat-name">Table Plan</div>
+        <p class="feat-desc">Drag guests to tables, track seating assignments, export or print for your team.</p>
+      </div>
+      <div class="feat-card guest-site">
+        <div class="feat-num">+</div>
+        <div class="feat-icon">🌐</div>
+        <div class="feat-name">Guest Site</div>
+        <p class="feat-desc">A public event page where guests RSVP, browse rooms and pay — all connected to your dashboard.</p>
+        <span class="feat-badge">Add-on</span>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- HOW IT WORKS -->
-<section class="how">
-  <div class="how-inner">
-    <div style="text-align:center;max-width:560px;margin:0 auto;">
-      <div class="section-label">How it works</div>
-      <h2 class="section-title">Up and running in minutes</h2>
-      <p class="section-sub" style="margin:0 auto;">No onboarding calls. No training required. Just create your event and start building.</p>
-    </div>
+<section class="how" id="how">
+  <div class="section-inner" style="text-align:center;">
+    <div class="section-label">Getting started</div>
+    <h2 class="section-title">Up and running in minutes</h2>
+    <p class="section-sub" style="margin:0 auto 0;">No onboarding calls. No setup complexity. Just create your event and start planning.</p>
+
     <div class="how-steps">
       <div class="how-step">
-        <div class="how-step-num">1</div>
+        <div class="how-num">1</div>
         <h3>Create your event</h3>
-        <p>Add your event name, dates, venue and cover photo. Everything lives in one place from day one.</p>
+        <p>Set up in minutes — add your event name, dates, venue and cover photo. Everything lives in one place from day one.</p>
       </div>
       <div class="how-step">
-        <div class="how-step-num">2</div>
-        <h3>Build your plan</h3>
-        <p>Load a checklist template, add your budget, upload your guest list and build your run sheet.</p>
+        <div class="how-num">2</div>
+        <h3>Manage everything in one place</h3>
+        <p>Load a checklist template, add your guest list, build your budget, assign rooms and set up your run sheet.</p>
       </div>
       <div class="how-step">
-        <div class="how-step-num">3</div>
-        <h3>Share & execute</h3>
-        <p>Share your guest site, check off the run sheet on the day and track everything in real time.</p>
+        <div class="how-num">3</div>
+        <h3>Share with your guests</h3>
+        <p>Activate your Guest Site so guests can RSVP, browse rooms and pay — no login required on their end.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- WHO IT'S FOR -->
-<section class="forwho" id="who">
-  <div class="section-label">Who it's for</div>
-  <h2 class="section-title">Built for anyone<br>who runs events</h2>
-  <div class="forwho-grid">
-    <div class="who-card">
-      <div class="who-icon">💍</div>
-      <div class="who-title">Wedding planners</div>
-      <div class="who-desc">Manage the full wedding journey from first enquiry to final invoice. Keep clients happy and suppliers on track.</div>
-      <div class="who-tags"><span class="who-tag">40-task template</span><span class="who-tag">Guest RSVP</span><span class="who-tag">Budget tracking</span><span class="who-tag">Table plan</span></div>
-    </div>
-    <div class="who-card">
-      <div class="who-icon">🏢</div>
-      <div class="who-title">Corporate event managers</div>
-      <div class="who-desc">Run conferences, team retreats and client events with full visibility across every moving part.</div>
-      <div class="who-tags"><span class="who-tag">32-task template</span><span class="who-tag">Run sheet</span><span class="who-tag">Room booking</span><span class="who-tag">Guest site</span></div>
-    </div>
-    <div class="who-card">
-      <div class="who-icon">🌿</div>
-      <div class="who-title">Retreat & villa hosts</div>
-      <div class="who-desc">Sell and manage rooms, coordinate arrivals and run a tight programme — all without the back-and-forth.</div>
-      <div class="who-tags"><span class="who-tag">Room payments</span><span class="who-tag">Retreat template</span><span class="who-tag">Guest portal</span></div>
-    </div>
-    <div class="who-card">
-      <div class="who-icon">🎉</div>
-      <div class="who-title">Private party planners</div>
-      <div class="who-desc">Whether it's a milestone birthday or a 40-person villa weekend — stay organised without the spreadsheet chaos.</div>
-      <div class="who-tags"><span class="who-tag">28-task template</span><span class="who-tag">Guest list</span><span class="who-tag">Budget tracker</span></div>
-    </div>
-    <div class="who-card">
-      <div class="who-icon">✈️</div>
-      <div class="who-title">Group holiday organisers</div>
-      <div class="who-desc">Stop chasing payments over WhatsApp. Collect RSVPs, assign rooms and share itineraries in one link.</div>
-      <div class="who-tags"><span class="who-tag">26-task template</span><span class="who-tag">Room allocation</span><span class="who-tag">Group payments</span></div>
-    </div>
-    <div class="who-card">
-      <div class="who-icon">🎨</div>
-      <div class="who-title">Independent planners</div>
-      <div class="who-desc">Manage multiple events, impress clients with a professional guest site and keep every detail under control.</div>
-      <div class="who-tags"><span class="who-tag">Unlimited events</span><span class="who-tag">Client sharing</span><span class="who-tag">All features</span></div>
-    </div>
-  </div>
-</section>
+<!-- WAITLIST -->
+<section class="waitlist" id="waitlist">
+  <div class="section-inner">
+    <div class="waitlist-inner">
+      <div class="section-label" style="text-align:center;">Early access</div>
+      <h2 class="section-title">Be the first to know<br>when we launch</h2>
+      <p class="section-sub">Join the waitlist and get early access.</p>
 
-<!-- PRICING -->
-<section class="pricing" id="pricing">
-  <div class="pricing-inner">
-    <div style="text-align:center;max-width:560px;margin:0 auto 0;">
-      <div class="section-label">Pricing</div>
-      <h2 class="section-title">Simple, honest pricing</h2>
-      <p class="section-sub" style="margin:0 auto;">Start free. Upgrade when you need more. No hidden fees.</p>
-    </div>
-    <div class="pricing-grid">
-
-      <!-- Free -->
-      <div class="p-card">
-        <div class="p-name">Free</div>
-        <div class="p-price">€0 <span>/ forever</span></div>
-        <div class="p-desc">Everything you need to plan and manage one event — properly.</div>
-        <div class="p-divider"></div>
-        <ul class="p-features">
-          <li>1 active event</li>
-          <li>Full checklist with templates</li>
-          <li>Budget tracker</li>
-          <li>Guest list (unlimited guests)</li>
-          <li>Run sheet builder</li>
-          <li>Table plan</li>
-          <li>Room inventory</li>
-          <li class="muted">Guest site</li>
-          <li class="muted">Multiple active events</li>
-        </ul>
-        <div class="p-cta"><a href="/login" class="btn-outline">Get started free</a></div>
+      <div class="wl-form" id="wl-form">
+        <div class="wl-field">
+          <label for="wl-name">First name</label>
+          <input type="text" id="wl-name" placeholder="Your first name" autocomplete="given-name">
+        </div>
+        <div class="wl-field">
+          <label for="wl-email">Email address</label>
+          <input type="email" id="wl-email" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="wl-field">
+          <label for="wl-type">What are you planning?</label>
+          <select id="wl-type">
+            <option value="">Select one...</option>
+            <option value="group-holiday">A group holiday</option>
+            <option value="retreat-villa">A retreat or villa event</option>
+            <option value="wedding-celebration">A wedding or celebration</option>
+            <option value="corporate-offsite">A corporate offsite or event</option>
+            <option value="something-else">Something else</option>
+          </select>
+        </div>
+        <button class="wl-submit" id="wl-submit" onclick="submitWaitlist()">Join the waitlist</button>
+        <p class="wl-note">No spam. Just updates when it matters.</p>
       </div>
 
-      <!-- Pro -->
-      <div class="p-card featured">
-        <div class="p-badge">Most popular</div>
-        <div class="p-name">Pro</div>
-        <div class="p-price">€19 <span>/ month</span></div>
-        <div class="p-desc">Run as many events as you like. Perfect for planners managing multiple clients.</div>
-        <div class="p-divider"></div>
-        <ul class="p-features">
-          <li>Unlimited active events</li>
-          <li>Full checklist with templates</li>
-          <li>Budget tracker</li>
-          <li>Guest list (unlimited guests)</li>
-          <li>Run sheet builder</li>
-          <li>Table plan</li>
-          <li>Room inventory</li>
-          <li class="muted">Guest site (add-on)</li>
-        </ul>
-        <div class="p-cta"><a href="/login" class="btn-amber">Join waitlist</a></div>
+      <div class="wl-success" id="wl-success">
+        <div class="wl-success-icon">🎉</div>
+        <h3>You're on the list!</h3>
+        <p>We'll be in touch when early access opens. In the meantime, feel free to share Octevent with anyone who'd find it useful.</p>
       </div>
-
-      <!-- Guest Site -->
-      <div class="p-card">
-        <div class="p-name">Guest Site</div>
-        <div class="p-price">€29 <span>/ event</span></div>
-        <div class="p-desc">Add a beautiful public event page to any Free or Pro event. Available for all plans.</div>
-        <div class="p-divider"></div>
-        <ul class="p-features">
-          <li>Public event page</li>
-          <li>Guest RSVP portal</li>
-          <li>Room browsing & reservation</li>
-          <li>Online room payments</li>
-          <li>Shareable link — no login needed</li>
-          <li>Custom event branding</li>
-          <li>Works on Free & Pro plans</li>
-        </ul>
-        <div class="p-cta"><a href="/login" class="btn-outline">Join waitlist</a></div>
-      </div>
-
     </div>
   </div>
-</section>
-
-<!-- QUOTE -->
-<div class="quote-band">
-  <blockquote>"Finally — one place for everything. I used to manage venues across three spreadsheets and a WhatsApp group. Those days are gone."</blockquote>
-  <cite>— Beta tester, corporate event planner · Barcelona</cite>
-  <div class="quote-stats">
-    <div><div class="quote-stat-n">8</div><div class="quote-stat-l">Modules in one platform</div></div>
-    <div><div class="quote-stat-n">0</div><div class="quote-stat-l">Spreadsheets needed</div></div>
-    <div><div class="quote-stat-n">∞</div><div class="quote-stat-l">WhatsApp threads saved</div></div>
-  </div>
-</div>
-
-<!-- CTA -->
-<section class="cta-band">
-  <h2>Ready to plan your next event?</h2>
-  <p>Join the waitlist and be first to get access when we launch.</p>
-  <div class="cta-capture">
-    <input type="email" id="cta-email" placeholder="your@email.com">
-    <button class="btn-amber" onclick="signup('cta-email','cta-success')">Join waitlist</button>
-  </div>
-  <div class="hero-success" id="cta-success" style="margin-top:0.75rem;">🎉 You're on the list!</div>
-  <div class="hero-picker" id="cta-picker" style="margin-top:1.5rem;">
-    <p>One quick question — which feature do you need most?</p>
-    <div class="feat-opts">
-      <button class="feat-opt" onclick="pickFeature(this,'cta')">Guest list & RSVP</button>
-      <button class="feat-opt" onclick="pickFeature(this,'cta')">Budget tracker</button>
-      <button class="feat-opt" onclick="pickFeature(this,'cta')">Room booking</button>
-      <button class="feat-opt" onclick="pickFeature(this,'cta')">Run sheet</button>
-      <button class="feat-opt" onclick="pickFeature(this,'cta')">Table plan</button>
-      <button class="feat-opt" onclick="pickFeature(this,'cta')">Guest site</button>
-    </div>
-    <div class="feat-submit" id="cta-feat-submit">
-      <button class="btn-amber" onclick="submitFeature('cta')" style="margin-top:0.75rem;">Tell us →</button>
-    </div>
-    <div class="feat-thanks" id="cta-thanks">Thanks! That's really helpful 🙏</div>
-  </div>
-  <p style="font-size:0.75rem;color:var(--ink3);margin-top:1rem;">Free to join · No credit card · Cancel anytime</p>
 </section>
 
 <!-- FOOTER -->
 <footer>
-  <a href="/"><img src="octevent-logo.png" alt="Octevent" style="height:26px;width:auto;"></a>
+  <div>
+    <a href="/"><img src="octevent-logo.png" alt="Octevent" style="height:28px;width:auto;"></a>
+    <p class="footer-tagline" style="margin-top:5px;">One platform. Every event.</p>
+  </div>
   <div class="footer-links">
-    <a href="#features">Features</a>
-    <a href="#pricing">Pricing</a>
+    <a href="#">Privacy Policy</a>
+    <a href="#">Terms of Use</a>
     <a href="mailto:hello@octevent.com">Contact</a>
   </div>
-  <div class="footer-copy">© 2026 Octevent. All rights reserved.</div>
 </footer>
 
 <script>
-function pickFeature(btn, section) {
-  const picker = document.getElementById(section + '-picker');
-  picker.querySelectorAll('.feat-opt').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  const submit = section === 'hero'
-    ? picker.querySelector('.feat-submit')
-    : document.getElementById('cta-feat-submit');
-  if (submit) submit.style.display = 'block';
-}
+// Eight arms visual
+(function() {
+  const visual = document.getElementById('arms-visual');
+  if (!visual) return;
+  const nodes = [
+    {icon:'🏠', label:'Overview'},
+    {icon:'✅', label:'Checklist'},
+    {icon:'💰', label:'Budget'},
+    {icon:'👥', label:'Guests'},
+    {icon:'🛏', label:'Rooms'},
+    {icon:'📅', label:'Run sheet'},
+    {icon:'🪑', label:'Table plan'},
+    {icon:'🌐', label:'Guest site'},
+  ];
+  const cx = 50, cy = 50, r = 40;
+  nodes.forEach(function(n, i) {
+    const angle = (i / 8) * 2 * Math.PI - Math.PI / 2;
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
 
-async function submitFeature(section) {
-  const picker = document.getElementById(section + '-picker');
-  const selected = picker.querySelector('.feat-opt.selected');
-  if (!selected) return;
-  const feature = selected.textContent;
-  const email = document.getElementById(section === 'hero' ? 'hero-email' : 'cta-email').value;
-  const submit = section === 'hero' ? picker.querySelector('.feat-submit') : document.getElementById('cta-feat-submit');
-  if (submit) submit.style.display = 'none';
-  picker.querySelectorAll('.feat-opt').forEach(b => b.style.display='none');
-  const thanks = document.getElementById(section + '-thanks');
-  if (thanks) thanks.style.display = 'block';
+    // Line
+    const line = document.createElement('div');
+    line.className = 'arm-line';
+    const dx = (x - cx) / 100, dy = (y - cy) / 100;
+    const len = Math.sqrt(dx*dx + dy*dy) * 320;
+    const rot = Math.atan2(dy, dx) * 180 / Math.PI;
+    line.style.cssText = 'position:absolute;top:50%;left:50%;transform-origin:0 0;height:1px;background:linear-gradient(90deg,rgba(245,168,0,0.5),transparent);width:' + len + 'px;transform:rotate(' + rot + 'deg);z-index:0;';
+    visual.appendChild(line);
+
+    // Node
+    const node = document.createElement('div');
+    node.className = 'arm-node';
+    node.style.cssText = 'left:calc(' + x + '% - 31px);top:calc(' + y + '% - 31px);';
+    node.innerHTML = '<span class="icon">' + n.icon + '</span>' + n.label;
+    visual.appendChild(node);
+  });
+})();
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+  a.addEventListener('click', function(e) {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({behavior:'smooth'}); }
+  });
+});
+
+// Waitlist form
+async function submitWaitlist() {
+  const name  = document.getElementById('wl-name').value.trim();
+  const email = document.getElementById('wl-email').value.trim();
+  const type  = document.getElementById('wl-type').value;
+  const btn   = document.getElementById('wl-submit');
+
+  if (!name) { document.getElementById('wl-name').focus(); return; }
+  if (!email || !email.includes('@')) { document.getElementById('wl-email').focus(); return; }
+  if (!type) { document.getElementById('wl-type').focus(); return; }
+
+  btn.textContent = 'Joining...';
+  btn.disabled = true;
+
   try {
     await fetch('/api/subscribe', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, feature })
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, first_name: name, event_type: type})
     });
   } catch(e) {}
-}
 
-async function signup(inputId, successId) {
-  const input = document.getElementById(inputId);
-  const ok    = document.getElementById(successId);
-  const val   = input.value.trim();
-  if (!val || !val.includes('@')) {
-    input.style.outline = '2px solid #e53e3e';
-    input.focus();
-    setTimeout(() => input.style.outline = '', 1800);
-    return;
-  }
-  const capture = input.closest('.hero-capture, .cta-capture');
-  const btn = capture ? capture.querySelector('button') : null;
-  if (btn) { btn.textContent = 'Adding...'; btn.disabled = true; }
-  try {
-    const res = await fetch('/api/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: val })
-    });
-    const data = await res.json();
-    if (capture) capture.style.display = 'none';
-    ok.style.display = 'block';
-    const section = inputId.replace('-email','');
-    const picker = document.getElementById(section + '-picker');
-    if (picker) picker.style.display = 'block';
-  } catch(err) {
-    if (capture) capture.style.display = 'none';
-    ok.style.display = 'block';
-    const section = inputId.replace('-email','');
-    const picker = document.getElementById(section + '-picker');
-    if (picker) picker.style.display = 'block';
-  }
+  document.getElementById('wl-form').style.display = 'none';
+  document.getElementById('wl-success').style.display = 'block';
 }
-
-// Smooth scroll
-document.querySelectorAll('a[href^="#"]').forEach(a => {
-  a.addEventListener('click', e => {
-    const t = document.querySelector(a.getAttribute('href'));
-    if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
-  });
-});
 </script>
 </body>
 </html>
