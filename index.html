@@ -20,7 +20,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--white);o
 
 /* ── NAV ── */
 nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--rule);padding:0 2.5rem;height:66px;display:flex;align-items:center;justify-content:space-between;}
-.nav-logo img{height:34px;width:auto;}
+.nav-logo img{height:32px;width:auto;}
 .nav-links{display:flex;align-items:center;gap:2rem;font-size:0.88rem;font-weight:500;}
 .nav-links a{color:var(--ink2);text-decoration:none;transition:color 0.15s;}
 .nav-links a:hover{color:var(--ink);}
@@ -45,10 +45,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.94);backdrop
 .arms-visual{position:relative;width:320px;height:320px;}
 .arm-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 8px 32px rgba(245,168,0,0.35);}
 .arm-center img{height:44px;width:auto;}
-.arm-node{position:absolute;width:62px;height:62px;background:#fff;border:1.5px solid var(--rule);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:0.58rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);transition:all 0.2s;}
-.arm-node:hover{border-color:var(--amber);transform:scale(1.08);box-shadow:0 6px 24px rgba(245,168,0,0.2);}
-.arm-node .icon{font-size:1.1rem;line-height:1;}
-.arm-line{position:absolute;top:50%;left:50%;transform-origin:0 0;height:1px;background:linear-gradient(90deg,var(--amber),transparent);opacity:0.4;z-index:0;}
+
 
 /* ── SECTION SHARED ── */
 section{padding:5rem 2.5rem;}
@@ -145,7 +142,7 @@ footer{border-top:1px solid var(--rule);padding:2rem 2.5rem;display:flex;align-i
 
 <!-- NAV -->
 <nav>
-  <a href="/"><img src="octevent-logo.png" alt="Octevent"></a>
+  <a href="/"><img src="octevent-logo.png" alt="Octevent" style="height:32px;width:auto;display:block;"></a>
   <div class="nav-links">
     <a href="#use-cases">Who it's for</a>
     <a href="#features">Features</a>
@@ -175,7 +172,7 @@ footer{border-top:1px solid var(--rule);padding:2rem 2.5rem;display:flex;align-i
   <div class="hero-right">
     <div class="arms-visual" id="arms-visual">
       <div class="arm-center">
-        <img src="octevent-logo-white.png.png" alt="Octevent" onerror="this.parentElement.innerHTML='<span style=\'font-family:Nunito,sans-serif;font-weight:900;font-size:1.1rem;color:var(--ink);\'>oct</span>'">
+        <span style="font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;color:var(--ink);letter-spacing:-0.03em;">oct</span>
       </div>
     </div>
   </div>
@@ -390,40 +387,78 @@ footer{border-top:1px solid var(--rule);padding:2rem 2.5rem;display:flex;align-i
 </footer>
 
 <script>
-// Eight arms visual
+// Eight arms visual — clean geometric
 (function() {
   const visual = document.getElementById('arms-visual');
   if (!visual) return;
   const nodes = [
-    {icon:'🏠', label:'Overview'},
-    {icon:'✅', label:'Checklist'},
-    {icon:'💰', label:'Budget'},
-    {icon:'👥', label:'Guests'},
-    {icon:'🛏', label:'Rooms'},
-    {icon:'📅', label:'Run sheet'},
-    {icon:'🪑', label:'Table plan'},
-    {icon:'🌐', label:'Guest site'},
+    'Overview','Checklist','Budget','Guests',
+    'Rooms','Run sheet','Table plan','Guest site'
   ];
-  const cx = 50, cy = 50, r = 40;
-  nodes.forEach(function(n, i) {
+  const size = visual.offsetWidth || 320;
+  const cx = size/2, cy = size/2, r = size * 0.38;
+
+  // SVG for lines
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;';
+  visual.appendChild(svg);
+
+  nodes.forEach(function(label, i) {
     const angle = (i / 8) * 2 * Math.PI - Math.PI / 2;
     const x = cx + r * Math.cos(angle);
     const y = cy + r * Math.sin(angle);
 
-    // Line
-    const line = document.createElement('div');
-    line.className = 'arm-line';
-    const dx = (x - cx) / 100, dy = (y - cy) / 100;
-    const len = Math.sqrt(dx*dx + dy*dy) * 320;
-    const rot = Math.atan2(dy, dx) * 180 / Math.PI;
-    line.style.cssText = 'position:absolute;top:50%;left:50%;transform-origin:0 0;height:1px;background:linear-gradient(90deg,rgba(245,168,0,0.5),transparent);width:' + len + 'px;transform:rotate(' + rot + 'deg);z-index:0;';
-    visual.appendChild(line);
+    // Line in SVG
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', x);  line.setAttribute('y2', y);
+    line.setAttribute('stroke','#F5A800');
+    line.setAttribute('stroke-width','1');
+    line.setAttribute('stroke-opacity','0.3');
+    svg.appendChild(line);
 
     // Node
     const node = document.createElement('div');
-    node.className = 'arm-node';
-    node.style.cssText = 'left:calc(' + x + '% - 31px);top:calc(' + y + '% - 31px);';
-    node.innerHTML = '<span class="icon">' + n.icon + '</span>' + n.label;
+    const isAddon = label === 'Guest site';
+    node.style.cssText = [
+      'position:absolute',
+      'width:72px','height:72px',
+      'left:' + (x - 36) + 'px','top:' + (y - 36) + 'px',
+      'border-radius:50%',
+      'display:flex','flex-direction:column',
+      'align-items:center','justify-content:center',
+      'font-size:0.52rem','font-weight:700',
+      'letter-spacing:0.05em','text-transform:uppercase',
+      'text-align:center','line-height:1.3',
+      'transition:all 0.2s','cursor:default',
+      isAddon
+        ? 'background:var(--ink);color:#fff;border:2px solid var(--ink);box-shadow:0 4px 16px rgba(0,0,0,0.15);'
+        : 'background:#fff;color:var(--ink2);border:1.5px solid var(--rule);box-shadow:0 3px 12px rgba(0,0,0,0.07);'
+    ].join(';');
+
+    const numEl = document.createElement('div');
+    numEl.style.cssText = 'font-family:Nunito,sans-serif;font-weight:900;font-size:0.85rem;color:' + (isAddon ? 'var(--amber)' : 'var(--amber-dark)') + ';line-height:1;margin-bottom:2px;';
+    numEl.textContent = isAddon ? '+' : String(i+1).padStart(2,'0');
+
+    const labelEl = document.createElement('div');
+    labelEl.textContent = label;
+
+    node.appendChild(numEl);
+    node.appendChild(labelEl);
+
+    node.addEventListener('mouseenter', function() {
+      node.style.transform = 'scale(1.1)';
+      node.style.boxShadow = '0 6px 24px rgba(245,168,0,0.25)';
+      node.style.borderColor = 'var(--amber)';
+      line.setAttribute('stroke-opacity','0.7');
+    });
+    node.addEventListener('mouseleave', function() {
+      node.style.transform = '';
+      node.style.boxShadow = isAddon ? '0 4px 16px rgba(0,0,0,0.15)' : '0 3px 12px rgba(0,0,0,0.07)';
+      node.style.borderColor = isAddon ? 'var(--ink)' : 'var(--rule)';
+      line.setAttribute('stroke-opacity','0.3');
+    });
+
     visual.appendChild(node);
   });
 })();
