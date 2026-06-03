@@ -41,9 +41,9 @@ nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.94);backdrop
 .hero-note{font-size:0.75rem;color:var(--ink3);margin-top:0.85rem;}
 
 /* Hero visual — eight arms concept */
-.hero-right{position:relative;height:420px;display:flex;align-items:center;justify-content:center;}
-.arms-visual{position:relative;width:320px;height:320px;}
-.arm-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90px;height:90px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1.5px solid var(--rule);}
+.hero-right{display:flex;align-items:center;justify-content:center;}
+.arms-visual{display:none;}
+
 .arm-center img{height:44px;width:auto;}
 
 
@@ -142,7 +142,7 @@ footer{border-top:1px solid var(--rule);padding:2rem 2.5rem;display:flex;align-i
 
 <!-- NAV -->
 <nav>
-  <a href="/"><img src="octevent-logo.png" alt="Octevent" style="height:32px;width:auto;display:block;"></a>
+  <a href="/"><img src="octevent-logo.png" alt="Octevent" style="height:38px;width:auto;display:block;"></a>
   <div class="nav-links">
     <a href="#use-cases">Who it's for</a>
     <a href="#features">Features</a>
@@ -168,19 +168,35 @@ footer{border-top:1px solid var(--rule);padding:2rem 2.5rem;display:flex;align-i
     <p class="hero-note">Free to join &middot; No credit card &middot; Early access</p>
   </div>
 
-  <!-- Eight arms visual -->
+  <!-- Hero visual — clean stat block -->
   <div class="hero-right">
-    <div class="arms-visual" id="arms-visual">
-      <div class="arm-center">
-        <img src="octevent-logo.png" alt="" style="height:36px;width:auto;filter:brightness(0);" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-        <span style="display:none;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;color:var(--ink);letter-spacing:-0.03em;">oct</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:420px;">
+      <div style="background:#fff;border:1px solid var(--rule);border-radius:16px;padding:1.5rem;box-shadow:0 4px 20px rgba(0,0,0,0.05);">
+        <div style="font-family:'Nunito',sans-serif;font-size:2.2rem;font-weight:900;color:var(--amber-dark);line-height:1;">8</div>
+        <div style="font-size:0.78rem;color:var(--ink2);margin-top:4px;font-weight:300;">modules in<br>one platform</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--rule);border-radius:16px;padding:1.5rem;box-shadow:0 4px 20px rgba(0,0,0,0.05);">
+        <div style="font-family:'Nunito',sans-serif;font-size:2.2rem;font-weight:900;color:var(--ink);line-height:1;">0</div>
+        <div style="font-size:0.78rem;color:var(--ink2);margin-top:4px;font-weight:300;">spreadsheets<br>needed</div>
+      </div>
+      <div style="background:var(--amber);border-radius:16px;padding:1.5rem;grid-column:1/-1;box-shadow:0 4px 20px rgba(245,168,0,0.25);">
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink);opacity:0.7;margin-bottom:0.5rem;">Works for</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:rgba(0,0,0,0.1);color:var(--ink);font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:100px;">Weddings</span>
+          <span style="background:rgba(0,0,0,0.1);color:var(--ink);font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:100px;">Retreats</span>
+          <span style="background:rgba(0,0,0,0.1);color:var(--ink);font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:100px;">Group holidays</span>
+          <span style="background:rgba(0,0,0,0.1);color:var(--ink);font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:100px;">Corporate</span>
+          <span style="background:rgba(0,0,0,0.1);color:var(--ink);font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:100px;">Villa events</span>
+        </div>
+      </div>
+      <div style="background:var(--ink);border-radius:16px;padding:1.5rem;grid-column:1/-1;box-shadow:0 4px 20px rgba(0,0,0,0.12);">
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:0.5rem;">Guest Site add-on</div>
+        <div style="font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:700;color:#fff;line-height:1.4;">Guests RSVP, book rooms and pay — all from one link.</div>
       </div>
     </div>
   </div>
 </div>
-</section>
-
-<!-- USE CASES -->
+</section><!-- USE CASES -->
 <section class="use-cases" id="use-cases">
   <div class="section-inner">
     <div class="section-label">Who it's for</div>
@@ -388,82 +404,6 @@ footer{border-top:1px solid var(--rule);padding:2rem 2.5rem;display:flex;align-i
 </footer>
 
 <script>
-// Eight arms visual — clean geometric
-(function() {
-  const visual = document.getElementById('arms-visual');
-  if (!visual) return;
-  const nodes = [
-    'Overview','Checklist','Budget','Guests',
-    'Rooms','Run sheet','Table plan','Guest site'
-  ];
-  const size = visual.offsetWidth || 320;
-  const cx = size/2, cy = size/2, r = size * 0.38;
-
-  // SVG for lines
-  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;';
-  visual.appendChild(svg);
-
-  nodes.forEach(function(label, i) {
-    const angle = (i / 8) * 2 * Math.PI - Math.PI / 2;
-    const x = cx + r * Math.cos(angle);
-    const y = cy + r * Math.sin(angle);
-
-    // Line in SVG
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
-    line.setAttribute('x2', x);  line.setAttribute('y2', y);
-    line.setAttribute('stroke','#F5A800');
-    line.setAttribute('stroke-width','1');
-    line.setAttribute('stroke-opacity','0.3');
-    svg.appendChild(line);
-
-    // Node
-    const node = document.createElement('div');
-    const isAddon = label === 'Guest site';
-    node.style.cssText = [
-      'position:absolute',
-      'width:72px','height:72px',
-      'left:' + (x - 36) + 'px','top:' + (y - 36) + 'px',
-      'border-radius:50%',
-      'display:flex','flex-direction:column',
-      'align-items:center','justify-content:center',
-      'font-size:0.52rem','font-weight:700',
-      'letter-spacing:0.05em','text-transform:uppercase',
-      'text-align:center','line-height:1.3',
-      'transition:all 0.2s','cursor:default',
-      isAddon
-        ? 'background:var(--ink);color:#fff;border:2px solid var(--ink);box-shadow:0 4px 16px rgba(0,0,0,0.15);'
-        : 'background:#fff;color:var(--ink2);border:1.5px solid var(--rule);box-shadow:0 3px 12px rgba(0,0,0,0.07);'
-    ].join(';');
-
-    const numEl = document.createElement('div');
-    numEl.style.cssText = 'font-family:Nunito,sans-serif;font-weight:900;font-size:0.85rem;color:' + (isAddon ? 'var(--ink)' : 'var(--amber-dark)') + ';line-height:1;margin-bottom:2px;';
-    numEl.textContent = isAddon ? '+' : String(i+1).padStart(2,'0');
-
-    const labelEl = document.createElement('div');
-    labelEl.textContent = label;
-
-    node.appendChild(numEl);
-    node.appendChild(labelEl);
-
-    node.addEventListener('mouseenter', function() {
-      node.style.transform = 'scale(1.1)';
-      node.style.boxShadow = '0 6px 24px rgba(245,168,0,0.25)';
-      node.style.borderColor = 'var(--amber)';
-      line.setAttribute('stroke-opacity','0.7');
-    });
-    node.addEventListener('mouseleave', function() {
-      node.style.transform = '';
-      node.style.boxShadow = isAddon ? '0 4px 16px rgba(245,168,0,0.3)' : '0 3px 12px rgba(0,0,0,0.07)';
-      node.style.borderColor = isAddon ? 'var(--amber)' : 'var(--rule)';
-      line.setAttribute('stroke-opacity','0.3');
-    });
-
-    visual.appendChild(node);
-  });
-})();
-
 // Smooth scroll
 document.querySelectorAll('a[href^="#"]').forEach(function(a) {
   a.addEventListener('click', function(e) {
