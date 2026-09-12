@@ -27,6 +27,7 @@
 
 <script>
 
+
 var allItems=[], hideDone=false;
 
 async function init(){
@@ -111,6 +112,7 @@ async function addItem(){var res=await sb.from('runsheet_items').insert([{event_
 async function deleteItem(id){if(!confirm('Delete this item?'))return;await sb.from('runsheet_items').delete().eq('id',id);allItems=allItems.filter(function(i){return i.id!==id;});render();}
 function toggleHide(){hideDone=!hideDone;render();}
 init();
+
 
 </script>
 </body>

@@ -43,6 +43,7 @@
 
 <script>
 
+
 async function init(){
   var ev=await OctHeader.init('settings');
   if(!ev)return;
@@ -70,6 +71,7 @@ async function saveSettings(){
 }
 async function deleteEvent(){if(!confirm('Delete this event? This cannot be undone.'))return;await sb.from('events').delete().eq('id',eventId);location.href='/dashboard';}
 init();
+
 
 </script>
 </body>

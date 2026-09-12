@@ -29,6 +29,7 @@
 
 <script>
 
+
 var allRooms=[], allGuests=[];
 var ROOM_TYPES={single:'Single',double:'Double',twin:'Twin',triple:'Triple',suite:'Suite',dorm:'Dormitory',villa:'Villa',cottage:'Cottage',other:'Other'};
 var ROOM_STATUS={available:'Available',reserved:'Reserved',paid:'Paid'};
@@ -125,6 +126,7 @@ function render(){
 async function addRoom(){var res=await sb.from('rooms').insert([{event_id:eventId,accommodation:'',name:'New room',type:'double',capacity:2,price_per_night:0,nights:1,notes:'',status:'available',sort_order:allRooms.length}]).select().single();if(!res.error&&res.data){allRooms.push(res.data);render();setTimeout(function(){var r=document.querySelector('tr[data-id="'+res.data.id+'"]');if(r){r.scrollIntoView({behavior:'smooth',block:'center'});var c=r.querySelector('td');if(c)c.click();}},80);}}
 async function deleteRoom(id){if(!confirm('Delete this room?'))return;await sb.from('rooms').delete().eq('id',id);allRooms=allRooms.filter(function(r){return r.id!==id;});render();}
 init();
+
 
 </script>
 </body>

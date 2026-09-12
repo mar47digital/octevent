@@ -23,6 +23,7 @@
 </div>
 <div id="g-content"><div class="spinner"></div></div>
 </main>
+
 <div class="modal-overlay" id="add-guest-modal" onclick="if(event.target===this)closeAddModal()">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add guest</div><button class="modal-close" onclick="closeAddModal()">&#x2715;</button></div>
@@ -49,6 +50,7 @@
   </div>
 </div>
 <script>
+
 
 var allGuests=[], allRooms=[], tpTables=[];
 
@@ -115,6 +117,7 @@ async function startImport(e){var file=e.target.files[0];if(!file)return;e.targe
 function closeImportModal(){document.getElementById('import-modal').classList.remove('open');_importRows=[];_importHeaders=[];}
 async function runImport(){var gc=function(k){var s=document.getElementById('map-'+k);return s&&s.value!==''?parseInt(s.value):-1;};var fc=gc('first_name');if(fc===-1){alert('Please map the First name column.');return;}var RSVP_MAP={confirmed:'confirmed',yes:'confirmed',y:'confirmed',attending:'confirmed',declined:'declined',no:'declined',n:'declined',pending:'pending',maybe:'pending',tbc:'pending','':'pending'};var rows=_importRows.map(function(r){var fn=(r[fc]||'').trim();if(!fn)return null;var rv=(r[gc('rsvp_status')]||'').trim().toLowerCase();return{event_id:eventId,first_name:fn,last_name:gc('last_name')>-1?(r[gc('last_name')]||'').trim():'',email:gc('email')>-1?(r[gc('email')]||'').trim():'',rsvp_status:RSVP_MAP[rv]||'pending',dietary:gc('dietary')>-1?(r[gc('dietary')]||'').trim():'',notes:gc('notes')>-1?(r[gc('notes')]||'').trim():''};}).filter(Boolean);if(!rows.length){alert('No valid rows to import.');return;}if(!confirm('Import '+rows.length+' guests?'))return;var res=await sb.from('guests').insert(rows);if(res.error){alert('Import failed: '+res.error.message);return;}closeImportModal();var gres=await sb.from('guests').select('*').eq('event_id',eventId).order('created_at',{ascending:true});allGuests=gres.data||[];await sb.from('events').update({guest_count:allGuests.length}).eq('id',eventId);document.getElementById('stat-guests').textContent=allGuests.filter(function(g){return g.rsvp_status==='confirmed';}).length;render();alert('Imported '+rows.length+' guests!');}
 init();
+
 
 </script>
 </body>
