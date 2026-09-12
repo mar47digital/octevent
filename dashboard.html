@@ -271,7 +271,6 @@ main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
 .photo-placeholder svg{opacity:0.4;}
 .photo-placeholder small{font-size:0.7rem;color:var(--ink3);opacity:0.7;}
 
-/* EVENT LIST ROWS */
 .event-list{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;border:1px solid var(--rule);}
 .event-row{display:flex;align-items:center;text-decoration:none;color:inherit;background:#fff;border-bottom:1px solid var(--rule);transition:background 0.15s;min-height:72px;}
 .event-row:last-child{border-bottom:none;}
@@ -287,10 +286,8 @@ main{max-width:1200px;margin:0 auto;padding:3rem 2.5rem;}
 .event-row-stat-n{font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;line-height:1;}
 .event-row-stat-l{font-size:0.6rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:1px;}
 .event-row-badge{flex-shrink:0;}
-@media(max-width:640px){
-  .event-row-stats{display:none;}
-  .event-row-thumb{width:72px;height:64px;}
-}
+@media(max-width:640px){.event-row-stats{display:none;}.event-row-thumb{width:72px;height:64px;}}
+
 </style>
 </head>
 <body>
@@ -633,229 +630,38 @@ function formatDate(dateStr) {
 function renderEvents(events) {
   const grid = document.getElementById('events-grid');
   if (!events.length) {
-    grid.innerHTML = '<div class="empty-state"><h3>No events yet</h3><p>Create your first event and start planning.</p><button class="new-event-btn" onclick="openModal()" style="margin:0 auto;">+ New event</button></div>';
+    grid.innerHTML = '<div class="empty-state"><h3>No events yet</h3><p>Create your first event.</p></div>';
     return;
   }
-  const STATUS_STYLE = {
-    upcoming:'background:#FFF8E6;color:#C98A00;',
-    live:'background:#f0f7f4;color:#2d6a4f;',
-    past:'background:#f0f0f0;color:#666;',
-    draft:'background:#f0f0f0;color:#999;',
-  };
-  const gradBg = ['linear-gradient(135deg,#1a1a2e,#533483)','linear-gradient(135deg,#0f3460,#e94560)','linear-gradient(135deg,#2d6a4f,#40916c)','linear-gradient(135deg,#c98a00,#f5a800)','linear-gradient(135deg,#3d405b,#81b29a)','linear-gradient(135deg,#582c4d,#c9a227)'];
-  const rows = events.map(function(ev, i) {
-    const status = getStatus(ev);
-    const thumb = ev.cover_image
-      ? '<img src="' + ev.cover_image + '" alt="' + ev.name + '">'
-      : '<div style="width:100%;height:100%;background:' + gradBg[i%6] + ';"></div>';
-    const meta = [];
+  const S = {upcoming:'background:#FFF8E6;color:#C98A00;',live:'background:#f0f7f4;color:#2d6a4f;',past:'background:#f0f0f0;color:#666;',draft:'background:#f0f0f0;color:#999;'};
+  const G = ['linear-gradient(135deg,#1a1a2e,#533483)','linear-gradient(135deg,#0f3460,#e94560)','linear-gradient(135deg,#2d6a4f,#40916c)','linear-gradient(135deg,#c98a00,#f5a800)','linear-gradient(135deg,#3d405b,#81b29a)','linear-gradient(135deg,#582c4d,#c9a227)'];
+  grid.innerHTML = '<div class="event-list">' + events.map(function(ev,i) {
+    var status = getStatus(ev);
+    var thumb = ev.cover_image ? '<img src="'+ev.cover_image+'" alt="">' : '<div style="width:100%;height:100%;background:'+G[i%6]+';"></div>';
+    var meta = [];
     if (ev.event_date) meta.push(formatDate(ev.event_date));
-    const loc = [ev.venue, ev.city, ev.country].filter(Boolean).join(', ');
+    var loc = [ev.venue,ev.city,ev.country].filter(Boolean).join(', ');
     if (loc) meta.push(loc);
     if (ev.event_type) meta.push(ev.event_type.charAt(0).toUpperCase()+ev.event_type.slice(1));
-    return '<a class="event-row" href="/event-overview?id=' + ev.id + '">'
-      + '<div class="event-row-thumb">' + thumb + '</div>'
-      + '<div class="event-row-body">'
-      + '<div class="event-row-main">'
-      + '<div class="event-row-name">' + ev.name + '</div>'
-      + '<div class="event-row-meta">' + meta.join(' &middot; ') + '</div>'
-      + '</div>'
-      + '<div class="event-row-stats">'
-      + '<div class="event-row-stat"><div class="event-row-stat-n">' + (ev.guest_count||0) + '</div><div class="event-row-stat-l">Guests</div></div>'
-      + '<div class="event-row-stat"><div class="event-row-stat-n">' + (ev.rsvp_count||0) + '</div><div class="event-row-stat-l">RSVPs</div></div>'
-      + '<div class="event-row-stat"><div class="event-row-stat-n">' + (ev.room_count||0) + '</div><div class="event-row-stat-l">Rooms</div></div>'
-      + '</div>'
-      + '<div class="event-row-badge"><span style="font-size:0.6rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px;' + STATUS_STYLE[status] + '">' + status + '</span></div>'
-      + '</div></a>';
-  }).join('');
-  grid.innerHTML = '<div class="event-list">' + rows + '</div>';
+    return '<a class="event-row" href="/event-overview?id='+ev.id+'">'
+      +'<div class="event-row-thumb">'+thumb+'</div>'
+      +'<div class="event-row-body">'
+      +'<div class="event-row-main"><div class="event-row-name">'+ev.name+'</div><div class="event-row-meta">'+meta.join(' &middot; ')+'</div></div>'
+      +'<div class="event-row-stats">'
+      +'<div class="event-row-stat"><div class="event-row-stat-n">'+(ev.guest_count||0)+'</div><div class="event-row-stat-l">Guests</div></div>'
+      +'<div class="event-row-stat"><div class="event-row-stat-n">'+(ev.rsvp_count||0)+'</div><div class="event-row-stat-l">RSVPs</div></div>'
+      +'<div class="event-row-stat"><div class="event-row-stat-n">'+(ev.room_count||0)+'</div><div class="event-row-stat-l">Rooms</div></div>'
+      +'</div>'
+      +'<div class="event-row-badge"><span style="font-size:0.6rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px;'+S[status]+'">'+status+'</span></div>'
+      +'</div></a>';
+  }).join('') + '</div>';
 }
 
-function getStatus(event) {
-  if (event.status === 'draft') return 'draft';
-  const today = new Date();
-  const date  = new Date(event.event_date);
-  const diff  = (date - today) / (1000 * 60 * 60 * 24);
-  if (diff < -1) return 'past';
-  if (diff <= 1) return 'live';
-  return 'upcoming';
-}
+
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
 }
 
-function renderEvents(events) {
-  const grid = document.getElementById('events-grid');
-  if (!events.length) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-oct">🐙</div>
-        <h3>No events yet</h3>
-        <p>Create your first event and start managing it like a pro.</p>
-        <button class="new-event-btn" onclick="openModal()" style="margin:0 auto;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
-          Create first event
-        </button>
-      </div>`;
-    return;
-  }
 
-  grid.innerHTML = events.map((ev, i) => {
-    const status  = getStatus(ev);
-    const grad    = gradients[i % gradients.length];
-    const imgHtml = ev.cover_image
-      ? `<img src="${ev.cover_image}" alt="${ev.name}">`
-      : '';
-    return `
-    <a class="event-card" href="/event-overview?id=${ev.id}" style="animation-delay:${i * 0.06}s">
-      <div class="card-image ${grad}">
-        ${imgHtml}
-        <span class="card-status status-${status}">${status}</span>
-        <div class="card-event-name">${ev.name}</div>
-      </div>
-      <div class="card-body">
-        <div class="card-meta">
-          <div class="card-meta-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            ${formatDate(ev.event_date)}
-          </div>
-          ${ev.venue ? `<div class="card-meta-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
-            ${ev.venue}
-          </div>` : ''}
-        </div>
-        <div class="card-divider"></div>
-        <div class="card-stats">
-          <div class="card-stat">
-            <div class="card-stat-n">${ev.guest_count || 0}</div>
-            <div class="card-stat-l">Guests</div>
-          </div>
-          <div class="card-stat">
-            <div class="card-stat-n">${ev.room_count || 0}</div>
-            <div class="card-stat-l">Rooms</div>
-          </div>
-          <div class="card-stat">
-            <div class="card-stat-n">${ev.rsvp_count || 0}</div>
-            <div class="card-stat-l">RSVPs</div>
-          </div>
-        </div>
-      </div>
-    </a>`;
-  }).join('');
-}
-
-function filterEvents(filter, btn) {
-  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  if (filter === 'all') { renderEvents(allEvents); return; }
-  renderEvents(allEvents.filter(ev => getStatus(ev) === filter));
-}
-
-function openModal() {
-  setTimeout(() => initDragDrop('photo-upload-area','new-photo','photo-preview','photo-placeholder'), 100);
-  document.getElementById('modal').classList.add('open');
-  document.getElementById('new-date').value = new Date().toISOString().split('T')[0];
-  setTimeout(() => document.getElementById('new-name').focus(), 100);
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
-}
-
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('modal')) closeModal();
-}
-
-function initDragDrop(areaId, inputId, previewId, placeholderId) {
-  const area = document.getElementById(areaId);
-  if (!area) return;
-  area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('dragover'); });
-  area.addEventListener('dragleave', () => area.classList.remove('dragover'));
-  area.addEventListener('drop', e => {
-    e.preventDefault();
-    area.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
-    const input = document.getElementById(inputId);
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    input.files = dt.files;
-    showPreview(file, previewId, placeholderId);
-  });
-}
-
-function showPreview(file, previewId, placeholderId) {
-  const reader = new FileReader();
-  reader.onload = ev => {
-    document.getElementById(previewId).src = ev.target.result;
-    document.getElementById(previewId).style.display = 'block';
-    document.getElementById(placeholderId).style.display = 'none';
-  };
-  reader.readAsDataURL(file);
-}
-
-function previewPhoto(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  showPreview(file, 'photo-preview', 'photo-placeholder');
-}
-
-async function handleCreateEvent() {
-  const name  = document.getElementById('new-name').value.trim();
-  const date  = document.getElementById('new-date').value;
-  const type  = document.getElementById('new-type').value;
-  const venue = document.getElementById('new-venue').value.trim();
-  const notes = document.getElementById('new-notes').value.trim();
-  const btn   = document.getElementById('create-btn');
-
-  if (!name || !date) {
-    document.getElementById('new-name').style.borderColor = !name ? '#e53e3e' : '';
-    document.getElementById('new-date').style.borderColor = !date ? '#e53e3e' : '';
-    return;
-  }
-
-  btn.textContent = 'Creating...'; btn.disabled = true;
-
-  // Upload cover photo if provided
-  let cover_image = null;
-  const photoFile = document.getElementById('new-photo').files[0];
-  if (photoFile) {
-    const ext = photoFile.name.split('.').pop();
-    const path = `${currentUser.id}/${Date.now()}.${ext}`;
-    const { data: uploadData, error: uploadError } = await sb.storage
-      .from('event-covers')
-      .upload(path, photoFile, { cacheControl: '3600', upsert: false });
-    if (!uploadError) {
-      const { data: urlData } = sb.storage.from('event-covers').getPublicUrl(path);
-      cover_image = urlData.publicUrl;
-    }
-  }
-
-  const { data, error } = await sb.from('events').insert([{
-    name, event_date: date, end_date: document.getElementById('new-end-date').value || null, event_type: type,
-    venue, city: document.getElementById('new-city').value.trim(), country: document.getElementById('new-country').value.trim(), notes,
-    user_id: currentUser.id,
-    guest_count: 0, room_count: 0, rsvp_count: 0,
-    cover_image
-  }]).select().single();
-
-  if (error) {
-    console.error(error);
-    btn.textContent = 'Create event'; btn.disabled = false;
-    alert('Could not create event. Make sure your database table is set up.');
-    return;
-  }
-
-  closeModal();
-  window.location.href = `/event-overview?id=${data.id}`;
-}
-
-async function signOut() {
-  await sb.auth.signOut();
-  window.location.href = '/login';
-}
-</script>
-</body>
-</html>
