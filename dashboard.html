@@ -16,8 +16,8 @@
 html,body{min-height:100%;background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--ink);}
 
 /* NAV */
-nav{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-img.nav-logo{height:30px;width:auto;display:block;}
+nav{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;overflow:hidden;}
+.nav-logo img{height:30px;width:auto;display:block;}
 .nav-right{display:flex;align-items:center;gap:1rem;}
 .nav-user{display:flex;align-items:center;gap:10px;font-size:0.85rem;color:var(--ink2);}
 .nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--ink);flex-shrink:0;}
@@ -109,7 +109,7 @@ main{max-width:900px;margin:0 auto;padding:2.5rem 2rem;}
 <body>
 
 <nav>
-  <a href="/"><img src="/octevent-logo.png" alt="Octevent" class="nav-logo"></a>
+  <a href="/" style="display:flex;align-items:center;height:30px;overflow:hidden;"><img src="/octevent-logo.png" alt="Octevent" style="height:30px;width:auto;display:block;"></a>
   <div class="nav-right">
     <div class="nav-user">
       <div class="nav-avatar" id="user-avatar">?</div>
