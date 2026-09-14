@@ -211,8 +211,8 @@ const OctHeader = {
     /* ── SHARED COMPONENTS ── */
     .btn{display:inline-flex;align-items:center;gap:5px;padding:0.45rem 0.9rem;border-radius:100px;font-size:0.8rem;font-weight:500;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.15s;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);text-decoration:none;}
     .btn:hover{border-color:var(--ink);color:var(--ink);}
-    .btn.amber{background:var(--amber);border-color:var(--amber);color:var(--ink);font-weight:600;}
-    .btn.amber:hover{background:var(--amber-dark);border-color:var(--amber-dark);}
+    .btn.amber{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:600;}
+    .btn.amber:hover{background:var(--amber-dark);border-color:var(--amber-dark);color:#fff;}
     .btn.danger{color:var(--red);border-color:#fdf0f0;}.btn.danger:hover{background:#fdf0f0;}
     .btn:disabled{opacity:0.5;cursor:not-allowed;}
     .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;}
@@ -331,7 +331,7 @@ const OctHeader = {
       <!-- MOBILE TOPBAR -->
       <div class="oc-topbar">
         <button class="oc-burger" onclick="OctHeader.openDrawer()">&#9776;</button>
-        <a href="/dashboard"><img src="/octevent-logo.png" alt="Octevent" class="oc-topbar-logo" style="height:28px;width:auto;"></a>
+        <a href="/dashboard"><img src="/octevent-logo.png.png" alt="Octevent" class="oc-topbar-logo" style="height:28px;width:auto;"></a>
         <div class="oc-avatar" id="oc-avatar-mobile">?</div>
       </div>
 
@@ -341,7 +341,7 @@ const OctHeader = {
       <!-- MOBILE DRAWER -->
       <div class="oc-drawer" id="oc-drawer">
         <div class="oc-drawer-head">
-          <a href="/dashboard"><img src="/octevent-logo.png" alt="Octevent" style="height:26px;width:auto;"></a>
+          <a href="/dashboard"><img src="/octevent-logo.png.png" alt="Octevent" style="height:26px;width:auto;"></a>
           <button class="oc-drawer-close" onclick="OctHeader.closeDrawer()">&#x2715;</button>
         </div>
         <div class="oc-drawer-event" id="oc-drawer-event-name">Loading...</div>
@@ -359,7 +359,7 @@ const OctHeader = {
         <!-- SIDEBAR -->
         <aside class="oc-sidebar">
           <div class="oc-sidebar-logo">
-            <a href="/dashboard"><img src="/octevent-logo.png" alt="Octevent"></a>
+            <a href="/dashboard"><img src="/octevent-logo.png.png" alt="Octevent"></a>
           </div>
           <div class="oc-event-info">
             <div class="oc-event-name" id="oc-event-name">Loading...</div>
