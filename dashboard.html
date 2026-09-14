@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Octevent — My Events</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --amber:#6B3FD6;--amber-light:#EDE9FE;--amber-dark:#5229B8;
+  --amber:#F5A800;--amber-light:#FFF8E6;--amber-dark:#C98A00;
   --ink:#18181A;--ink2:#555;--ink3:#999;--cream:#FAFAF7;--rule:#ECEAE4;
   --green:#2d6a4f;--red:#c0392b;
 }
-html,body{min-height:100%;background:var(--cream);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);}
+html,body{min-height:100%;background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--ink);}
 
 /* NAV */
 nav{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-img.nav-logo{height:30px;width:auto;display:block;}
+.nav-logo img{height:30px;width:auto;display:block;}
 .nav-right{display:flex;align-items:center;gap:1rem;}
 .nav-user{display:flex;align-items:center;gap:10px;font-size:0.85rem;color:var(--ink2);}
-.nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--ink);flex-shrink:0;}
-.sign-out-btn{font-size:0.78rem;color:var(--ink3);background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;padding:0.4rem 0.75rem;border-radius:100px;transition:all 0.2s;}
+.nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#fff;flex-shrink:0;}
+.sign-out-btn{font-size:0.78rem;color:var(--ink3);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0.4rem 0.75rem;border-radius:100px;transition:all 0.2s;}
 .sign-out-btn:hover{color:var(--ink);background:var(--cream);}
 
 /* MAIN */
@@ -29,15 +29,15 @@ main{max-width:900px;margin:0 auto;padding:2.5rem 2rem;}
 
 /* PAGE HEADER */
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;}
-.page-header h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:2rem;font-weight:800;}
+.page-header h1{font-family:'Nunito',sans-serif;font-size:2rem;font-weight:800;}
 .page-header-sub{font-size:0.88rem;color:var(--ink3);margin-top:3px;font-weight:300;}
-.new-event-btn{display:inline-flex;align-items:center;gap:8px;padding:0.65rem 1.25rem;background:var(--amber);color:#fff;border:none;border-radius:100px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.new-event-btn{display:inline-flex;align-items:center;gap:8px;padding:0.65rem 1.25rem;background:var(--amber);color:#fff;border:none;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
 .new-event-btn:hover{background:var(--amber-dark);color:#fff;}
 .new-event-btn svg{width:16px;height:16px;}
 
 /* FILTER TABS */
 .filter-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;}
-.filter-tab{padding:0.45rem 1rem;border-radius:100px;border:1.5px solid var(--rule);background:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.8rem;font-weight:500;color:var(--ink2);cursor:pointer;transition:all 0.15s;}
+.filter-tab{padding:0.45rem 1rem;border-radius:100px;border:1.5px solid var(--rule);background:#fff;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:500;color:var(--ink2);cursor:pointer;transition:all 0.15s;}
 .filter-tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
 .filter-tab:hover:not(.active){border-color:var(--ink);}
 
@@ -56,11 +56,11 @@ main{max-width:900px;margin:0 auto;padding:2.5rem 2rem;}
 .event-row-thumb.g6{background:linear-gradient(135deg,#582c4d,#c9a227);}
 .event-row-body{flex:1;display:flex;align-items:center;padding:0 1.25rem;gap:1rem;min-width:0;}
 .event-row-main{flex:1;min-width:0;}
-.event-row-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+.event-row-name{font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
 .event-row-meta{font-size:0.76rem;color:var(--ink3);}
 .event-row-stats{display:flex;gap:1.5rem;flex-shrink:0;}
 .event-row-stat{text-align:center;}
-.event-row-stat-n{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95rem;font-weight:800;line-height:1;}
+.event-row-stat-n{font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;line-height:1;}
 .event-row-stat-l{font-size:0.6rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:1px;}
 .event-row-badge{flex-shrink:0;}
 .event-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px;white-space:nowrap;}
@@ -71,7 +71,7 @@ main{max-width:900px;margin:0 auto;padding:2.5rem 2rem;}
 
 /* EMPTY STATE */
 .empty-state{text-align:center;padding:4rem 2rem;background:#fff;border:1px solid var(--rule);border-radius:14px;}
-.empty-state h3{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:0.5rem;}
+.empty-state h3{font-family:'Nunito',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:0.5rem;}
 .empty-state p{font-size:0.85rem;color:var(--ink3);margin-bottom:1.5rem;font-weight:300;}
 
 /* SPINNER */
@@ -83,15 +83,15 @@ main{max-width:900px;margin:0 auto;padding:2.5rem 2rem;}
 .modal-overlay.open{display:flex;}
 .modal{background:#fff;border-radius:16px;width:100%;max-width:480px;padding:1.75rem;}
 .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
-.modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.2rem;font-weight:800;}
+.modal-title{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
 .modal-close{width:30px;height:30px;border-radius:50%;background:var(--cream);border:none;cursor:pointer;font-size:1rem;}
 .modal-close:hover{background:var(--rule);}
 .field{margin-bottom:1rem;}
 .field label{display:block;font-size:0.78rem;font-weight:500;color:var(--ink2);margin-bottom:0.35rem;}
-.field input,.field select{width:100%;padding:0.7rem 1rem;border:1.5px solid var(--rule);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.88rem;color:var(--ink);background:#fff;outline:none;transition:border-color 0.2s;}
+.field input,.field select{width:100%;padding:0.7rem 1rem;border:1.5px solid var(--rule);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.88rem;color:var(--ink);background:#fff;outline:none;transition:border-color 0.2s;}
 .field input:focus,.field select:focus{border-color:var(--amber);}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.btn-primary{width:100%;padding:0.8rem;border-radius:100px;background:var(--amber);color:var(--ink);border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;margin-top:0.5rem;}
+.btn-primary{width:100%;padding:0.8rem;border-radius:100px;background:var(--amber);color:var(--ink);border:none;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;margin-top:0.5rem;}
 .btn-primary:hover{background:var(--amber-dark);color:#fff;}
 .btn-primary:disabled{opacity:0.6;cursor:not-allowed;}
 
@@ -109,7 +109,7 @@ main{max-width:900px;margin:0 auto;padding:2.5rem 2rem;}
 <body>
 
 <nav>
-  <a href="/dashboard"><img src="/octevent-logo.png" alt="Octevent" style="height:30px;width:auto;display:block;"></a>
+  <a href="/"><img src="/octevent-logo.png" alt="Octevent" class="nav-logo"></a>
   <div class="nav-right">
     <div class="nav-user">
       <div class="nav-avatar" id="user-avatar">?</div>
@@ -207,7 +207,7 @@ async function loadEvents() {
     .order('event_date', { ascending: true });
 
   if (error) { console.error(error); renderEvents([]); return; }
-  allEvents = (data || []).sort(function(a,b){ return new Date(a.event_date||'9999') - new Date(b.event_date||'9999'); });
+  allEvents = data || [];
   renderEvents(allEvents);
 }
 
@@ -237,8 +237,8 @@ function renderEvents(events) {
     const thumb = ev.cover_image
       ? '<img src="' + ev.cover_image + '" alt="' + ev.name + '">'
       : '';
-    const dateStr = ev.event_date ? fmtDate(ev.event_date) : '';
     const meta = [];
+    if (ev.event_date) meta.push(fmtDate(ev.event_date));
     const loc = [ev.venue, ev.city, ev.country].filter(Boolean).join(', ');
     if (loc) meta.push(loc);
     if (ev.event_type) meta.push(ev.event_type.charAt(0).toUpperCase() + ev.event_type.slice(1));
@@ -255,10 +255,7 @@ function renderEvents(events) {
       + '<div class="event-row-stat"><div class="event-row-stat-n">' + (ev.rsvp_count||0) + '</div><div class="event-row-stat-l">RSVPs</div></div>'
       + '<div class="event-row-stat"><div class="event-row-stat-n">' + (ev.room_count||0) + '</div><div class="event-row-stat-l">Rooms</div></div>'
       + '</div>'
-      + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;min-width:90px;text-align:right;">'
-      + '<span class="event-badge badge-' + status + '">' + status + '</span>'
-      + (dateStr ? '<span style="font-size:0.8rem;font-weight:600;color:var(--ink2);white-space:nowrap;">' + dateStr + '</span>' : '')
-      + '</div>'
+      + '<div class="event-row-badge"><span class="event-badge badge-' + status + '">' + status + '</span></div>'
       + '</div></a>';
   }).join('');
 
