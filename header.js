@@ -15,12 +15,12 @@ const OctHeader = {
   CSS: `
     *{margin:0;padding:0;box-sizing:border-box;}
     :root{
-      --amber:#F5A800;--amber-light:#FFF8E6;--amber-dark:#C98A00;
+      --amber:#6B3FD6;--amber-light:#EDE9FE;--amber-dark:#5229B8;
       --ink:#18181A;--ink2:#555;--ink3:#9A9AA0;--cream:#FAFAF7;--rule:#ECEAE4;
       --green:#2d6a4f;--red:#c0392b;
       --sidebar-w:220px;
     }
-    html,body{min-height:100%;background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--ink);}
+    html,body{min-height:100%;background:var(--cream);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);}
 
     /* ── LAYOUT ── */
     .oc-layout{display:flex;min-height:100vh;}
@@ -44,7 +44,7 @@ const OctHeader = {
       border-bottom:1px solid var(--rule);
     }
     .oc-event-name{
-      font-family:'Nunito',sans-serif;
+      font-family:'Plus Jakarta Sans',sans-serif;
       font-size:0.88rem;font-weight:800;
       color:var(--ink);line-height:1.3;
       margin-bottom:3px;
@@ -67,7 +67,7 @@ const OctHeader = {
       width:100%;padding:0.6rem 1.25rem;
       font-size:0.83rem;font-weight:500;color:var(--ink2);
       background:none;border:none;cursor:pointer;
-      font-family:'DM Sans',sans-serif;text-align:left;
+      font-family:'Plus Jakarta Sans',sans-serif;text-align:left;
       border-radius:0;transition:all 0.15s;
       text-decoration:none;position:relative;
     }
@@ -133,7 +133,7 @@ const OctHeader = {
     }
     .oc-stat:last-child{border-right:none;}
     .oc-stat-n{
-      font-family:'Nunito',sans-serif;font-size:1.3rem;
+      font-family:'Plus Jakarta Sans',sans-serif;font-size:1.3rem;
       font-weight:800;line-height:1;
     }
     .oc-stat-l{
@@ -194,7 +194,7 @@ const OctHeader = {
       width:100%;padding:0.75rem 1.25rem;
       font-size:0.88rem;font-weight:500;color:var(--ink2);
       background:none;border:none;cursor:pointer;
-      font-family:'DM Sans',sans-serif;text-align:left;
+      font-family:'Plus Jakarta Sans',sans-serif;text-align:left;
       transition:background 0.15s;border-left:3px solid transparent;
     }
     .oc-drawer-item:hover{background:var(--cream);color:var(--ink);}
@@ -209,7 +209,7 @@ const OctHeader = {
     }
 
     /* ── SHARED COMPONENTS ── */
-    .btn{display:inline-flex;align-items:center;gap:5px;padding:0.45rem 0.9rem;border-radius:100px;font-size:0.8rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);text-decoration:none;}
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:0.45rem 0.9rem;border-radius:100px;font-size:0.8rem;font-weight:500;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.15s;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);text-decoration:none;}
     .btn:hover{border-color:var(--ink);color:var(--ink);}
     .btn.amber{background:var(--amber);border-color:var(--amber);color:var(--ink);font-weight:600;}
     .btn.amber:hover{background:var(--amber-dark);border-color:var(--amber-dark);}
@@ -217,7 +217,7 @@ const OctHeader = {
     .btn:disabled{opacity:0.5;cursor:not-allowed;}
     .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;}
     .panel-header-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-    .panel-title{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
+    .panel-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.2rem;font-weight:800;}
     .table-wrap{background:#fff;border:1px solid var(--rule);border-radius:12px;overflow:hidden;}
     .table-scroll{overflow-x:auto;}
     table{width:100%;border-collapse:collapse;}
@@ -230,15 +230,15 @@ const OctHeader = {
     .add-row td{cursor:pointer;color:var(--ink3);border-top:2px solid var(--rule);}
     .add-row:hover td{background:var(--amber-light);color:var(--ink);}
     td.editing{padding:2px!important;background:#fff!important;}
-    .inline-input{width:100%;padding:4px 7px;border:2px solid var(--amber);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:0.81rem;color:var(--ink);outline:none;background:#fff;}
-    .inline-select{width:100%;padding:4px 5px;border:2px solid var(--amber);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:0.77rem;color:var(--ink);outline:none;background:#fff;cursor:pointer;}
+    .inline-input{width:100%;padding:4px 7px;border:2px solid var(--amber);border-radius:5px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.81rem;color:var(--ink);outline:none;background:#fff;}
+    .inline-select{width:100%;padding:4px 5px;border:2px solid var(--amber);border-radius:5px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.77rem;color:var(--ink);outline:none;background:#fff;cursor:pointer;}
     .green{color:var(--green)!important;}.red{color:var(--red)!important;}
     .badge{display:inline-block;font-size:0.63rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;}
-    .row-del{font-size:0.7rem;padding:2px 7px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ink2);opacity:0;transition:opacity 0.12s;}
+    .row-del{font-size:0.7rem;padding:2px 7px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink2);opacity:0;transition:opacity 0.12s;}
     tr:hover .row-del{opacity:1;}
     .row-del:hover{border-color:var(--red);color:var(--red);}
     .empty-state{text-align:center;padding:3rem 2rem;background:#fff;border:1px solid var(--rule);border-radius:12px;}
-    .empty-state h3{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.3rem;}
+    .empty-state h3{font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:800;margin-bottom:0.3rem;}
     .empty-state p{font-size:0.82rem;color:var(--ink3);margin-bottom:1rem;font-weight:300;}
     .spinner{width:26px;height:26px;border:3px solid var(--rule);border-top-color:var(--amber);border-radius:50%;animation:oc-spin 0.7s linear infinite;margin:2.5rem auto;display:block;}
     @keyframes oc-spin{to{transform:rotate(360deg);}}
@@ -246,19 +246,19 @@ const OctHeader = {
     .modal-overlay.open{display:flex;}
     .modal{background:#fff;border-radius:16px;width:100%;max-width:480px;padding:1.5rem;}
     .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;}
-    .modal-title{font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;}
+    .modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.1rem;font-weight:800;}
     .modal-close{width:28px;height:28px;border-radius:50%;background:var(--cream);border:none;cursor:pointer;font-size:0.9rem;}
     .modal-close:hover{background:var(--rule);}
     .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.2rem;}
     .field{margin-bottom:0.85rem;}
     .field label{display:block;font-size:0.76rem;font-weight:500;color:var(--ink2);margin-bottom:0.3rem;}
-    .field input,.field select,.field textarea{width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--rule);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:var(--ink);background:#fff;outline:none;transition:border-color 0.2s;}
+    .field input,.field select,.field textarea{width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--rule);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.85rem;color:var(--ink);background:#fff;outline:none;transition:border-color 0.2s;}
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);}
     .field textarea{resize:vertical;min-height:70px;}
     .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    .btn-primary{padding:0.6rem 1.25rem;border-radius:100px;background:var(--amber);color:var(--ink);border:none;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;}
+    .btn-primary{padding:0.6rem 1.25rem;border-radius:100px;background:var(--amber);color:var(--ink);border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;}
     .btn-primary:hover{background:var(--amber-dark);color:#fff;}
-    .btn-cancel{padding:0.6rem 1.1rem;border-radius:100px;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:0.82rem;cursor:pointer;}
+    .btn-cancel{padding:0.6rem 1.1rem;border-radius:100px;border:1.5px solid var(--rule);background:#fff;color:var(--ink2);font-family:'Plus Jakarta Sans',sans-serif;font-size:0.82rem;cursor:pointer;}
     .progress-wrap{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;}
     .progress-label{display:flex;justify-content:space-between;font-size:0.78rem;color:var(--ink2);margin-bottom:0.35rem;}
     .progress-bar{height:5px;background:var(--rule);border-radius:100px;overflow:hidden;}
@@ -266,7 +266,7 @@ const OctHeader = {
     .summary-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:1.1rem;}
     .s-card{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:0.8rem 1rem;}
     .s-card-label{font-size:0.65rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.25rem;}
-    .s-card-value{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
+    .s-card-value{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.2rem;font-weight:800;}
     .s-card-value.green{color:var(--green);}.s-card-value.red{color:var(--red);}.s-card-value.amber{color:var(--amber-dark);}
 
     /* ── RESPONSIVE ── */
@@ -307,7 +307,7 @@ const OctHeader = {
     document.head.appendChild(style);
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap';
+    link.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap';
     document.head.appendChild(link);
 
     const self = this;

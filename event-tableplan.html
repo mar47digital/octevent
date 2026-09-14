@@ -59,7 +59,7 @@ function makeCard(t){
 
   var header=document.createElement('div');
   header.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;';
-  header.innerHTML='<div><div style="font-family:Nunito,sans-serif;font-weight:800;font-size:1rem;">'+t.name+'</div><div style="font-size:0.7rem;color:var(--ink3);">'+(t.shape==='round'?'Round':'Rectangular')+' &middot; '+assigned.length+'/'+cap+' seats</div></div>';
+  header.innerHTML='<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:1rem;">'+t.name+'</div><div style="font-size:0.7rem;color:var(--ink3);">'+(t.shape==='round'?'Round':'Rectangular')+' &middot; '+assigned.length+'/'+cap+' seats</div></div>';
   var btns=document.createElement('div');btns.style.display='flex';btns.style.gap='4px';
   var renBtn=document.createElement('button');renBtn.textContent='Rename';renBtn.style.cssText='font-size:0.68rem;padding:2px 8px;border-radius:5px;border:1px solid var(--rule);background:#fff;cursor:pointer;color:var(--ink2);';renBtn.onclick=function(){renameTable(t.id);};
   var remBtn=document.createElement('button');remBtn.textContent='Remove';remBtn.style.cssText='font-size:0.68rem;padding:2px 8px;border-radius:5px;border:1px solid #fdf0f0;background:#fff;cursor:pointer;color:var(--red);';remBtn.onclick=function(){removeTable(t.id);};
@@ -76,7 +76,7 @@ function makeCard(t){
 
   if(remaining>0){
     var sel=document.createElement('select');
-    sel.style.cssText='width:100%;font-size:0.78rem;padding:5px 8px;border:1.5px dashed var(--rule);border-radius:7px;background:#fff;font-family:DM Sans,sans-serif;color:var(--ink3);cursor:pointer;outline:none;margin-top:4px;';
+    sel.style.cssText='width:100%;font-size:0.78rem;padding:5px 8px;border:1.5px dashed var(--rule);border-radius:7px;background:#fff;font-family:Plus Jakarta Sans,sans-serif;color:var(--ink3);cursor:pointer;outline:none;margin-top:4px;';
     sel.innerHTML='<option value="">+ Add guest ('+remaining+' seat'+(remaining!==1?'s':'')+' left)</option>';
     unassigned.forEach(function(g){var o=document.createElement('option');o.value=g.id;o.textContent=g.first_name+' '+(g.last_name||'');sel.appendChild(o);});
     sel.onchange=function(){if(sel.value)assignGuest(t.id,sel.value);sel.value='';};
@@ -121,7 +121,7 @@ function exportCSV(){
   a.download=(currentEvent?currentEvent.name:'event')+'-table-plan.csv';
   a.click();
 }
-function printPlan(){if(!tpTables.length){alert('No tables to print.');return;}var rows=tpTables.map(function(t){return '<div class="block"><div class="tname">'+t.name+'</div><div class="seats">'+(t.guests||[]).length+' of '+(t.capacity||8)+' seats</div>'+( !(t.guests||[]).length?'<div style="color:#ccc;font-style:italic;">Empty</div>':(t.guests||[]).map(function(gid){var g=tpGuests.find(function(g){return g.id===gid;});return g?'<div class="grow"><span>'+g.first_name+' '+(g.last_name||'')+'</span><span class="diet">'+(g.dietary||'')+'</span></div>':''}).join(''))+'</div>';}).join('');var html='<html><head><title>Table Plan</title><style>body{font-family:Arial,sans-serif;padding:2rem;}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;}.block{border:1px solid #eee;border-radius:7px;padding:0.9rem;break-inside:avoid;}.tname{font-weight:700;border-bottom:2px solid #F5A800;padding-bottom:0.35rem;margin-bottom:0.4rem;}.seats{font-size:0.7rem;color:#999;margin-bottom:0.4rem;}.grow{font-size:0.82rem;padding:0.28rem 0;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;}.diet{font-size:0.7rem;color:#999;}</style></head><body><h1>'+(currentEvent?currentEvent.name:'Event')+' — Table Plan</h1><div class="grid">'+rows+'</div></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();w.print();}
+function printPlan(){if(!tpTables.length){alert('No tables to print.');return;}var rows=tpTables.map(function(t){return '<div class="block"><div class="tname">'+t.name+'</div><div class="seats">'+(t.guests||[]).length+' of '+(t.capacity||8)+' seats</div>'+( !(t.guests||[]).length?'<div style="color:#ccc;font-style:italic;">Empty</div>':(t.guests||[]).map(function(gid){var g=tpGuests.find(function(g){return g.id===gid;});return g?'<div class="grow"><span>'+g.first_name+' '+(g.last_name||'')+'</span><span class="diet">'+(g.dietary||'')+'</span></div>':''}).join(''))+'</div>';}).join('');var html='<html><head><title>Table Plan</title><style>body{font-family:Arial,sans-serif;padding:2rem;}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;}.block{border:1px solid #eee;border-radius:7px;padding:0.9rem;break-inside:avoid;}.tname{font-weight:700;border-bottom:2px solid #6B3FD6;padding-bottom:0.35rem;margin-bottom:0.4rem;}.seats{font-size:0.7rem;color:#999;margin-bottom:0.4rem;}.grow{font-size:0.82rem;padding:0.28rem 0;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;}.diet{font-size:0.7rem;color:#999;}</style></head><body><h1>'+(currentEvent?currentEvent.name:'Event')+' — Table Plan</h1><div class="grid">'+rows+'</div></body></html>';var w=window.open('','_blank');w.document.write(html);w.document.close();w.print();}
 init();
 
 

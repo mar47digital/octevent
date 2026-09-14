@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Octevent — Sign in</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,800;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --amber:#F5A800;
-  --amber-light:#FFF8E6;
-  --amber-dark:#C98A00;
+  --amber:#6B3FD6;
+  --amber-light:#EDE9FE;
+  --amber-dark:#5229B8;
   --ink:#18181A;
   --ink2:#555;
   --ink3:#999;
@@ -21,7 +21,7 @@
 }
 html,body{height:100%;}
 body{
-  font-family:'DM Sans',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   background:var(--cream);
   color:var(--ink);
   display:grid;
@@ -41,7 +41,7 @@ body{
 .left-logo img{height:52px;width:auto;}
 .left-content{z-index:1;position:relative;}
 .left-content h2{
-  font-family:'Nunito',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   font-size:2.8rem;font-weight:800;
   color:#fff;line-height:1.1;
   margin-bottom:1.25rem;
@@ -59,8 +59,8 @@ body{
 }
 .feature-dot{
   width:28px;height:28px;border-radius:50%;
-  background:rgba(245,168,0,0.15);
-  border:1px solid rgba(245,168,0,0.3);
+  background:rgba(107,63,214,0.15);
+  border:1px solid rgba(107,63,214,0.3);
   display:flex;align-items:center;justify-content:center;
   font-size:0.75rem;flex-shrink:0;
 }
@@ -85,11 +85,11 @@ body{
   font-size:0.85rem;font-weight:500;color:var(--ink3);
   cursor:pointer;border-bottom:2px solid transparent;
   margin-bottom:-1px;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;
-  font-family:'DM Sans',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
 }
 .auth-tab.active{color:var(--ink);border-bottom-color:var(--amber);}
 .auth-title{
-  font-family:'Nunito',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   font-size:1.75rem;font-weight:800;
   margin-bottom:0.4rem;
 }
@@ -98,7 +98,7 @@ body{
   width:100%;padding:0.85rem;
   border:1.5px solid var(--rule);border-radius:100px;
   background:#fff;color:var(--ink);
-  font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:500;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.88rem;font-weight:500;
   cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;
   transition:border-color 0.2s;margin-bottom:1.5rem;
 }
@@ -120,7 +120,7 @@ body{
 .field input{
   width:100%;padding:0.85rem 1rem;
   border:1.5px solid var(--rule);border-radius:10px;
-  font-family:'DM Sans',sans-serif;font-size:0.9rem;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;
   color:var(--ink);background:#fff;outline:none;
   transition:border-color 0.2s;
 }
@@ -130,7 +130,7 @@ body{
   width:100%;padding:0.9rem;
   background:var(--amber);color:var(--ink);
   border:none;border-radius:100px;
-  font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:600;
   cursor:pointer;transition:all 0.2s;margin-top:0.5rem;
 }
 .submit-btn:hover{background:var(--amber-dark);color:#fff;}
@@ -152,7 +152,7 @@ body{
   color:var(--ink3);margin-top:-0.5rem;
   margin-bottom:1rem;cursor:pointer;
   text-decoration:underline;background:none;
-  border:none;font-family:'DM Sans',sans-serif;
+  border:none;font-family:'Plus Jakarta Sans',sans-serif;
 }
 .forgot:hover{color:var(--ink);}
 .terms{

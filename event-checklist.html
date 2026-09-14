@@ -49,7 +49,7 @@ var allItems=[], hideDone=true;
 var STAGE_ORDER=['planning','booking','confirmed','on_the_day','post_event'];
 var STAGE_LABELS={planning:'Planning',booking:'Booking',confirmed:'Confirmed',on_the_day:'On the day',post_event:'Post event'};
 var STATUS_LABELS={not_started:'Not started',in_progress:'In progress',done:'Done',blocked:'Blocked'};
-var STAGE_STYLES={planning:'background:#e8f0fd;color:#1a3fa8;',booking:'background:#fdf6ec;color:#92600a;',confirmed:'background:#f0f7f4;color:var(--green,#2d6a4f);',on_the_day:'background:#FFF8E6;color:#C98A00;',post_event:'background:#f0f0f0;color:#666;'};
+var STAGE_STYLES={planning:'background:#e8f0fd;color:#1a3fa8;',booking:'background:#fdf6ec;color:#92600a;',confirmed:'background:#f0f7f4;color:var(--green,#2d6a4f);',on_the_day:'background:#EDE9FE;color:#5229B8;',post_event:'background:#f0f0f0;color:#666;'};
 var STATUS_STYLES={not_started:'background:#f0f0f0;color:#666;',in_progress:'background:#e8f0fd;color:#1a3fa8;',done:'background:#f0f7f4;color:#2d6a4f;',blocked:'background:#fdf0f0;color:#c0392b;'};
 
 var TEMPLATES={
@@ -83,9 +83,9 @@ function render(){
   document.getElementById('cl-reset-btn').style.display=total?'inline-flex':'none';
   var hideBtn=document.getElementById('cl-hide-btn');
   hideBtn.textContent=hideDone?'Show completed':'Hide completed';
-  hideBtn.style.background=hideDone?'#FFF8E6':'';
-  hideBtn.style.borderColor=hideDone?'#F5A800':'';
-  hideBtn.style.color=hideDone?'#C98A00':'';
+  hideBtn.style.background=hideDone?'#EDE9FE':'';
+  hideBtn.style.borderColor=hideDone?'#6B3FD6':'';
+  hideBtn.style.color=hideDone?'#5229B8':'';
   var sorted=[].concat(allItems).sort(function(a,b){return STAGE_ORDER.indexOf(a.stage||'planning')-STAGE_ORDER.indexOf(b.stage||'planning');});
   var visible=hideDone?sorted.filter(function(i){return i.status!=='done';}):sorted;
   var el=document.getElementById('cl-content');
@@ -115,7 +115,7 @@ function render(){
     card.style.cssText='background:#fff;border:1px solid #ECEAE4;border-radius:12px;padding:1rem;margin-bottom:9px;';
     var isDone=item.status==='done';
     card.innerHTML='<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">'
-      +'<div data-id="'+item.id+'" data-done="'+isDone+'" class="mob-check" style="width:20px;height:20px;border-radius:4px;border:2px solid '+(isDone?'#F5A800':'#ECEAE4')+';background:'+(isDone?'#F5A800':'#fff')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:11px;font-weight:700;">'+(isDone?'&#x2713;':'')+'</div>'
+      +'<div data-id="'+item.id+'" data-done="'+isDone+'" class="mob-check" style="width:20px;height:20px;border-radius:4px;border:2px solid '+(isDone?'#6B3FD6':'#ECEAE4')+';background:'+(isDone?'#6B3FD6':'#fff')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:11px;font-weight:700;">'+(isDone?'&#x2713;':'')+'</div>'
       +'<div style="flex:1;">'
       +'<div style="font-weight:600;font-size:0.88rem;'+(isDone?'text-decoration:line-through;opacity:0.5;':'')+'" data-edit="task" data-id="'+item.id+'" class="editable-text">'+( item.task||'Tap to add task')+'</div>'
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;">'
@@ -163,7 +163,7 @@ function buildRow(item){
   // Done checkbox
   var chkTd=document.createElement('td');chkTd.style.textAlign='center';
   var box=document.createElement('div');
-  box.style.cssText='width:18px;height:18px;border-radius:4px;border:2px solid '+(item.status==='done'?'#F5A800':'#ECEAE4')+';background:'+(item.status==='done'?'#F5A800':'#fff')+';cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:11px;font-weight:700;';
+  box.style.cssText='width:18px;height:18px;border-radius:4px;border:2px solid '+(item.status==='done'?'#6B3FD6':'#ECEAE4')+';background:'+(item.status==='done'?'#6B3FD6':'#fff')+';cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:11px;font-weight:700;';
   if(item.status==='done')box.innerHTML='&#x2713;';
   box.onclick=function(){toggleDone(item.id,item.status==='done');};
   chkTd.appendChild(box);tr.appendChild(chkTd);

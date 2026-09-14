@@ -44,7 +44,7 @@ function buildRsRow(item){
 
   function editTd(field,type){
     var td=document.createElement('td');
-    if(type==='date'||type==='time'){td.style.fontFamily="'Nunito',sans-serif";td.style.fontWeight='700';td.style.fontSize='0.82rem';}
+    if(type==='date'||type==='time'){td.style.fontFamily="'Plus Jakarta Sans',sans-serif";td.style.fontWeight='700';td.style.fontSize='0.82rem';}
     td.textContent=type==='date'?fmtDate(item[field]):type==='time'?fmtTime(item[field]):(item[field]||'—');
     if(field==='action')td.style.fontWeight='500';
     if(item.done&&field==='action')td.style.textDecoration='line-through';
