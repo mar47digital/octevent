@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octevent — Event details</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/shared.js"></script>
+<style>
+.colour-row{display:flex;align-items:center;gap:0.75rem;}
+.colour-row input[type=color]{width:46px;height:40px;border:1.5px solid var(--rule);border-radius:10px;padding:3px;background:#fff;cursor:pointer;}
+.colour-row .input{max-width:130px;font-family:monospace;}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;}
+.swatch{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--rule);cursor:pointer;}
+.danger{border-color:#f1d4d0;}
+.sticky-save{position:sticky;bottom:0;background:linear-gradient(transparent,var(--cream) 30%);padding:1.25rem 0 0.5rem;margin-top:0.5rem;}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="content">
+    <div id="page" style="display:none">
+      <div class="page-head">
+        <div>
+          <h1>Event details</h1>
+          <div class="page-sub">What your guests will see on the event's info page.</div>
+        </div>
+      </div>
+
+      <div class="notice notice-ok" id="new-notice" style="display:none">
+        Your event is created. Fill in the details below (you can come back any time), then
+        <a href="#" id="to-rooms" style="font-weight:700">add your rooms</a>.
+      </div>
+
+      <div class="card">
+        <div class="card-title">The basics</div>
+        <div class="card-sub">Name, type and dates.</div>
+        <div class="field"><label for="f-name">Event name</label><input class="input" id="f-name"></div>
+        <div class="field"><label for="f-type">Type of event</label><select class="input" id="f-type"></select></div>
+        <div class="grid-2">
+          <div class="field"><label for="f-start">Start date</label><input class="input" type="date" id="f-start"></div>
+          <div class="field"><label for="f-end">End date</label><input class="input" type="date" id="f-end"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Venue</div>
+        <div class="card-sub">Where the event takes place.</div>
+        <div class="grid-2">
+          <div class="field"><label for="f-venue">Venue name</label><input class="input" id="f-venue" placeholder="e.g. Finca Es Pla"></div>
+          <div class="field"><label for="f-location">Town / area</label><input class="input" id="f-location" placeholder="e.g. Pollença, Mallorca"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Cover photo</div>
+        <div class="card-sub">The big image at the top of your guest page. A wide landscape photo works best.</div>
+        <div class="cover-box" id="cover-box" onclick="document.getElementById('cover-file').click()">
+          <div class="cover-empty" id="cover-empty"><span id="img-ic"></span>Click to upload a photo</div>
+        </div>
+        <input type="file" id="cover-file" accept="image/*" hidden>
+        <div class="cover-actions" id="cover-actions" style="display:none">
+          <button class="btn btn-ghost" onclick="document.getElementById('cover-file').click()">Change photo</button>
+          <button class="btn btn-danger" onclick="removeCover()">Remove</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Guest page text</div>
+        <div class="card-sub">A welcome message and the plan for the event. Plain text is fine; line breaks are kept.</div>
+        <div class="field">
+          <label for="f-desc">Welcome message</label>
+          <textarea class="input" id="f-desc" rows="5" placeholder="We're so happy you can join us for four days of yoga, good food and sunshine..."></textarea>
+        </div>
+        <div class="field">
+          <label for="f-schedule">Schedule</label>
+          <textarea class="input" id="f-schedule" rows="6" placeholder="Friday 12 June&#10;4pm  Arrivals and check-in&#10;7pm  Welcome dinner on the terrace&#10;&#10;Saturday 13 June&#10;..."></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Brand colour</div>
+        <div class="card-sub">Used for buttons and highlights on your guest page.</div>
+        <div class="colour-row">
+          <input type="color" id="f-colour-pick">
+          <input class="input" id="f-colour" maxlength="7">
+          <div class="swatches" id="swatches"></div>
+        </div>
+      </div>
+
+      <div class="sticky-save">
+        <div class="form-actions" style="margin-top:0">
+          <span class="save-state" id="save-state"></span>
+          <button class="btn btn-primary" id="save-btn" onclick="save()">Save changes</button>
+        </div>
+      </div>
+
+      <div class="card danger" style="margin-top:2.5rem">
+        <div class="card-title">Delete this event</div>
+        <div class="card-sub">Deletes the event with all its rooms, guests and bookings. This can't be undone.</div>
+        <button class="btn btn-danger" onclick="deleteEvent()">Delete event</button>
+      </div>
+    </div>
+    <div id="loading"><div class="spinner"></div></div>
+  </div>
+</main>
+
+<script>
+let user, ev, dirty = false;
+const SWATCHES = ['#6B3FD6', '#18181A', '#2d6a4f', '#1f4e79', '#b5543c', '#c9a227', '#8a5a44', '#7a8b6f'];
+const $ = id => document.getElementById(id);
+
+(async function init() {
+  user = await requireUser(); if (!user) return;
+  ev = await loadEventOrLeave(); if (!ev) return;
+  Layout.render('details', user, ev);
+
+  $('f-type').innerHTML = Object.entries(EVENT_TYPES).map(([k, v]) => '<option value="' + k + '">' + v + '</option>').join('');
+  $('img-ic').innerHTML = ICON.image;
+  $('swatches').innerHTML = SWATCHES.map(c => '<span class="swatch" style="background:' + c + '" title="' + c + '" data-c="' + c + '"></span>').join('');
+  $('swatches').onclick = e => { if (e.target.dataset.c) setColour(e.target.dataset.c); };
+
+  $('f-name').value = ev.name || '';
+  $('f-type').value = ev.event_type || 'other';
+  $('f-start').value = ev.start_date || '';
+  $('f-end').value = ev.end_date || '';
+  $('f-venue').value = ev.venue_name || '';
+  $('f-location').value = ev.location || '';
+  $('f-desc').value = ev.description || '';
+  $('f-schedule').value = ev.schedule || '';
+  setColour(ev.brand_colour || '#6B3FD6', true);
+  showCover(ev.cover_image_url);
+
+  if (qs('new')) {
+    $('new-notice').style.display = 'block';
+    $('to-rooms').href = '/event-rooms?id=' + ev.id;
+    history.replaceState(null, '', '/event-details?id=' + ev.id);
+  }
+
+  document.querySelectorAll('#page .input').forEach(i => i.addEventListener('input', markDirty));
+  $('f-colour-pick').addEventListener('input', e => setColour(e.target.value));
+  $('f-colour').addEventListener('change', e => {
+    const v = e.target.value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) setColour(v); else { toast('Colour must look like #6B3FD6', true); setColour(ev.brand_colour || '#6B3FD6'); }
+  });
+  $('cover-file').addEventListener('change', uploadCover);
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  $('loading').style.display = 'none';
+  $('page').style.display = 'block';
+})();
+
+function markDirty() { dirty = true; $('save-state').textContent = 'Unsaved changes'; }
+function setColour(c, silent) {
+  $('f-colour').value = c.toUpperCase();
+  $('f-colour-pick').value = c.toLowerCase();
+  if (!silent) markDirty();
+}
+
+async function save() {
+  const name = $('f-name').value.trim();
+  const start = $('f-start').value || null;
+  const end = $('f-end').value || null;
+  if (!name) return toast('Your event needs a name.', true);
+  if (start && end && end < start) return toast('The end date is before the start date.', true);
+
+  const btn = $('save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const changes = {
+    name, event_type: $('f-type').value, start_date: start, end_date: end,
+    venue_name: $('f-venue').value.trim() || null, location: $('f-location').value.trim() || null,
+    description: $('f-desc').value.trim() || null, schedule: $('f-schedule').value.trim() || null,
+    brand_colour: $('f-colour').value
+  };
+  const { error } = await sb.from('events').update(changes).eq('id', ev.id);
+  btn.disabled = false; btn.textContent = 'Save changes';
+  if (error) return toast('Could not save: ' + error.message, true);
+  Object.assign(ev, changes);
+  Layout.updateEvent(ev);
+  dirty = false;
+  $('save-state').textContent = 'All changes saved';
+  toast('Saved');
+}
+
+function showCover(url) {
+  const box = $('cover-box');
+  box.querySelectorAll('img,.uploading').forEach(n => n.remove());
+  if (url) {
+    const img = document.createElement('img'); img.src = url; img.alt = '';
+    box.appendChild(img);
+  }
+  $('cover-empty').style.display = url ? 'none' : 'block';
+  $('cover-actions').style.display = url ? 'flex' : 'none';
+}
+
+async function uploadCover(e) {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  const box = $('cover-box');
+  const busy = document.createElement('div'); busy.className = 'uploading'; busy.textContent = 'Uploading...';
+  box.appendChild(busy);
+  try {
+    const url = await uploadImage(file, user.id, ev.id);
+    const { error } = await sb.from('events').update({ cover_image_url: url }).eq('id', ev.id);
+    if (error) throw error;
+    const old = ev.cover_image_url;
+    ev.cover_image_url = url;
+    showCover(url);
+    if (old) deleteImage(old);
+    toast('Cover photo saved');
+  } catch (err) {
+    busy.remove();
+    toast('Upload failed: ' + (err.message || err), true);
+  }
+}
+
+async function removeCover() {
+  if (!confirm('Remove the cover photo?')) return;
+  const { error } = await sb.from('events').update({ cover_image_url: null }).eq('id', ev.id);
+  if (error) return toast('Could not remove: ' + error.message, true);
+  deleteImage(ev.cover_image_url);
+  ev.cover_image_url = null;
+  showCover(null);
+}
+
+async function deleteEvent() {
+  const typed = prompt('This deletes "' + ev.name + '" and all its rooms, guests and bookings.\n\nType DELETE to confirm.');
+  if (typed !== 'DELETE') return;
+  const { error } = await sb.from('events').delete().eq('id', ev.id);
+  if (error) return toast('Could not delete: ' + error.message, true);
+  dirty = false;
+  location.href = '/dashboard';
+}
+</script>
+</body>
+</html>

@@ -3,131 +3,300 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Octevent</title>
+<title>Octevent — Rooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/shared.js"></script>
-<script src="/header.js"></script>
+<style>
+.summary{display:flex;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.sum-n{font-size:1.4rem;font-weight:800;line-height:1.1;}
+.sum-l{font-size:0.7rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;}
+
+.rooms{display:flex;flex-direction:column;gap:0.85rem;}
+.room{display:flex;gap:1.1rem;background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:0.9rem;align-items:stretch;}
+.room-img{width:150px;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--purple-light);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--purple);position:relative;}
+.room-img img{width:100%;height:100%;object-fit:cover;}
+.room-img svg{width:26px;height:26px;opacity:0.6;}
+.room-img .count{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.68rem;font-weight:600;padding:2px 7px;border-radius:100px;}
+.room-body{flex:1;min-width:0;display:flex;flex-direction:column;}
+.room-top{display:flex;justify-content:space-between;gap:0.75rem;align-items:flex-start;}
+.room-name{font-weight:700;font-size:1rem;}
+.room-price{font-weight:800;font-size:1rem;white-space:nowrap;}
+.room-facts{display:flex;gap:1rem;font-size:0.8rem;color:var(--ink2);margin-top:0.3rem;flex-wrap:wrap;}
+.room-facts span{display:inline-flex;align-items:center;gap:5px;}
+.room-facts svg{width:14px;height:14px;color:var(--ink3);}
+.room-desc{font-size:0.82rem;color:var(--ink3);margin-top:0.4rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.room-foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:0.6rem;gap:0.5rem;}
+.room-tools{display:flex;gap:0.35rem;}
+@media (max-width:640px){
+  .summary{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+  .room{flex-direction:column;}
+  .room-img{width:100%;aspect-ratio:16/9;}
+}
+
+/* photo manager in modal */
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:0.6rem;}
+.photo{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--cream);border:1px solid var(--rule);}
+.photo img{width:100%;height:100%;object-fit:cover;}
+.photo .main-tag{position:absolute;top:5px;left:5px;background:var(--purple);color:#fff;font-size:0.6rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 6px;border-radius:100px;}
+.photo .p-tools{position:absolute;bottom:4px;right:4px;display:flex;gap:4px;}
+.photo .p-tools button{width:24px;height:24px;border-radius:6px;border:none;background:rgba(255,255,255,0.92);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink);}
+.photo .p-tools button:hover{background:#fff;color:var(--purple);}
+.photo .p-tools svg{width:13px;height:13px;}
+.photo-add{aspect-ratio:4/3;border-radius:8px;border:1.5px dashed #d9d6cd;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:0.72rem;color:var(--ink3);cursor:pointer;}
+.photo-add:hover{border-color:var(--purple);color:var(--purple);}
+.photo-add svg{width:18px;height:18px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;}
+@media (max-width:640px){.grid-3{grid-template-columns:1fr 1fr;}}
+</style>
 </head>
 <body>
-<div id="app-header"></div>
-<main>
-<div class="panel-header">
-  <div class="panel-header-left">
-    <div class="panel-title">Rooms</div>
-    <button class="btn amber" onclick="addRoom()">+ Add room</button>
+<main class="main">
+  <div class="content">
+    <div class="page-head">
+      <div>
+        <h1>Rooms</h1>
+        <div class="page-sub">The rooms your guests can choose from. They'll appear on your guest page in this order.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openRoom()" id="add-btn" style="display:none"></button>
+    </div>
+    <div id="summary" class="summary"></div>
+    <div id="list"><div class="spinner"></div></div>
   </div>
-</div>
-<div class="summary-cards" id="r-summary" style="display:none;">
-  <div class="s-card"><div class="s-card-label">Total rooms</div><div class="s-card-value" id="r-total">0</div></div>
-  <div class="s-card"><div class="s-card-label">Available</div><div class="s-card-value green" id="r-avail">0</div></div>
-  <div class="s-card"><div class="s-card-label">Reserved</div><div class="s-card-value amber" id="r-res">0</div></div>
-  <div class="s-card"><div class="s-card-label">Total capacity</div><div class="s-card-value" id="r-cap">0</div></div>
-  <div class="s-card"><div class="s-card-label">Expected income</div><div class="s-card-value green" id="r-inc">0</div></div>
-</div>
-<div id="r-content"><div class="spinner"></div></div>
 </main>
 
+<!-- ROOM MODAL -->
+<div class="modal-wrap" id="room-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title">Add a room</h2>
+      <button class="modal-close" onclick="closeRoom()" aria-label="Close" id="close-ic"></button>
+    </div>
+    <div class="field"><label for="r-name">Room name</label><input class="input" id="r-name" placeholder="e.g. The Olive Suite"></div>
+    <div class="grid-3">
+      <div class="field">
+        <label for="r-price">Price for the stay</label>
+        <div class="input-prefix"><span>€</span><input class="input" type="number" min="0" step="0.01" id="r-price" placeholder="0"></div>
+      </div>
+      <div class="field"><label for="r-sleeps">Sleeps</label><input class="input" type="number" min="1" max="20" id="r-sleeps"></div>
+      <div class="field"><label for="r-bed">Beds</label><input class="input" id="r-bed" placeholder="e.g. 1 king"></div>
+    </div>
+    <div class="field">
+      <label for="r-desc">Description</label>
+      <textarea class="input" id="r-desc" rows="4" placeholder="Sea views, private terrace, ensuite with rain shower..."></textarea>
+    </div>
+    <div class="field">
+      <label>Photos</label>
+      <div class="photos" id="photos"></div>
+      <div class="hint">The first photo is the main one guests see. Use the arrow to move a photo to the front.</div>
+      <input type="file" id="photo-file" accept="image/*" multiple hidden>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeRoom()">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveRoom()">Save room</button>
+    </div>
+  </div>
+</div>
+
 <script>
+let user, ev, rooms = [], bookedIds = new Set();
+let editing = null;          // room being edited (null = new)
+let draftPhotos = [];        // photos in the modal
+let newUploads = [];         // uploaded during this modal session (removed again on cancel)
+let uploadingCount = 0;
+const $ = id => document.getElementById(id);
 
+(async function init() {
+  user = await requireUser(); if (!user) return;
+  ev = await loadEventOrLeave(); if (!ev) return;
+  Layout.render('rooms', user, ev);
+  $('add-btn').innerHTML = ICON.plus + 'Add room';
+  $('close-ic').innerHTML = ICON.close;
+  $('photo-file').addEventListener('change', addPhotos);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('room-modal').classList.contains('open')) closeRoom(); });
+  await load();
+})();
 
-var allRooms=[], allGuests=[];
-var ROOM_TYPES={single:'Single',double:'Double',twin:'Twin',triple:'Triple',suite:'Suite',dorm:'Dormitory',villa:'Villa',cottage:'Cottage',other:'Other'};
-var ROOM_STATUS={available:'Available',reserved:'Reserved',paid:'Paid'};
-var ROOM_STATUS_STYLE={available:'background:#f0f7f4;color:var(--green);',reserved:'background:var(--amber-light);color:var(--amber-dark);',paid:'background:#f0f7f4;color:var(--green);font-weight:700;'};
-
-async function init(){
-  await OctHeader.init('rooms');
-  var res=await Promise.all([
-    sb.from('rooms').select('*').eq('event_id',eventId).order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
-    sb.from('guests').select('id,first_name,last_name').eq('event_id',eventId)
+async function load() {
+  const [r, b] = await Promise.all([
+    sb.from('rooms').select('*').eq('event_id', ev.id).order('sort_order').order('created_at'),
+    sb.from('bookings').select('room_id').eq('event_id', ev.id).neq('status', 'cancelled')
   ]);
-  allRooms=res[0].data||[]; allGuests=res[1].data||[];
+  if (r.error) { $('list').innerHTML = '<div class="notice notice-error">Could not load rooms: ' + esc(r.error.message) + '</div>'; return; }
+  rooms = r.data;
+  bookedIds = new Set((b.data || []).map(x => x.room_id));
   render();
 }
 
-function updateSummary(){
-  var total=allRooms.length;
-  if(!total){document.getElementById('r-summary').style.display='none';return;}
-  document.getElementById('r-summary').style.display='grid';
-  document.getElementById('r-total').textContent=total;
-  document.getElementById('r-avail').textContent=allRooms.filter(function(r){return r.status==='available';}).length;
-  document.getElementById('r-res').textContent=allRooms.filter(function(r){return r.status!=='available';}).length;
-  document.getElementById('r-cap').textContent=allRooms.reduce(function(s,r){return s+(r.capacity||0);},0);
-  document.getElementById('r-inc').textContent=fmtSum(allRooms.reduce(function(s,r){return s+(parseFloat(r.price_per_night||0)*(r.nights||1));},0));
-  document.getElementById('stat-rooms').textContent=allRooms.filter(function(r){return r.status!=='available';}).length;
-  sb.from('events').update({room_count:total}).eq('id',eventId);
-}
-
-function buildRoomRow(room){
-  var tr=document.createElement('tr');tr.dataset.id=room.id;
-  var total=parseFloat(room.price_per_night||0)*(room.nights||1);
-  var g=allGuests.find(function(g){return g.id===room.guest_id;});
-
-  function editableTd(field,type,cls){
-    var td=document.createElement('td');if(cls)td.className=cls;
-    renderRoomCell(td,room,field,type);
-    td.style.cursor='pointer';
-    td.addEventListener('click',function(){editRoomCell(td,room,field,type);});
-    return td;
+function render() {
+  $('add-btn').style.display = rooms.length ? 'inline-flex' : 'none';
+  if (!rooms.length) {
+    $('summary').innerHTML = '';
+    $('list').innerHTML = '<div class="empty">' + ICON.rooms +
+      '<h3>Add your first room</h3><p>Give each room a name, a price for the stay and a few photos. Guests will browse these and pick the one they want.</p>' +
+      '<button class="btn btn-primary" onclick="openRoom()">' + ICON.plus + 'Add a room</button></div>';
+    return;
   }
+  const beds = rooms.reduce((s, r) => s + (r.sleeps || 0), 0);
+  const total = rooms.reduce((s, r) => s + Number(r.price || 0), 0);
+  $('summary').innerHTML =
+    '<div><div class="sum-n">' + rooms.length + '</div><div class="sum-l">Rooms</div></div>' +
+    '<div><div class="sum-n">' + beds + '</div><div class="sum-l">Guests it sleeps</div></div>' +
+    '<div><div class="sum-n">' + bookedIds.size + '</div><div class="sum-l">Booked</div></div>' +
+    '<div><div class="sum-n">' + fmtEuro(total) + '</div><div class="sum-l">If all rooms book</div></div>';
 
-  ['accommodation','name'].forEach(function(f){tr.appendChild(editableTd(f,'text'));});
-  tr.appendChild(editableTd('type','room-type'));
-  tr.appendChild(editableTd('capacity','num','num'));
-  tr.appendChild(editableTd('price_per_night','num','num'));
-  tr.appendChild(editableTd('nights','num','num'));
-  var totTd=document.createElement('td');totTd.className='num';totTd.textContent=total>0?fmtEuro(total):'—';tr.appendChild(totTd);
-  tr.appendChild(editableTd('status','room-status'));
-  tr.appendChild(editableTd('guest_id','room-guest'));
-  tr.appendChild(editableTd('notes','text'));
-  var delTd=document.createElement('td');var btn=document.createElement('button');btn.className='row-del';btn.textContent='Delete';btn.onclick=function(){deleteRoom(room.id);};delTd.appendChild(btn);tr.appendChild(delTd);
-  return tr;
+  $('list').innerHTML = '<div class="rooms">' + rooms.map((r, i) => {
+    const photo = r.photos && r.photos[0];
+    const booked = bookedIds.has(r.id);
+    return '<div class="room">' +
+      '<div class="room-img">' + (photo ? '<img src="' + esc(photo) + '" alt="" loading="lazy">' : ICON.image) +
+        (r.photos && r.photos.length > 1 ? '<span class="count">' + r.photos.length + ' photos</span>' : '') + '</div>' +
+      '<div class="room-body">' +
+        '<div class="room-top"><div class="room-name">' + esc(r.name) + '</div><div class="room-price">' + fmtEuro(r.price) + '</div></div>' +
+        '<div class="room-facts"><span>' + ICON.person + 'Sleeps ' + (r.sleeps || '–') + '</span>' +
+          (r.bed_type ? '<span>' + ICON.bed + esc(r.bed_type) + '</span>' : '') + '</div>' +
+        (r.description ? '<div class="room-desc">' + esc(r.description) + '</div>' : '') +
+        '<div class="room-foot">' +
+          (booked ? '<span class="badge badge-green">Booked</span>' : '<span class="badge badge-grey">Available</span>') +
+          '<div class="room-tools">' +
+            '<button class="icon-btn" title="Move up" onclick="move(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + '>' + ICON.up + '</button>' +
+            '<button class="icon-btn" title="Move down" onclick="move(' + i + ',1)"' + (i === rooms.length - 1 ? ' disabled' : '') + '>' + ICON.down + '</button>' +
+            '<button class="icon-btn" title="Duplicate" onclick="duplicate(' + i + ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+            '<button class="icon-btn" title="Edit" onclick="openRoom(' + i + ')">' + ICON.edit + '</button>' +
+            '<button class="icon-btn" title="Delete" onclick="removeRoom(' + i + ')">' + ICON.trash + '</button>' +
+          '</div></div></div></div>';
+  }).join('') + '</div>';
 }
 
-function renderRoomCell(td,room,f,type){
-  if(type==='room-type')td.innerHTML='<span style="font-size:0.78rem;">'+(ROOM_TYPES[room[f]||'double']||'Double')+'</span>';
-  else if(type==='room-status')td.innerHTML='<span class="badge" style="'+(ROOM_STATUS_STYLE[room[f]||'available'])+'">'+(ROOM_STATUS[room[f]||'available'])+'</span>';
-  else if(type==='room-guest'){var g=allGuests.find(function(g){return g.id===room.guest_id;});td.textContent=g?g.first_name+' '+(g.last_name||''):'— Unassigned';td.style.color=g?'var(--ink)':'var(--ink3)';td.style.fontSize='0.78rem';}
-  else if(type==='num')td.textContent=f==='price_per_night'?fmtEuro(room[f]):(parseFloat(room[f]||0)||'—');
-  else{td.textContent=room[f]||'—';if(f==='notes')td.style.fontSize='0.78rem';}
+// ── MODAL ──
+function openRoom(i) {
+  editing = i === undefined ? null : rooms[i];
+  const r = editing || {};
+  $('modal-title').textContent = editing ? 'Edit room' : 'Add a room';
+  $('r-name').value = r.name || '';
+  $('r-price').value = editing ? r.price : '';
+  $('r-sleeps').value = r.sleeps || 2;
+  $('r-bed').value = r.bed_type || '';
+  $('r-desc').value = r.description || '';
+  draftPhotos = (r.photos || []).slice();
+  newUploads = [];
+  renderPhotos();
+  $('room-modal').classList.add('open');
+  setTimeout(() => $('r-name').focus(), 50);
 }
 
-function editRoomCell(td,room,f,type){
-  if(td.classList.contains('editing'))return;td.classList.add('editing');
-  var input;
-  if(type==='room-type'){input=document.createElement('select');input.className='inline-select';Object.keys(ROOM_TYPES).forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=ROOM_TYPES[v];if(v===(room[f]||'double'))o.selected=true;input.appendChild(o);});}
-  else if(type==='room-status'){input=document.createElement('select');input.className='inline-select';Object.keys(ROOM_STATUS).forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=ROOM_STATUS[v];if(v===(room[f]||'available'))o.selected=true;input.appendChild(o);});}
-  else if(type==='room-guest'){input=document.createElement('select');input.className='inline-select';var none=document.createElement('option');none.value='';none.textContent='— Unassigned';if(!room[f])none.selected=true;input.appendChild(none);allGuests.forEach(function(g){var o=document.createElement('option');o.value=g.id;o.textContent=g.first_name+' '+(g.last_name||'');if(g.id===room[f])o.selected=true;input.appendChild(o);});}
-  else{input=document.createElement('input');input.className='inline-input';input.type=type==='num'?'number':'text';input.value=room[f]||'';if(type==='num'){input.step='0.01';input.min='0';}}
-  td.innerHTML='';td.appendChild(input);input.focus();if(input.select)input.select();
-  var saved=false;
-  function save(){if(saved)return;saved=true;var val=type==='num'?parseFloat(input.value)||0:input.value.trim()||null;room[f]=val;td.classList.remove('editing');render();sb.from('rooms').update({[f]:val}).eq('id',room.id);}
-  input.addEventListener('blur',save);
-  input.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();input.blur();}if(e.key==='Escape'){saved=true;td.classList.remove('editing');renderRoomCell(td,room,f,type);}});
+function closeRoom() {
+  if (uploadingCount) return toast('Please wait for photos to finish uploading.', true);
+  newUploads.forEach(deleteImage);   // tidy up photos added but not saved
+  newUploads = [];
+  $('room-modal').classList.remove('open');
 }
 
-function render(){
-  updateSummary();
-  var el=document.getElementById('r-content');
-  if(!allRooms.length){el.innerHTML='<div class="empty-state"><div class="icon">&#x1F6CF;</div><h3>No rooms yet</h3><p>Add rooms to manage accommodation for your event.</p><button class="btn amber" onclick="addRoom()">+ Add first room</button></div>';return;}
-  var totalInc=allRooms.reduce(function(s,r){return s+(parseFloat(r.price_per_night||0)*(r.nights||1));},0);
-  var totalCap=allRooms.reduce(function(s,r){return s+(r.capacity||0);},0);
-  var wrap=document.createElement('div');wrap.className='table-wrap table-scroll';
-  var tbl=document.createElement('table');
-  tbl.innerHTML='<thead><tr><th>Accommodation</th><th>Room name</th><th>Type</th><th class="num">Capacity</th><th class="num">Price/night</th><th class="num">Nights</th><th class="num">Total</th><th>Status</th><th>Assigned guest</th><th>Notes</th><th></th></tr></thead>';
-  var tbody=document.createElement('tbody');
-  allRooms.forEach(function(room){tbody.appendChild(buildRoomRow(room));});
-  var tfoot=document.createElement('tfoot');
-  tfoot.innerHTML='<tr style="background:var(--cream);border-top:2px solid var(--rule);"><td colspan="3"><strong>Totals</strong></td><td class="num"><strong>'+totalCap+'</strong></td><td colspan="2"></td><td class="num"><strong>'+fmtSum(totalInc)+'</strong></td><td colspan="4"></td></tr>';
-  tbl.appendChild(tbody);tbl.appendChild(tfoot);wrap.appendChild(tbl);
-  el.innerHTML='';el.appendChild(wrap);
+function renderPhotos() {
+  $('photos').innerHTML = draftPhotos.map((url, i) =>
+    '<div class="photo"><img src="' + esc(url) + '" alt="">' +
+    (i === 0 ? '<span class="main-tag">Main</span>' : '') +
+    '<div class="p-tools">' +
+      (i > 0 ? '<button title="Make main photo" onclick="makeMain(' + i + ')">' + ICON.up.replace('points="18 15 12 9 6 15"', 'points="15 18 9 12 15 6"') + '</button>' : '') +
+      '<button title="Remove" onclick="removePhoto(' + i + ')">' + ICON.close + '</button>' +
+    '</div></div>'
+  ).join('') +
+  (uploadingCount ? '<div class="photo-add" style="cursor:default">Uploading ' + uploadingCount + '...</div>' : '') +
+  '<div class="photo-add" onclick="document.getElementById(\'photo-file\').click()">' + ICON.plus + 'Add photos</div>';
 }
 
-async function addRoom(){var res=await sb.from('rooms').insert([{event_id:eventId,accommodation:'',name:'New room',type:'double',capacity:2,price_per_night:0,nights:1,notes:'',status:'available',sort_order:allRooms.length}]).select().single();if(!res.error&&res.data){allRooms.push(res.data);render();setTimeout(function(){var r=document.querySelector('tr[data-id="'+res.data.id+'"]');if(r){r.scrollIntoView({behavior:'smooth',block:'center'});var c=r.querySelector('td');if(c)c.click();}},80);}}
-async function deleteRoom(id){if(!confirm('Delete this room?'))return;await sb.from('rooms').delete().eq('id',id);allRooms=allRooms.filter(function(r){return r.id!==id;});render();}
-init();
+async function addPhotos(e) {
+  const files = Array.from(e.target.files); e.target.value = '';
+  if (!files.length) return;
+  uploadingCount += files.length; renderPhotos();
+  for (const f of files) {
+    try {
+      const url = await uploadImage(f, user.id, ev.id);
+      draftPhotos.push(url); newUploads.push(url);
+    } catch (err) {
+      toast('A photo failed to upload: ' + (err.message || err), true);
+    }
+    uploadingCount--; renderPhotos();
+  }
+}
+function makeMain(i) { draftPhotos.unshift(draftPhotos.splice(i, 1)[0]); renderPhotos(); }
+function removePhoto(i) { draftPhotos.splice(i, 1); renderPhotos(); }
 
+async function saveRoom() {
+  if (uploadingCount) return toast('Please wait for photos to finish uploading.', true);
+  const name = $('r-name').value.trim();
+  const price = parseFloat($('r-price').value);
+  const sleeps = parseInt($('r-sleeps').value, 10);
+  if (!name) return toast('Please give the room a name.', true);
+  if (isNaN(price) || price < 0) return toast('Please enter a price (0 if it\'s free).', true);
+  if (!sleeps || sleeps < 1) return toast('How many people does it sleep?', true);
 
+  const row = {
+    name, price, sleeps,
+    bed_type: $('r-bed').value.trim() || null,
+    description: $('r-desc').value.trim() || null,
+    photos: draftPhotos
+  };
+  const btn = $('save-btn'); btn.disabled = true; btn.textContent = 'Saving...';
+  let error;
+  if (editing) {
+    ({ error } = await sb.from('rooms').update(row).eq('id', editing.id));
+  } else {
+    row.event_id = ev.id;
+    row.sort_order = rooms.length ? Math.max.apply(null, rooms.map(r => r.sort_order)) + 1 : 0;
+    ({ error } = await sb.from('rooms').insert(row));
+  }
+  btn.disabled = false; btn.textContent = 'Save room';
+  if (error) return toast('Could not save: ' + error.message, true);
+
+  // photos removed from an existing room can now be deleted from storage
+  if (editing) (editing.photos || []).filter(u => !draftPhotos.includes(u)).forEach(deleteImage);
+  newUploads = [];
+  $('room-modal').classList.remove('open');
+  toast(editing ? 'Room updated' : 'Room added');
+  await load();
+}
+
+// ── LIST ACTIONS ──
+async function move(i, dir) {
+  const a = rooms[i], b = rooms[i + dir];
+  if (!b) return;
+  // give every room a clean position first, then swap the two
+  rooms.forEach((r, idx) => r.sort_order = idx);
+  a.sort_order = i + dir; b.sort_order = i;
+  rooms.sort((x, y) => x.sort_order - y.sort_order);
+  render();
+  const results = await Promise.all(rooms.map(r => sb.from('rooms').update({ sort_order: r.sort_order }).eq('id', r.id)));
+  const failed = results.find(x => x.error);
+  if (failed) { toast('Could not save the new order: ' + failed.error.message, true); load(); }
+}
+
+async function duplicate(i) {
+  const r = rooms[i];
+  const { error } = await sb.from('rooms').insert({
+    event_id: ev.id, name: r.name + ' (copy)', price: r.price, sleeps: r.sleeps, bed_type: r.bed_type,
+    description: r.description, photos: [],   // photos aren't copied, so deleting one room never breaks another
+    sort_order: Math.max.apply(null, rooms.map(x => x.sort_order)) + 1
+  });
+  if (error) return toast('Could not duplicate: ' + error.message, true);
+  toast('Room copied (without photos)');
+  load();
+}
+
+async function removeRoom(i) {
+  const r = rooms[i];
+  const msg = bookedIds.has(r.id)
+    ? '"' + r.name + '" is booked by a guest. Deleting it also removes their booking.\n\nDelete anyway?'
+    : 'Delete "' + r.name + '"?';
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('rooms').delete().eq('id', r.id);
+  if (error) return toast('Could not delete: ' + error.message, true);
+  (r.photos || []).forEach(deleteImage);
+  toast('Room deleted');
+  load();
+}
 </script>
 </body>
 </html>

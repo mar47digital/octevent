@@ -128,7 +128,7 @@ body{
 .field input::placeholder{color:#ccc;}
 .submit-btn{
   width:100%;padding:0.9rem;
-  background:var(--amber);color:var(--ink);
+  background:var(--amber);color:#fff;
   border:none;border-radius:100px;
   font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:600;
   cursor:pointer;transition:all 0.2s;margin-top:0.5rem;
@@ -191,14 +191,13 @@ body{
     <img src="octevent-logo-white.png.png" alt="Octevent">
   </div>
   <div class="left-content">
-    <h2>Every arm of<br>your event,<br><em>under control</em></h2>
-    <p>The all-in-one platform for event planners. Manage guests, rooms, budgets and table plans — all in one place.</p>
+    <h2>Your guests book<br>their room.<br><em>You manage everything.</em></h2>
+    <p>Give your retreat, wedding or group stay its own booking page. Guests browse the rooms, pick one and RSVP — and you see it all in one place.</p>
     <div class="feature-list">
-      <div class="feature-item"><div class="feature-dot">✓</div>Guest list & RSVP management</div>
-      <div class="feature-item"><div class="feature-dot">✓</div>Room booking & payments</div>
-      <div class="feature-item"><div class="feature-dot">✓</div>Budget tracker & run sheet</div>
-      <div class="feature-item"><div class="feature-dot">✓</div>Table plan builder</div>
-      <div class="feature-item"><div class="feature-dot">✓</div>Beautiful guest event sites</div>
+      <div class="feature-item"><div class="feature-dot">✓</div>A booking page for every event</div>
+      <div class="feature-item"><div class="feature-dot">✓</div>Guests choose their own room</div>
+      <div class="feature-item"><div class="feature-dot">✓</div>RSVPs with your own questions</div>
+      <div class="feature-item"><div class="feature-dot">✓</div>Every booking in one dashboard</div>
     </div>
   </div>
   <div class="left-footer">© 2026 Octevent · octevent.com</div>
@@ -353,7 +352,7 @@ async function signUp() {
     showError('signup-error', error.message);
     btn.textContent = 'Create account'; btn.disabled = false;
   } else {
-    showSuccess('signup-success', '✓ Check your email to confirm your account, then sign in.');
+    showSuccess('signup-success', 'Check your email to confirm your account, then sign in.');
     btn.textContent = 'Create account'; btn.disabled = false;
   }
 }
@@ -362,10 +361,10 @@ async function forgotPassword() {
   const email = document.getElementById('signin-email').value.trim();
   if (!email) return showError('signin-error', 'Enter your email address first.');
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/reset-password.html'
+    redirectTo: window.location.origin + '/reset-password'
   });
   if (error) showError('signin-error', error.message);
-  else showSuccess('signin-success', '✓ Password reset email sent — check your inbox.');
+  else showSuccess('signin-success', 'Password reset email sent — check your inbox.');
 }
 
 // If already logged in, go straight to dashboard

@@ -1,15 +1,10 @@
 {
   "rewrites": [
-    { "source": "/event-overview", "destination": "/event-overview.html" },
-    { "source": "/event-checklist", "destination": "/event-checklist.html" },
-    { "source": "/event-budget", "destination": "/event-budget.html" },
-    { "source": "/event-guests", "destination": "/event-guests.html" },
-    { "source": "/event-rooms", "destination": "/event-rooms.html" },
-    { "source": "/event-runsheet", "destination": "/event-runsheet.html" },
-    { "source": "/event-tableplan", "destination": "/event-tableplan.html" },
-    { "source": "/event-settings", "destination": "/event-settings.html" },
-    { "source": "/event", "destination": "/event-overview.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/login", "destination": "/login.html" }
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/reset-password", "destination": "/reset-password.html" },
+    { "source": "/event", "destination": "/event-details.html" },
+    { "source": "/event-details", "destination": "/event-details.html" },
+    { "source": "/event-rooms", "destination": "/event-rooms.html" }
   ]
 }

@@ -3,309 +3,157 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Octevent — My Events</title>
+<title>Octevent — My events</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/shared.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-:root{
-  --amber:#6B3FD6;--amber-light:#EDE9FE;--amber-dark:#5229B8;
-  --ink:#18181A;--ink2:#555;--ink3:#999;--cream:#FAFAF7;--rule:#ECEAE4;
-  --green:#2d6a4f;--red:#c0392b;
-}
-html,body{min-height:100%;background:var(--cream);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);}
-
-/* NAV */
-nav{background:#fff;border-bottom:1px solid var(--rule);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-.nav-logo img{height:30px;width:auto;display:block;}
-.nav-right{display:flex;align-items:center;gap:1rem;}
-.nav-user{display:flex;align-items:center;gap:10px;font-size:0.85rem;color:var(--ink2);}
-.nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#fff;flex-shrink:0;}
-.sign-out-btn{font-size:0.78rem;color:var(--ink3);background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;padding:0.4rem 0.75rem;border-radius:100px;transition:all 0.2s;}
-.sign-out-btn:hover{color:var(--ink);background:var(--cream);}
-
-/* MAIN */
-main{max-width:900px;margin:0 auto;padding:2.5rem 2rem;}
-
-/* PAGE HEADER */
-.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;}
-.page-header h1{font-family:'Nunito',sans-serif;font-size:2rem;font-weight:800;}
-.page-header-sub{font-size:0.88rem;color:var(--ink3);margin-top:3px;font-weight:300;}
-.new-event-btn{display:inline-flex;align-items:center;gap:8px;padding:0.65rem 1.25rem;background:var(--amber);color:#fff;border:none;border-radius:100px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
-.new-event-btn:hover{background:var(--amber-dark);color:#fff;}
-.new-event-btn svg{width:16px;height:16px;}
-
-/* FILTER TABS */
-.filter-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;}
-.filter-tab{padding:0.45rem 1rem;border-radius:100px;border:1.5px solid var(--rule);background:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.8rem;font-weight:500;color:var(--ink2);cursor:pointer;transition:all 0.15s;}
-.filter-tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
-.filter-tab:hover:not(.active){border-color:var(--ink);}
-
-/* EVENT LIST */
-.event-list{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;border:1px solid var(--rule);}
-.event-row{display:flex;align-items:center;text-decoration:none;color:inherit;background:#fff;border-bottom:1px solid var(--rule);transition:background 0.15s;min-height:72px;}
+.event-list{display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;background:var(--white);}
+.event-row{display:flex;align-items:center;gap:1.1rem;padding:0.9rem 1.1rem;text-decoration:none;border-bottom:1px solid var(--rule);transition:background 0.15s;}
 .event-row:last-child{border-bottom:none;}
-.event-row:hover{background:var(--amber-light);}
-.event-row-thumb{width:100px;height:72px;flex-shrink:0;overflow:hidden;border-right:1px solid var(--rule);}
-.event-row-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-.event-row-thumb.g1{background:linear-gradient(135deg,#1a1a2e,#533483);}
-.event-row-thumb.g2{background:linear-gradient(135deg,#0f3460,#e94560);}
-.event-row-thumb.g3{background:linear-gradient(135deg,#2d6a4f,#40916c);}
-.event-row-thumb.g4{background:linear-gradient(135deg,#c98a00,#f5a800);}
-.event-row-thumb.g5{background:linear-gradient(135deg,#3d405b,#81b29a);}
-.event-row-thumb.g6{background:linear-gradient(135deg,#582c4d,#c9a227);}
-.event-row-body{flex:1;display:flex;align-items:center;padding:0 1.25rem;gap:1rem;min-width:0;}
-.event-row-main{flex:1;min-width:0;}
-.event-row-name{font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
-.event-row-meta{font-size:0.76rem;color:var(--ink3);}
-.event-row-stats{display:flex;gap:1.5rem;flex-shrink:0;}
-.event-row-stat{text-align:center;}
-.event-row-stat-n{font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;line-height:1;}
-.event-row-stat-l{font-size:0.6rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:1px;}
-.event-row-badge{flex-shrink:0;}
-.event-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px;white-space:nowrap;}
-.badge-upcoming{background:var(--amber-light);color:var(--amber-dark);}
-.badge-live{background:#f0f7f4;color:var(--green);}
-.badge-past{background:#f0f0f0;color:#666;}
-.badge-draft{background:#f0f0f0;color:#999;}
-
-/* EMPTY STATE */
-.empty-state{text-align:center;padding:4rem 2rem;background:#fff;border:1px solid var(--rule);border-radius:14px;}
-.empty-state h3{font-family:'Nunito',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:0.5rem;}
-.empty-state p{font-size:0.85rem;color:var(--ink3);margin-bottom:1.5rem;font-weight:300;}
-
-/* SPINNER */
-.spinner{width:28px;height:28px;border:3px solid var(--rule);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;margin:3rem auto;display:block;}
-@keyframes spin{to{transform:rotate(360deg);}}
-
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem;}
-.modal-overlay.open{display:flex;}
-.modal{background:#fff;border-radius:16px;width:100%;max-width:480px;padding:1.75rem;}
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
-.modal-title{font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;}
-.modal-close{width:30px;height:30px;border-radius:50%;background:var(--cream);border:none;cursor:pointer;font-size:1rem;}
-.modal-close:hover{background:var(--rule);}
-.field{margin-bottom:1rem;}
-.field label{display:block;font-size:0.78rem;font-weight:500;color:var(--ink2);margin-bottom:0.35rem;}
-.field input,.field select{width:100%;padding:0.7rem 1rem;border:1.5px solid var(--rule);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.88rem;color:var(--ink);background:#fff;outline:none;transition:border-color 0.2s;}
-.field input:focus,.field select:focus{border-color:var(--amber);}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.btn-primary{width:100%;padding:0.8rem;border-radius:100px;background:var(--amber);color:#fff;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;margin-top:0.5rem;}
-.btn-primary:hover{background:var(--amber-dark);color:#fff;}
-.btn-primary:disabled{opacity:0.6;cursor:not-allowed;}
-
-/* RESPONSIVE */
-@media(max-width:640px){
-  nav{padding:0 1rem;}
-  main{padding:1.5rem 1rem;}
-  .event-row-stats{display:none;}
-  .event-row-thumb{width:72px;height:64px;}
-  .page-header{flex-direction:column;gap:1rem;}
-  .new-event-btn{width:100%;justify-content:center;}
+.event-row:hover{background:#faf8ff;}
+.thumb{width:84px;height:60px;border-radius:8px;flex-shrink:0;background:var(--purple-light);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--purple);}
+.thumb img{width:100%;height:100%;object-fit:cover;}
+.thumb svg{width:22px;height:22px;opacity:0.7;}
+.row-main{flex:1;min-width:0;}
+.row-name{font-weight:700;font-size:0.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.row-meta{font-size:0.8rem;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.row-stats{display:flex;gap:1.5rem;flex-shrink:0;}
+.stat{text-align:center;min-width:44px;}
+.stat-n{font-weight:800;font-size:1rem;line-height:1.1;}
+.stat-l{font-size:0.62rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;}
+.row-badge{flex-shrink:0;width:90px;text-align:right;}
+@media (max-width:640px){
+  .row-stats{display:none;}
+  .row-badge{width:auto;}
+  .thumb{width:64px;height:48px;}
 }
 </style>
 </head>
 <body>
-
-<nav>
-  <a href="/dashboard" style="display:flex;align-items:center;flex-shrink:0;"><img src="/octevent-logo.png" alt="Octevent" style="height:30px;width:auto;display:block;"></a>
-  <div class="nav-right">
-    <div class="nav-user">
-      <div class="nav-avatar" id="user-avatar">?</div>
-      <span id="user-name"></span>
+<main class="main">
+  <div class="content">
+    <div class="page-head">
+      <div>
+        <h1 id="greeting">My events</h1>
+        <div class="page-sub">Your events, soonest first.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openNew()"><span style="display:flex" id="plus-ic"></span>New event</button>
     </div>
-    <button class="sign-out-btn" onclick="signOut()">Sign out</button>
-  </div>
-</nav>
-
-<main>
-  <div class="page-header">
-    <div>
-      <h1>My Events</h1>
-      <div class="page-header-sub" id="dashboard-greeting"></div>
-    </div>
-    <button class="new-event-btn" onclick="openModal()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      New event
-    </button>
-  </div>
-
-  <div class="filter-tabs">
-    <button class="filter-tab active" onclick="filterEvents('all',this)">All events</button>
-    <button class="filter-tab" onclick="filterEvents('upcoming',this)">Upcoming</button>
-    <button class="filter-tab" onclick="filterEvents('live',this)">Live</button>
-    <button class="filter-tab" onclick="filterEvents('past',this)">Past</button>
-  </div>
-
-  <div id="events-container">
-    <div class="spinner"></div>
+    <div id="list"><div class="spinner"></div></div>
   </div>
 </main>
 
 <!-- NEW EVENT MODAL -->
-<div class="modal-overlay" id="new-event-modal" onclick="if(event.target===this)closeModal()">
+<div class="modal-wrap" id="new-modal">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Create new event</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-head">
+      <h2>New event</h2>
+      <button class="modal-close" onclick="closeNew()" aria-label="Close" id="close-ic"></button>
     </div>
-    <div class="field"><label>Event name *</label><input type="text" id="ev-name" placeholder="e.g. Will & Kate's 40th"></div>
-    <div class="field-row">
-      <div class="field"><label>Start date</label><input type="date" id="ev-date"></div>
-      <div class="field"><label>End date</label><input type="date" id="ev-end"></div>
+    <div class="notice notice-error" id="new-error" style="display:none"></div>
+    <div class="field">
+      <label for="n-name">Event name</label>
+      <input class="input" id="n-name" placeholder="e.g. Sunrise Yoga Retreat, Mallorca">
     </div>
-    <div class="field"><label>Event type</label>
-      <select id="ev-type">
-        <option value="wedding">Wedding</option>
-        <option value="corporate">Corporate</option>
-        <option value="retreat">Retreat</option>
-        <option value="party">Private party</option>
-        <option value="group_holiday">Group holiday</option>
-        <option value="villa">Villa event</option>
-        <option value="other">Other</option>
-      </select>
+    <div class="field">
+      <label for="n-type">Type of event</label>
+      <select class="input" id="n-type"></select>
     </div>
-    <div class="field"><label>Venue</label><input type="text" id="ev-venue" placeholder="Venue name"></div>
-    <button class="btn-primary" id="create-btn" onclick="createEvent()">Create event</button>
+    <div class="grid-2">
+      <div class="field"><label for="n-start">Start date</label><input class="input" type="date" id="n-start"></div>
+      <div class="field"><label for="n-end">End date</label><input class="input" type="date" id="n-end"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeNew()">Cancel</button>
+      <button class="btn btn-primary" id="create-btn" onclick="createNewEvent()">Create event</button>
+    </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = 'https://esjmzvhxbwcpslutprel.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzam16dmh4YndjcHNsdXRwcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzcxNjAsImV4cCI6MjA5Mzc1MzE2MH0.fsr1_P_ZB68SaiK00GPXvJLQUePM4eLght_CaAYOeF0';
-const { createClient } = window.supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+let user;
 
-let currentUser = null;
-let allEvents = [];
-const gradClasses = ['g1','g2','g3','g4','g5','g6'];
-
-// ── INIT ──
-window.addEventListener('DOMContentLoaded', async function() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) { window.location.href = '/login'; return; }
-  currentUser = session.user;
-
-  const name = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
-  document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
-  document.getElementById('user-name').textContent = name;
+(async function init() {
+  user = await requireUser();
+  if (!user) return;
+  Layout.render('events', user, null);
+  document.getElementById('plus-ic').innerHTML = ICON.plus;
+  document.getElementById('close-ic').innerHTML = ICON.close;
+  document.getElementById('n-type').innerHTML = Object.entries(EVENT_TYPES)
+    .map(([k, v]) => '<option value="' + k + '">' + v + '</option>').join('');
 
   const hour = new Date().getHours();
-  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  document.getElementById('dashboard-greeting').textContent = greet + ', ' + name + '.';
+  const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting').textContent = hello + ', ' + userName(user).split(' ')[0];
 
-  await loadEvents();
-});
+  loadEvents();
+})();
 
 async function loadEvents() {
-  const { data, error } = await sb
-    .from('events')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .order('event_date', { ascending: true });
+  const { data, error } = await sb.from('events')
+    .select('id,name,event_type,start_date,end_date,venue_name,location,cover_image_url,guest_site_live,rooms(count),bookings(count)')
+    .order('start_date', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false });
 
-  if (error) { console.error(error); renderEvents([]); return; }
-  allEvents = data || [];
-  renderEvents(allEvents);
-}
-
-function getStatus(ev) {
-  if (ev.status === 'draft') return 'draft';
-  if (!ev.event_date) return 'upcoming';
-  const diff = (new Date(ev.event_date) - new Date()) / 86400000;
-  if (diff < -1) return 'past';
-  if (diff <= 1) return 'live';
-  return 'upcoming';
-}
-
-function fmtDate(d) {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
-}
-
-function renderEvents(events) {
-  const el = document.getElementById('events-container');
-  if (!events.length) {
-    el.innerHTML = '<div class="empty-state"><h3>No events yet</h3><p>Create your first event and start planning.</p><button class="new-event-btn" onclick="openModal()" style="margin:0 auto;">+ New event</button></div>';
+  const list = document.getElementById('list');
+  if (error) { list.innerHTML = '<div class="notice notice-error">Could not load your events: ' + esc(error.message) + '</div>'; return; }
+  if (!data.length) {
+    list.innerHTML = '<div class="empty">' + ICON.events +
+      '<h3>No events yet</h3><p>Create your first event, add its rooms, and you\'ll soon be able to share a booking page with your guests.</p>' +
+      '<button class="btn btn-primary" onclick="openNew()">' + ICON.plus + 'Create your first event</button></div>';
     return;
   }
-  const rows = events.map(function(ev, i) {
-    const status = getStatus(ev);
-    const grad = gradClasses[i % 6];
-    const thumb = ev.cover_image
-      ? '<img src="' + ev.cover_image + '" alt="' + ev.name + '">'
-      : '';
-    const meta = [];
-    if (ev.event_date) meta.push(fmtDate(ev.event_date));
-    const loc = [ev.venue, ev.city, ev.country].filter(Boolean).join(', ');
-    if (loc) meta.push(loc);
-    if (ev.event_type) meta.push(ev.event_type.charAt(0).toUpperCase() + ev.event_type.slice(1));
 
-    return '<a class="event-row" href="/event-overview?id=' + ev.id + '">'
-      + '<div class="event-row-thumb ' + grad + '">' + thumb + '</div>'
-      + '<div class="event-row-body">'
-      + '<div class="event-row-main">'
-      + '<div class="event-row-name">' + ev.name + '</div>'
-      + '<div class="event-row-meta">' + meta.join(' &middot; ') + '</div>'
-      + '</div>'
-      + '<div class="event-row-stats">'
-      + '<div class="event-row-stat"><div class="event-row-stat-n">' + (ev.guest_count||0) + '</div><div class="event-row-stat-l">Guests</div></div>'
-      + '<div class="event-row-stat"><div class="event-row-stat-n">' + (ev.rsvp_count||0) + '</div><div class="event-row-stat-l">RSVPs</div></div>'
-      + '<div class="event-row-stat"><div class="event-row-stat-n">' + (ev.room_count||0) + '</div><div class="event-row-stat-l">Rooms</div></div>'
-      + '</div>'
-      + '<div class="event-row-badge"><span class="event-badge badge-' + status + '">' + status + '</span></div>'
-      + '</div></a>';
-  }).join('');
-
-  el.innerHTML = '<div class="event-list">' + rows + '</div>';
+  list.innerHTML = '<div class="event-list">' + data.map(ev => {
+    const rooms = ev.rooms && ev.rooms[0] ? ev.rooms[0].count : 0;
+    const booked = ev.bookings && ev.bookings[0] ? ev.bookings[0].count : 0;
+    const days = daysUntil(ev.end_date || ev.start_date);
+    let badge;
+    if (days !== null && days < 0) badge = '<span class="badge badge-grey">Past</span>';
+    else if (ev.guest_site_live) badge = '<span class="badge badge-green">Live</span>';
+    else badge = '<span class="badge badge-purple">Draft</span>';
+    const meta = [EVENT_TYPES[ev.event_type] || '', fmtDateRange(ev.start_date, ev.end_date), ev.venue_name || ev.location || '']
+      .filter(Boolean).join(' · ');
+    return '<a class="event-row" href="/event-details?id=' + ev.id + '">' +
+      '<div class="thumb">' + (ev.cover_image_url ? '<img src="' + esc(ev.cover_image_url) + '" alt="">' : ICON.image) + '</div>' +
+      '<div class="row-main"><div class="row-name">' + esc(ev.name) + '</div><div class="row-meta">' + esc(meta) + '</div></div>' +
+      '<div class="row-stats"><div class="stat"><div class="stat-n">' + rooms + '</div><div class="stat-l">Rooms</div></div>' +
+      '<div class="stat"><div class="stat-n">' + booked + '</div><div class="stat-l">Bookings</div></div></div>' +
+      '<div class="row-badge">' + badge + '</div></a>';
+  }).join('') + '</div>';
 }
 
-function filterEvents(filter, btn) {
-  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
-  btn.classList.add('active');
-  if (filter === 'all') { renderEvents(allEvents); return; }
-  renderEvents(allEvents.filter(function(ev) { return getStatus(ev) === filter; }));
+function openNew() {
+  document.getElementById('new-error').style.display = 'none';
+  document.getElementById('new-modal').classList.add('open');
+  setTimeout(() => document.getElementById('n-name').focus(), 50);
 }
+function closeNew() { document.getElementById('new-modal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNew(); });
 
-// ── MODAL ──
-function openModal() {
-  document.getElementById('ev-name').value = '';
-  document.getElementById('ev-date').value = '';
-  document.getElementById('ev-end').value = '';
-  document.getElementById('ev-venue').value = '';
-  document.getElementById('ev-type').value = 'other';
-  document.getElementById('new-event-modal').classList.add('open');
-  setTimeout(function() { document.getElementById('ev-name').focus(); }, 80);
-}
-function closeModal() { document.getElementById('new-event-modal').classList.remove('open'); }
+async function createNewEvent() {
+  const name = document.getElementById('n-name').value.trim();
+  const start = document.getElementById('n-start').value || null;
+  const end = document.getElementById('n-end').value || null;
+  const errEl = document.getElementById('new-error');
+  const fail = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
 
-async function createEvent() {
-  const name = document.getElementById('ev-name').value.trim();
-  if (!name) { document.getElementById('ev-name').focus(); return; }
+  if (!name) return fail('Please give your event a name.');
+  if (start && end && end < start) return fail('The end date is before the start date.');
+
   const btn = document.getElementById('create-btn');
-  btn.textContent = 'Creating...'; btn.disabled = true;
-
-  const { data, error } = await sb.from('events').insert([{
-    user_id:    currentUser.id,
-    name:       name,
-    event_date: document.getElementById('ev-date').value || null,
-    end_date:   document.getElementById('ev-end').value || null,
-    event_type: document.getElementById('ev-type').value,
-    venue:      document.getElementById('ev-venue').value.trim(),
-    status:     'active'
-  }]).select().single();
-
-  btn.textContent = 'Create event'; btn.disabled = false;
-  if (error) { alert('Error creating event: ' + error.message); return; }
-  closeModal();
-  window.location.href = '/event-overview?id=' + data.id;
-}
-
-async function signOut() {
-  await sb.auth.signOut();
-  window.location.href = '/login';
+  btn.disabled = true; btn.textContent = 'Creating...';
+  const { data, error } = await sb.from('events')
+    .insert({ name, event_type: document.getElementById('n-type').value, start_date: start, end_date: end || start })
+    .select('id').single();
+  if (error) {
+    btn.disabled = false; btn.textContent = 'Create event';
+    return fail('Could not create the event: ' + error.message);
+  }
+  location.href = '/event-details?id=' + data.id + '&new=1';
 }
 </script>
 </body>
