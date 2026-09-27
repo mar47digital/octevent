@@ -152,7 +152,7 @@ const Layout = {
         link('rooms', '/event-rooms?id=' + eid, 'Rooms') +
         link('site', '/event-site?id=' + eid, 'Guest site') +
         link('guests', '/event-guests?id=' + eid, 'Guests') +
-        link('bookings', '#', 'Bookings', true) +
+        link('bookings', '/event-bookings?id=' + eid, 'Bookings') +
         '<div class="sb-divider"></div>' +
         '<a class="sb-link" href="/dashboard">' + ICON.back + 'All events</a>';
     } else {

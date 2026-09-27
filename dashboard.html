@@ -94,7 +94,7 @@ let user;
 
 async function loadEvents() {
   const { data, error } = await sb.from('events')
-    .select('id,name,event_type,start_date,end_date,venue_name,location,cover_image_url,guest_site_live,rooms(count),bookings(count)')
+    .select('id,name,event_type,start_date,end_date,venue_name,location,cover_image_url,guest_site_live,rooms(count),bookings(status)')
     .order('start_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
@@ -109,7 +109,7 @@ async function loadEvents() {
 
   list.innerHTML = '<div class="event-list">' + data.map(ev => {
     const rooms = ev.rooms && ev.rooms[0] ? ev.rooms[0].count : 0;
-    const booked = ev.bookings && ev.bookings[0] ? ev.bookings[0].count : 0;
+    const booked = (ev.bookings || []).filter(b => b.status !== 'cancelled').length;
     const days = daysUntil(ev.end_date || ev.start_date);
     let badge;
     if (days !== null && days < 0) badge = '<span class="badge badge-grey">Past</span>';

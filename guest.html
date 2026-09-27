@@ -284,6 +284,12 @@ function infoHtml(ev, where, hasRooms) {
 function renderRooms() {
   const el = document.getElementById('rooms');
   if (!el) return;
+  // if the organiser cancelled this guest's booking, forget it on this device
+  const stored = me();
+  if (stored.roomId && !preview) {
+    const r = site.rooms.find(x => x.id === stored.roomId);
+    if (!r || r.available) saveMe({ roomId: null });
+  }
   const guest = me();
   const free = site.rooms.filter(r => r.available).length;
   el.innerHTML = '<h2>Choose your room</h2><p class="lead">' +
