@@ -105,6 +105,11 @@ textarea.input{resize:vertical;min-height:80px;}
 .choice input{accent-color:var(--accent);width:17px;height:17px;}
 .choice label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);}
 .attending-only.hidden{display:none;}
+.ticks{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:0.5rem;}
+.ticks label{display:flex;align-items:center;gap:8px;padding:0.55rem 0.7rem;border:1.5px solid var(--rule);border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:500;margin:0;}
+.ticks input{accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;}
+.ticks label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);}
+.other-diet{margin-top:0.5rem;}
 
 .notice{padding:0.9rem 1.1rem;border-radius:12px;margin-bottom:1.25rem;font-size:0.92rem;}
 .notice-error{background:var(--red-bg);color:var(--red);}
@@ -182,6 +187,10 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replac
 function fmtDate(d, withYear) { if (!d) return ''; const [y,m,day] = d.split('-').map(Number); const o = {weekday:'short',day:'numeric',month:'long'}; if (withYear !== false) o.year = 'numeric'; return new Date(y,m-1,day).toLocaleDateString('en-GB', o); }
 function fmtRange(a, b) { if (!a) return ''; if (!b || a === b) return fmtDate(a); return fmtDate(a, a.slice(0,4) !== b.slice(0,4)) + ' – ' + fmtDate(b); }
 function fmtEuro(n) { const v = Number(n || 0); return '€' + v.toLocaleString('en-GB', {minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2}); }
+const DIETS = ['Vegetarian', 'Vegan', 'Pescatarian', 'Gluten-free', 'Dairy-free', 'Nut allergy', 'Halal', 'Kosher'];
+function dietParts(g) { return (g.dietary || '').split(',').map(x => x.trim()).filter(Boolean); }
+function dietPicked(g) { return dietParts(g).filter(x => DIETS.includes(x)); }
+function dietOther(g) { return dietParts(g).filter(x => !DIETS.includes(x)).join(', '); }
 function me() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; } }
 function saveMe(obj) { try { localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign(me(), obj))); } catch (e) {} }
 
@@ -381,7 +390,9 @@ function renderRsvp(forceForm) {
       '<label><input type="radio" name="attending" value="yes"' + (guest.attending === true ? ' checked' : '') + '>Yes, I\'ll be there</label>' +
       '<label><input type="radio" name="attending" value="no"' + (guest.attending === false ? ' checked' : '') + '>Sorry, I can\'t</label></div></div>' +
     '<div class="attending-only' + (guest.attending === false ? ' hidden' : '') + '" id="attending-only">' +
-      '<div class="field"><label for="g-diet">Dietary requirements</label><input class="input" id="g-diet" placeholder="e.g. vegetarian, nut allergy"></div>' +
+      '<div class="field"><span class="lbl">Dietary requirements</span><div class="ticks">' +
+        DIETS.map(d => '<label><input type="checkbox" name="diet" value="' + d + '"' + (dietPicked(guest).includes(d) ? ' checked' : '') + '>' + d + '</label>').join('') + '</div>' +
+        '<input class="input other-diet" id="g-diet-other" placeholder="Anything else? e.g. shellfish allergy" value="' + esc(dietOther(guest)) + '"></div>' +
       '<div class="field"><label for="g-access">Accessibility needs</label><input class="input" id="g-access" placeholder="Anything we should know?"></div>' +
       qs.map((q, i) => {
         const req = q.required ? ' <span class="req">*</span>' : '';
@@ -423,12 +434,16 @@ async function submitRsvp() {
       if (v) answers[q.label] = v;
     }
   }
+  const dietList = Array.from(document.querySelectorAll('input[name=diet]:checked')).map(c => c.value);
+  const dietExtra = attending ? document.getElementById('g-diet-other').value.trim() : '';
+  if (dietExtra) dietList.push(dietExtra);
+  const dietary = dietList.join(', ') || null;
   if (preview) return showErr('This is a preview. Switch the guest site on to accept RSVPs.');
 
   const btn = document.getElementById('rsvp-btn'); btn.disabled = true; btn.textContent = 'Sending...';
   const { error } = await sb.rpc('submit_rsvp', {
     p_slug: slug, p_first_name: first, p_last_name: last, p_email: email, p_attending: attending,
-    p_dietary: attending ? (document.getElementById('g-diet').value.trim() || null) : null,
+    p_dietary: attending ? dietary : null,
     p_accessibility: attending ? (document.getElementById('g-access').value.trim() || null) : null,
     p_answers: answers
   });
@@ -437,7 +452,7 @@ async function submitRsvp() {
 
   const prev = me();
   const sameGuest = prev.email === email.toLowerCase();
-  saveMe({ first_name: first, last_name: last, email: email.toLowerCase(), attending, roomId: attending && sameGuest ? prev.roomId : null });
+  saveMe({ first_name: first, last_name: last, email: email.toLowerCase(), attending, dietary: attending ? dietary : null, roomId: attending && sameGuest ? prev.roomId : null });
   if (site.rooms.length) await refresh();
   renderRsvp();
   document.getElementById('rsvp').scrollIntoView({ behavior: 'smooth' });
