@@ -269,11 +269,15 @@ async function deleteGuest() {
 function exportCsv() {
   const qs = (ev.rsvp_questions || []).map(q => q.label);
   Object.values(guests).forEach(g => Object.keys(g.answers || {}).forEach(k => { if (!qs.includes(k)) qs.push(k); }));
-  const head = ['First name', 'Last name', 'Email', 'Phone', 'RSVP', 'Room', 'Paid', 'Dietary', 'Accessibility', 'Notes'].concat(qs);
+  const head = ['First name', 'Last name', 'Email', 'Phone', 'RSVP', 'Room', 'Paid'].concat(DIETS, ['Other dietary', 'Accessibility', 'Notes'], qs);
+  const dietCols = g => {
+    const parts = (g.dietary || '').split(',').map(x => x.trim()).filter(Boolean);
+    return DIETS.map(d => parts.includes(d) ? 'Yes' : '').concat(parts.filter(x => !DIETS.includes(x)).join(', '));
+  };
   const label = { confirmed: 'Coming', declined: 'Not coming', pending: 'Awaiting reply' };
   const cell = v => { v = v == null ? '' : String(v); if (/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
   const rows = guests.map(g => [g.first_name, g.last_name, g.email, g.phone, label[g.rsvp_status], g.room, g.room ? (g.paid ? 'Yes' : 'No') : '',
-    g.dietary, g.accessibility, g.notes].concat(qs.map(q => (g.answers || {})[q])).map(cell).join(','));
+    ].concat(dietCols(g), [g.accessibility, g.notes], qs.map(q => (g.answers || {})[q])).map(cell).join(','));
   const csv = '﻿' + [head.map(cell).join(',')].concat(rows).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

@@ -14,6 +14,9 @@ const EVENT_TYPES = {
   other: 'Other'
 };
 
+// Dietary options guests can tick (keep in sync with DIETS in guest.html)
+const DIETS = ['Vegetarian', 'Vegan', 'Pescatarian', 'Gluten-free', 'Dairy-free', 'Nut allergy', 'Halal', 'Kosher'];
+
 // ── HELPERS ──
 function esc(s) {
   return String(s == null ? '' : s)
