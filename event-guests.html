@@ -3,122 +3,283 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Octevent</title>
+<title>Octevent — Guests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/shared.js"></script>
-<script src="/header.js"></script>
+<style>
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.5rem;}
+.stat{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:0.9rem 1rem;}
+.stat-n{font-size:1.5rem;font-weight:800;line-height:1.1;}
+.stat-l{font-size:0.7rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
+@media (max-width:640px){.stats{grid-template-columns:1fr 1fr;}}
+
+.toolbar{display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;}
+.filters{display:flex;gap:0.35rem;flex-wrap:wrap;}
+.filter{padding:0.45rem 0.9rem;border-radius:100px;border:1.5px solid var(--rule);background:var(--white);font-size:0.8rem;font-weight:600;color:var(--ink2);cursor:pointer;}
+.filter:hover{border-color:var(--ink);}
+.filter.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+.filter span{opacity:0.6;margin-left:3px;font-weight:500;}
+.search{margin-left:auto;max-width:240px;padding:0.5rem 0.9rem;}
+@media (max-width:640px){.search{margin-left:0;max-width:none;flex:1 1 100%;}}
+
+.table{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;}
+.g-row{display:grid;grid-template-columns:1.6fr 1fr 1.1fr 1.3fr;gap:1rem;align-items:center;padding:0.8rem 1.1rem;border-bottom:1px solid var(--rule);cursor:pointer;}
+.g-row:last-child{border-bottom:none;}
+.g-row:hover{background:#faf8ff;}
+.g-head{cursor:default;background:var(--cream);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);padding-top:0.6rem;padding-bottom:0.6rem;}
+.g-head:hover{background:var(--cream);}
+.g-name{font-weight:600;font-size:0.92rem;}
+.g-email{font-size:0.78rem;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.g-room{font-size:0.84rem;}
+.g-room .muted,.g-notes .muted{color:#bbb;}
+.g-notes{font-size:0.8rem;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.badge-red{background:var(--red-bg);color:var(--red);}
+.paid{font-size:0.66rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.05em;margin-left:4px;}
+@media (max-width:760px){
+  .g-head{display:none;}
+  .g-row{grid-template-columns:1fr auto;gap:0.3rem 0.75rem;}
+  .g-row > :nth-child(3){grid-column:1/-1;}
+  .g-row > :nth-child(4){grid-column:1/-1;}
+  .g-row > :nth-child(2){grid-row:1;grid-column:2;}
+  .g-notes:has(> .muted:only-child){display:none;}
+}
+
+.answers{background:var(--cream);border-radius:10px;padding:0.9rem 1rem;margin-bottom:1rem;}
+.answers h4{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);margin-bottom:0.5rem;}
+.answer{font-size:0.85rem;margin-bottom:0.45rem;}
+.answer:last-child{margin-bottom:0;}
+.answer b{display:block;font-weight:600;color:var(--ink2);font-size:0.78rem;}
+.meta-line{font-size:0.78rem;color:var(--ink3);margin-bottom:1rem;}
+.status-pick{display:flex;gap:0.4rem;flex-wrap:wrap;}
+.status-pick label{flex:1;min-width:110px;display:flex;align-items:center;gap:8px;padding:0.6rem 0.8rem;border:1.5px solid var(--rule);border-radius:10px;cursor:pointer;font-size:0.85rem;font-weight:600;}
+.status-pick input{accent-color:var(--purple);}
+.status-pick label:has(input:checked){border-color:var(--purple);background:var(--purple-light);}
+</style>
 </head>
 <body>
-<div id="app-header"></div>
-<main>
-<div class="panel-header">
-  <div class="panel-header-left">
-    <div class="panel-title">Guests</div>
-    <button class="btn" onclick="exportCSV()">Export CSV</button>
-    <button class="btn" onclick="document.getElementById('g-import').click()">Import CSV</button>
-    <input type="file" id="g-import" accept=".csv" style="display:none" onchange="startImport(event)">
-    <button class="btn danger" onclick="clearAll()">Clear all</button>
+<main class="main">
+  <div class="content">
+    <div class="page-head">
+      <div>
+        <h1>Guests</h1>
+        <div class="page-sub">Everyone who has RSVP'd on your guest site, plus anyone you add yourself.</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="exportCsv()" id="export-btn" style="display:none">Download list</button>
+        <button class="btn btn-primary" onclick="openGuest()" id="add-btn"></button>
+      </div>
+    </div>
+    <div id="stats"></div>
+    <div id="toolbar"></div>
+    <div id="list"><div class="spinner"></div></div>
   </div>
-  <button class="btn amber" onclick="openAddModal()">+ Add guest</button>
-</div>
-<div id="g-content"><div class="spinner"></div></div>
 </main>
 
-<div class="modal-overlay" id="add-guest-modal" onclick="if(event.target===this)closeAddModal()">
+<!-- GUEST MODAL -->
+<div class="modal-wrap" id="guest-modal">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add guest</div><button class="modal-close" onclick="closeAddModal()">&#x2715;</button></div>
-    <div class="field-row">
-      <div class="field"><label>First name *</label><input type="text" id="g-first"></div>
-      <div class="field"><label>Last name</label><input type="text" id="g-last"></div>
+    <div class="modal-head">
+      <h2 id="modal-title">Add a guest</h2>
+      <button class="modal-close" onclick="closeGuest()" aria-label="Close" id="close-ic"></button>
     </div>
-    <div class="field"><label>Email</label><input type="email" id="g-email"></div>
-    <div class="field-row">
-      <div class="field"><label>RSVP</label><select id="g-rsvp"><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="declined">Declined</option></select></div>
-      <div class="field"><label>Dietary</label><input type="text" id="g-dietary"></div>
+    <div class="meta-line" id="meta-line"></div>
+    <div id="answers-box"></div>
+    <div class="grid-2">
+      <div class="field"><label for="f-first">First name</label><input class="input" id="f-first"></div>
+      <div class="field"><label for="f-last">Last name</label><input class="input" id="f-last"></div>
     </div>
-    <div class="field"><label>Notes</label><input type="text" id="g-notes"></div>
-    <div class="modal-footer"><button class="btn-cancel" onclick="closeAddModal()">Cancel</button><button class="btn-primary" onclick="addGuest()">Add guest</button></div>
+    <div class="grid-2">
+      <div class="field"><label for="f-email">Email</label><input class="input" type="email" id="f-email"><div class="hint">If they RSVP with this email, it links to this guest.</div></div>
+      <div class="field"><label for="f-phone">Phone</label><input class="input" type="tel" id="f-phone"></div>
+    </div>
+    <div class="field">
+      <label>RSVP</label>
+      <div class="status-pick">
+        <label><input type="radio" name="status" value="pending">Awaiting reply</label>
+        <label><input type="radio" name="status" value="confirmed">Coming</label>
+        <label><input type="radio" name="status" value="declined">Not coming</label>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label for="f-diet">Dietary requirements</label><input class="input" id="f-diet"></div>
+      <div class="field"><label for="f-access">Accessibility needs</label><input class="input" id="f-access"></div>
+    </div>
+    <div class="field"><label for="f-notes">Your notes <span style="font-weight:400;color:var(--ink3)">(only you see these)</span></label><textarea class="input" id="f-notes" rows="2"></textarea></div>
+    <div class="form-actions">
+      <button class="btn btn-danger" id="delete-btn" onclick="deleteGuest()" style="margin-right:auto">Delete</button>
+      <button class="btn btn-ghost" onclick="closeGuest()">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveGuest()">Save</button>
+    </div>
   </div>
 </div>
-<div class="modal-overlay" id="import-modal" onclick="if(event.target===this)closeImportModal()">
-  <div class="modal" style="max-width:520px;">
-    <div class="modal-header"><div class="modal-title">Map CSV columns</div><button class="modal-close" onclick="closeImportModal()">&#x2715;</button></div>
-    <p style="font-size:0.81rem;color:var(--ink3);margin-bottom:1rem;">Match your CSV columns to guest fields.</p>
-    <div id="import-map"></div>
-    <div style="background:var(--cream);border-radius:8px;padding:0.7rem;margin-top:0.75rem;font-size:0.72rem;color:var(--ink3);font-family:monospace;overflow:hidden;text-overflow:ellipsis;" id="import-preview"></div>
-    <div class="modal-footer"><button class="btn-cancel" onclick="closeImportModal()">Cancel</button><button class="btn-primary" onclick="runImport()">Import</button></div>
-  </div>
-</div>
+
 <script>
+let user, ev, guests = [], filter = 'all', search = '', editing = null;
+const $ = id => document.getElementById(id);
+const STATUS = {
+  confirmed: '<span class="badge badge-green">Coming</span>',
+  declined: '<span class="badge badge-red">Not coming</span>',
+  pending: '<span class="badge badge-grey">Awaiting reply</span>'
+};
 
+(async function init() {
+  user = await requireUser(); if (!user) return;
+  ev = await loadEventOrLeave(); if (!ev) return;
+  Layout.render('guests', user, ev);
+  $('add-btn').innerHTML = ICON.plus + 'Add guest';
+  $('close-ic').innerHTML = ICON.close;
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGuest(); });
+  await load();
+})();
 
-var allGuests=[], allRooms=[], tpTables=[];
-
-async function init(){
-  await OctHeader.init('guests');
-  var res=await Promise.all([
-    sb.from('guests').select('*').eq('event_id',eventId).order('created_at',{ascending:true}),
-    sb.from('rooms').select('*').eq('event_id',eventId),
-    sb.from('events').select('table_plan').eq('id',eventId).single()
-  ]);
-  allGuests=res[0].data||[];
-  allRooms=res[1].data||[];
-  tpTables=Array.isArray(res[2].data&&res[2].data.table_plan)?res[2].data.table_plan:[];
+async function load() {
+  const { data, error } = await sb.from('guests')
+    .select('*, bookings(status, rooms(name))')
+    .eq('event_id', ev.id)
+    .order('created_at', { ascending: false });
+  if (error) { $('list').innerHTML = '<div class="notice notice-error">Could not load guests: ' + esc(error.message) + '</div>'; return; }
+  guests = data.map(g => {
+    const b = (g.bookings || []).find(x => x.status !== 'cancelled');
+    return Object.assign(g, { room: b && b.rooms ? b.rooms.name : null, paid: b && b.status === 'paid' });
+  });
   render();
 }
 
-function getGuestTable(gid){return tpTables.find(function(t){return (t.guests||[]).includes(gid);});}
-function getGuestRoom(gid){return allRooms.find(function(r){return r.guest_id===gid;});}
+function fullName(g) { return [g.first_name, g.last_name].filter(Boolean).join(' '); }
 
-function render(){
-  var el=document.getElementById('g-content');
-  if(!allGuests.length){el.innerHTML='<div class="empty-state"><div class="icon">&#x1F465;</div><h3>No guests yet</h3><p>Add guests manually or import from CSV.</p><button class="btn amber" onclick="openAddModal()">+ Add first guest</button></div>';return;}
-  var RSVP_STYLES={confirmed:'background:#f0f7f4;color:var(--green);',pending:'background:var(--amber-light);color:var(--amber-dark);',declined:'background:#fdf0f0;color:var(--red);'};
-  var wrap=document.createElement('div');wrap.className='table-wrap table-scroll';
-  var tbl=document.createElement('table');
-  tbl.innerHTML='<thead><tr><th>Name</th><th>RSVP</th><th>Table</th><th>Room</th><th>Dietary</th><th>Notes</th><th></th></tr></thead>';
-  var tbody=document.createElement('tbody');
-  allGuests.forEach(function(g){
-    var t=getGuestTable(g.id);
-    var r=getGuestRoom(g.id);
-    var rsvp=g.rsvp_status||'pending';
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td><strong style="font-size:0.85rem;">'+g.first_name+' '+(g.last_name||'')+'</strong>'+(g.email?'<br><span style="font-size:0.72rem;color:var(--ink3);">'+g.email+'</span>':'')+'</td>'
-      +'<td><select class="inline-select" style="border:1px solid var(--rule);border-radius:6px;" data-gid="'+g.id+'" class="rsvp-sel"><option value="pending" '+(rsvp==='pending'?'selected':'')+'>Pending</option><option value="confirmed" '+(rsvp==='confirmed'?'selected':'')+'>Confirmed</option><option value="declined" '+(rsvp==='declined'?'selected':'')+'>Declined</option></select></td>'
-      +'<td><select class="inline-select" style="border:1px solid var(--rule);border-radius:6px;max-width:120px;" data-gid="'+g.id+'" class="table-sel"><option value="">— Table —</option>'+tpTables.map(function(tb){return '<option value="'+tb.id+'"'+(t&&t.id===tb.id?' selected':'')+'>'+tb.name+'</option>';}).join('')+'</select></td>'
-      +'<td><select class="inline-select" style="border:1px solid var(--rule);border-radius:6px;max-width:120px;" data-gid="'+g.id+'" class="room-sel"><option value="">— Room —</option>'+allRooms.map(function(rm){return '<option value="'+rm.id+'"'+(r&&r.id===rm.id?' selected':'')+'>'+rm.name+'</option>';}).join('')+'</select></td>'
-      +'<td style="font-size:0.78rem;">'+(g.dietary||'—')+'</td>'
-      +'<td style="font-size:0.78rem;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(g.notes||'—')+'</td>'
-      +'<td><button class="row-del" data-gid="'+g.id+'">Delete</button></td>';
-    tbody.appendChild(tr);
-  });
-  tbl.appendChild(tbody);wrap.appendChild(tbl);
-  el.innerHTML='';el.appendChild(wrap);
-  el.querySelectorAll('.rsvp-sel').forEach(function(sel){sel.addEventListener('change',function(){updateRsvp(sel.dataset.gid,sel.value);});});
-  el.querySelectorAll('.table-sel').forEach(function(sel){sel.addEventListener('change',function(){assignTable(sel.dataset.gid,sel.value);});});
-  el.querySelectorAll('.room-sel').forEach(function(sel){sel.addEventListener('change',function(){assignRoom(sel.dataset.gid,sel.value);});});
-  el.querySelectorAll('[data-gid].row-del').forEach(function(btn){btn.addEventListener('click',function(){deleteGuest(btn.dataset.gid);});});
+function render() {
+  const count = s => guests.filter(g => g.rsvp_status === s).length;
+  const coming = count('confirmed');
+  const withRoom = guests.filter(g => g.room).length;
+  $('export-btn').style.display = guests.length ? 'inline-flex' : 'none';
+
+  if (!guests.length) {
+    $('stats').innerHTML = ''; $('toolbar').innerHTML = '';
+    $('list').innerHTML = '<div class="empty">' + ICON.guests +
+      '<h3>No guests yet</h3><p>When guests RSVP on your guest site they\'ll appear here automatically. You can also add guests yourself.</p>' +
+      '<div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap"><a class="btn btn-ghost" href="/event-site?id=' + ev.id + '">Share your guest site</a>' +
+      '<button class="btn btn-primary" onclick="openGuest()">' + ICON.plus + 'Add a guest</button></div></div>';
+    return;
+  }
+
+  $('stats').innerHTML = '<div class="stats">' +
+    '<div class="stat"><div class="stat-n">' + coming + '</div><div class="stat-l">Coming</div></div>' +
+    '<div class="stat"><div class="stat-n">' + count('pending') + '</div><div class="stat-l">Awaiting reply</div></div>' +
+    '<div class="stat"><div class="stat-n">' + count('declined') + '</div><div class="stat-l">Not coming</div></div>' +
+    '<div class="stat"><div class="stat-n">' + withRoom + '<span style="font-size:0.9rem;color:var(--ink3);font-weight:600"> / ' + coming + '</span></div><div class="stat-l">Coming with a room</div></div>' +
+    '</div>';
+
+  const f = (key, label, n) => '<button class="filter' + (filter === key ? ' active' : '') + '" onclick="setFilter(\'' + key + '\')">' + label + '<span>' + n + '</span></button>';
+  if (!$('search')) {
+    $('toolbar').innerHTML = '<div class="toolbar"><div class="filters" id="filters"></div>' +
+      '<input class="input search" id="search" placeholder="Search name or email" oninput="search=this.value.toLowerCase();renderList()"></div>';
+  }
+  $('filters').innerHTML = f('all', 'All', guests.length) + f('confirmed', 'Coming', coming) + f('pending', 'Awaiting', count('pending')) +
+    f('declined', 'Not coming', count('declined')) + f('noroom', 'Coming, no room', coming - guests.filter(g => g.room && g.rsvp_status === 'confirmed').length);
+  renderList();
 }
 
-async function updateRsvp(id,status){var g=allGuests.find(function(g){return g.id===id;});if(g)g.rsvp_status=status;var confirmed=allGuests.filter(function(g){return g.rsvp_status==='confirmed';}).length;await sb.from('guests').update({rsvp_status:status}).eq('id',id);await sb.from('events').update({rsvp_count:confirmed}).eq('id',eventId);document.getElementById('stat-guests').textContent=confirmed;}
-async function assignTable(guestId,tableId){tpTables.forEach(function(t){t.guests=(t.guests||[]).filter(function(id){return id!==guestId;});});if(tableId){var t=tpTables.find(function(t){return t.id===tableId;});if(t){if(!t.guests)t.guests=[];t.guests.push(guestId);}}await sb.from('events').update({table_plan:tpTables}).eq('id',eventId);}
-async function assignRoom(guestId,roomId){allRooms.forEach(function(r){if(r.guest_id===guestId){r.guest_id=null;r.status='available';sb.from('rooms').update({guest_id:null,status:'available'}).eq('id',r.id);}});if(roomId){var r=allRooms.find(function(r){return r.id===roomId;});if(r){r.guest_id=guestId;r.status='reserved';await sb.from('rooms').update({guest_id:guestId,status:'reserved'}).eq('id',roomId);}}}
-async function deleteGuest(id){if(!confirm('Delete this guest?'))return;tpTables.forEach(function(t){t.guests=(t.guests||[]).filter(function(gid){return gid!==id;});});await Promise.all([sb.from('guests').delete().eq('id',id),sb.from('events').update({table_plan:tpTables,guest_count:allGuests.length-1}).eq('id',eventId)]);allGuests=allGuests.filter(function(g){return g.id!==id;});document.getElementById('stat-guests').textContent=allGuests.filter(function(g){return g.rsvp_status==='confirmed';}).length;render();}
-async function clearAll(){if(!confirm('Delete ALL guests?'))return;await sb.from('guests').delete().eq('event_id',eventId);tpTables.forEach(function(t){t.guests=[];});await sb.from('events').update({guest_count:0,rsvp_count:0,table_plan:tpTables}).eq('id',eventId);allGuests=[];document.getElementById('stat-guests').textContent=0;render();}
+function setFilter(k) { filter = k; render(); }
 
-function openAddModal(){['g-first','g-last','g-email','g-dietary','g-notes'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('g-rsvp').value='pending';document.getElementById('add-guest-modal').classList.add('open');setTimeout(function(){document.getElementById('g-first').focus();},80);}
-function closeAddModal(){document.getElementById('add-guest-modal').classList.remove('open');}
-async function addGuest(){var first=document.getElementById('g-first').value.trim();if(!first){document.getElementById('g-first').style.borderColor='var(--red)';return;}var res=await sb.from('guests').insert([{event_id:eventId,first_name:first,last_name:document.getElementById('g-last').value.trim(),email:document.getElementById('g-email').value.trim(),rsvp_status:document.getElementById('g-rsvp').value,dietary:document.getElementById('g-dietary').value.trim(),notes:document.getElementById('g-notes').value.trim()}]).select().single();if(!res.error&&res.data){allGuests.push(res.data);await sb.from('events').update({guest_count:allGuests.length}).eq('id',eventId);document.getElementById('stat-guests').textContent=allGuests.filter(function(g){return g.rsvp_status==='confirmed';}).length;closeAddModal();render();}}
+function renderList() {
+  let list = guests;
+  if (filter === 'noroom') list = list.filter(g => g.rsvp_status === 'confirmed' && !g.room);
+  else if (filter !== 'all') list = list.filter(g => g.rsvp_status === filter);
+  if (search) list = list.filter(g => (fullName(g) + ' ' + (g.email || '')).toLowerCase().includes(search));
 
-function exportCSV(){if(!allGuests.length){alert('No guests to export.');return;}var csv=['First name,Last name,Email,RSVP,Dietary,Notes'].concat(allGuests.map(function(g){return [g.first_name,g.last_name||'',g.email||'',g.rsvp_status||'pending',g.dietary||'',g.notes||''].map(function(v){return '"'+v.replace(/"/g,'""')+'"';}).join(',');})).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(currentEvent?currentEvent.name:'event')+'-guests.csv';a.click();}
+  if (!list.length) { $('list').innerHTML = '<div class="empty" style="padding:2rem"><p style="margin:0">No guests match.</p></div>'; return; }
 
-var _importRows=[], _importHeaders=[];
-async function startImport(e){var file=e.target.files[0];if(!file)return;e.target.value='';var text=await file.text();var lines=text.split('\n').map(function(l){return l.replace(/\r$/,'');}).filter(function(l){return l.trim();});if(lines.length<2){alert('CSV appears empty.');return;}function parseRow(row){var cols=[],cur='',inQ=false;for(var i=0;i<row.length;i++){var ch=row[i];if(ch==='"'){if(inQ&&row[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(ch===','&&!inQ){cols.push(cur.trim());cur='';}else cur+=ch;}cols.push(cur.trim());return cols;}_importHeaders=parseRow(lines[0]);_importRows=lines.slice(1).map(parseRow).filter(function(r){return r.some(function(c){return c.trim();});});var HINTS={first_name:['first','firstname','first name'],last_name:['last','lastname','last name','surname'],email:['email','e-mail'],rsvp_status:['rsvp','status','attending'],dietary:['dietary','diet'],notes:['notes','note','comments']};function best(k){var hs=HINTS[k]||[];for(var i=0;i<_importHeaders.length;i++){if(hs.indexOf(_importHeaders[i].toLowerCase().trim())>-1)return i;}return '';}var mapEl=document.getElementById('import-map');mapEl.innerHTML=['first_name','last_name','email','rsvp_status','dietary','notes'].map(function(k){return '<div class="field-row"><div style="display:flex;align-items:center;font-size:0.82rem;font-weight:500;">'+({first_name:'First name *',last_name:'Last name',email:'Email',rsvp_status:'RSVP',dietary:'Dietary',notes:'Notes'})[k]+'</div><select id="map-'+k+'" style="padding:0.5rem;border:1.5px solid var(--rule);border-radius:8px;font-family:Plus Jakarta Sans,sans-serif;font-size:0.82rem;outline:none;"><option value="">Skip</option>'+_importHeaders.map(function(h,i){return '<option value="'+i+'"'+(best(k)===i?' selected':'')+'>'+h+'</option>';}).join('')+'</select></div>';}).join('');if(_importRows[0])document.getElementById('import-preview').textContent=_importRows[0].map(function(v,i){return '['+ (_importHeaders[i]||i)+']: '+(v||'—');}).join('  |  ');document.getElementById('import-modal').classList.add('open');}
-function closeImportModal(){document.getElementById('import-modal').classList.remove('open');_importRows=[];_importHeaders=[];}
-async function runImport(){var gc=function(k){var s=document.getElementById('map-'+k);return s&&s.value!==''?parseInt(s.value):-1;};var fc=gc('first_name');if(fc===-1){alert('Please map the First name column.');return;}var RSVP_MAP={confirmed:'confirmed',yes:'confirmed',y:'confirmed',attending:'confirmed',declined:'declined',no:'declined',n:'declined',pending:'pending',maybe:'pending',tbc:'pending','':'pending'};var rows=_importRows.map(function(r){var fn=(r[fc]||'').trim();if(!fn)return null;var rv=(r[gc('rsvp_status')]||'').trim().toLowerCase();return{event_id:eventId,first_name:fn,last_name:gc('last_name')>-1?(r[gc('last_name')]||'').trim():'',email:gc('email')>-1?(r[gc('email')]||'').trim():'',rsvp_status:RSVP_MAP[rv]||'pending',dietary:gc('dietary')>-1?(r[gc('dietary')]||'').trim():'',notes:gc('notes')>-1?(r[gc('notes')]||'').trim():''};}).filter(Boolean);if(!rows.length){alert('No valid rows to import.');return;}if(!confirm('Import '+rows.length+' guests?'))return;var res=await sb.from('guests').insert(rows);if(res.error){alert('Import failed: '+res.error.message);return;}closeImportModal();var gres=await sb.from('guests').select('*').eq('event_id',eventId).order('created_at',{ascending:true});allGuests=gres.data||[];await sb.from('events').update({guest_count:allGuests.length}).eq('id',eventId);document.getElementById('stat-guests').textContent=allGuests.filter(function(g){return g.rsvp_status==='confirmed';}).length;render();alert('Imported '+rows.length+' guests!');}
-init();
+  $('list').innerHTML = '<div class="table"><div class="g-row g-head"><div>Guest</div><div>RSVP</div><div>Room</div><div>Dietary / notes</div></div>' +
+    list.map(g => {
+      const extra = [g.dietary, g.accessibility].filter(Boolean).join(' · ');
+      const nAns = Object.keys(g.answers || {}).length;
+      return '<div class="g-row" onclick="openGuest(\'' + g.id + '\')">' +
+        '<div style="min-width:0"><div class="g-name">' + esc(fullName(g) || '(no name)') + '</div><div class="g-email">' + esc(g.email || 'No email') + '</div></div>' +
+        '<div>' + STATUS[g.rsvp_status] + '</div>' +
+        '<div class="g-room">' + (g.room ? esc(g.room) + (g.paid ? '<span class="paid">Paid</span>' : '') : '<span class="muted">No room</span>') + '</div>' +
+        '<div class="g-notes">' + (extra ? esc(extra) : nAns ? nAns + ' answer' + (nAns > 1 ? 's' : '') : '<span class="muted">—</span>') + '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+}
 
+// ── MODAL ──
+function openGuest(id) {
+  editing = id ? guests.find(g => g.id === id) : null;
+  const g = editing || { rsvp_status: 'pending' };
+  $('modal-title').textContent = editing ? (fullName(g) || 'Guest') : 'Add a guest';
+  $('f-first').value = g.first_name || '';
+  $('f-last').value = g.last_name || '';
+  $('f-email').value = g.email || '';
+  $('f-phone').value = g.phone || '';
+  $('f-diet').value = g.dietary || '';
+  $('f-access').value = g.accessibility || '';
+  $('f-notes').value = g.notes || '';
+  document.querySelector('input[name=status][value=' + g.rsvp_status + ']').checked = true;
+  $('delete-btn').style.display = editing ? 'inline-flex' : 'none';
 
+  $('meta-line').textContent = editing
+    ? (g.source === 'guest_site' ? 'RSVP\'d on the guest site' : 'Added by you') + (g.created_at ? ' · ' + new Date(g.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '') +
+      (g.room ? ' · Room: ' + g.room + (g.paid ? ' (paid)' : ' (reserved)') : '')
+    : '';
+  const ans = Object.entries((editing && editing.answers) || {});
+  $('answers-box').innerHTML = ans.length
+    ? '<div class="answers"><h4>Their answers</h4>' + ans.map(([q, a]) => '<div class="answer"><b>' + esc(q) + '</b>' + esc(a) + '</div>').join('') + '</div>'
+    : '';
+  $('guest-modal').classList.add('open');
+  if (!editing) setTimeout(() => $('f-first').focus(), 50);
+}
+function closeGuest() { $('guest-modal').classList.remove('open'); }
+
+async function saveGuest() {
+  const first = $('f-first').value.trim();
+  const email = $('f-email').value.trim().toLowerCase();
+  if (!first) return toast('Please enter a first name.', true);
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) return toast('That email doesn\'t look right.', true);
+  const row = {
+    first_name: first, last_name: $('f-last').value.trim() || null, email: email || null,
+    phone: $('f-phone').value.trim() || null, rsvp_status: document.querySelector('input[name=status]:checked').value,
+    dietary: $('f-diet').value.trim() || null, accessibility: $('f-access').value.trim() || null, notes: $('f-notes').value.trim() || null
+  };
+  const btn = $('save-btn'); btn.disabled = true; btn.textContent = 'Saving...';
+  let error;
+  if (editing) ({ error } = await sb.from('guests').update(row).eq('id', editing.id));
+  else ({ error } = await sb.from('guests').insert(Object.assign({ event_id: ev.id, source: 'planner' }, row)));
+  btn.disabled = false; btn.textContent = 'Save';
+  if (error) {
+    if (/guests_one_per_email|duplicate/i.test(error.message)) return toast('Another guest already has that email address.', true);
+    return toast('Could not save: ' + error.message, true);
+  }
+  closeGuest();
+  toast(editing ? 'Guest updated' : 'Guest added');
+  load();
+}
+
+async function deleteGuest() {
+  const msg = 'Delete ' + (fullName(editing) || 'this guest') + '?' + (editing.room ? '\n\nThis also removes their room reservation (' + editing.room + ').' : '');
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('guests').delete().eq('id', editing.id);
+  if (error) return toast('Could not delete: ' + error.message, true);
+  closeGuest(); toast('Guest deleted'); load();
+}
+
+// ── EXPORT ──
+function exportCsv() {
+  const qs = (ev.rsvp_questions || []).map(q => q.label);
+  Object.values(guests).forEach(g => Object.keys(g.answers || {}).forEach(k => { if (!qs.includes(k)) qs.push(k); }));
+  const head = ['First name', 'Last name', 'Email', 'Phone', 'RSVP', 'Room', 'Paid', 'Dietary', 'Accessibility', 'Notes'].concat(qs);
+  const label = { confirmed: 'Coming', declined: 'Not coming', pending: 'Awaiting reply' };
+  const cell = v => { v = v == null ? '' : String(v); if (/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
+  const rows = guests.map(g => [g.first_name, g.last_name, g.email, g.phone, label[g.rsvp_status], g.room, g.room ? (g.paid ? 'Yes' : 'No') : '',
+    g.dietary, g.accessibility, g.notes].concat(qs.map(q => (g.answers || {})[q])).map(cell).join(','));
+  const csv = '﻿' + [head.map(cell).join(',')].concat(rows).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = ev.name.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-') + '-guests.csv';
+  a.click();
+}
 </script>
 </body>
 </html>

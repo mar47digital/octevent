@@ -7,6 +7,7 @@
     { "source": "/event-details", "destination": "/event-details.html" },
     { "source": "/event-rooms", "destination": "/event-rooms.html" },
     { "source": "/event-site", "destination": "/event-site.html" },
+    { "source": "/event-guests", "destination": "/event-guests.html" },
     { "source": "/e/:slug", "destination": "/guest.html" }
   ]
 }

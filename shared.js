@@ -148,7 +148,7 @@ const Layout = {
         link('details', '/event-details?id=' + eid, 'Event details') +
         link('rooms', '/event-rooms?id=' + eid, 'Rooms') +
         link('site', '/event-site?id=' + eid, 'Guest site') +
-        link('guests', '#', 'Guests', true) +
+        link('guests', '/event-guests?id=' + eid, 'Guests') +
         link('bookings', '#', 'Bookings', true) +
         '<div class="sb-divider"></div>' +
         '<a class="sb-link" href="/dashboard">' + ICON.back + 'All events</a>';
