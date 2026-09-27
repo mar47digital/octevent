@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octevent — Guest site</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/shared.js"></script>
+<style>
+.live-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.live-state{display:flex;align-items:center;gap:0.75rem;}
+.dot{width:10px;height:10px;border-radius:50%;background:#c9c6bd;flex-shrink:0;}
+.dot.on{background:#2fa36b;box-shadow:0 0 0 4px #dff3e8;}
+.live-title{font-weight:700;}
+.live-sub{font-size:0.82rem;color:var(--ink3);}
+.switch{position:relative;width:50px;height:28px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.switch span{position:absolute;inset:0;background:#d9d6cd;border-radius:100px;cursor:pointer;transition:background 0.2s;}
+.switch span::before{content:'';position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);}
+.switch input:checked + span{background:var(--purple);}
+.switch input:checked + span::before{transform:translateX(22px);}
+.link-box{display:flex;gap:0.5rem;margin-top:1.25rem;flex-wrap:wrap;}
+.link-box .input{flex:1;min-width:220px;font-family:monospace;font-size:0.86rem;background:var(--cream);}
+.checklist{list-style:none;margin-top:1rem;display:flex;flex-direction:column;gap:0.4rem;font-size:0.85rem;}
+.checklist li{display:flex;gap:8px;align-items:center;}
+.checklist .ok{color:var(--green);} .checklist .no{color:var(--ink3);}
+.checklist a{color:var(--purple-dark);font-weight:600;}
+
+.fixed-qs{font-size:0.84rem;color:var(--ink3);margin-bottom:1rem;}
+.q{border:1px solid var(--rule);border-radius:10px;padding:1rem;margin-bottom:0.75rem;background:var(--cream);}
+.q-top{display:flex;gap:0.5rem;align-items:flex-start;}
+.q-top .input{flex:1;}
+.q-opts{margin-top:0.6rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center;font-size:0.84rem;}
+.q-opts select{width:auto;padding:0.45rem 0.7rem;}
+.q-opts label{display:flex;align-items:center;gap:6px;cursor:pointer;}
+.q-options{margin-top:0.6rem;}
+.q-tools{display:flex;gap:0.3rem;}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="content">
+    <div id="page" style="display:none">
+      <div class="page-head">
+        <div>
+          <h1>Guest site</h1>
+          <div class="page-sub">The page you share with guests: event info, rooms and RSVP.</div>
+        </div>
+        <a class="btn btn-ghost" id="preview-btn" target="_blank" rel="noopener">Preview page</a>
+      </div>
+
+      <div class="card">
+        <div class="live-row">
+          <div class="live-state">
+            <span class="dot" id="live-dot"></span>
+            <div><div class="live-title" id="live-title"></div><div class="live-sub" id="live-sub"></div></div>
+          </div>
+          <label class="switch" title="Guest site on/off"><input type="checkbox" id="live-toggle"><span></span></label>
+        </div>
+        <div class="link-box">
+          <input class="input" id="link" readonly onclick="this.select()">
+          <button class="btn btn-primary" onclick="copyLink()">Copy link</button>
+        </div>
+        <ul class="checklist" id="checklist"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">RSVP questions</div>
+        <div class="card-sub">Every RSVP already asks for name, email, whether they're coming, dietary requirements and accessibility needs. Add anything else you'd like to know.</div>
+        <div id="questions"></div>
+        <button class="btn btn-ghost" onclick="addQuestion()"><span style="display:flex" id="plus-ic"></span>Add a question</button>
+        <div class="form-actions">
+          <span class="save-state" id="save-state"></span>
+          <button class="btn btn-primary" id="save-btn" onclick="saveQuestions()">Save questions</button>
+        </div>
+      </div>
+    </div>
+    <div id="loading"><div class="spinner"></div></div>
+  </div>
+</main>
+
+<script>
+let user, ev, questions = [], roomCount = 0, dirty = false;
+const $ = id => document.getElementById(id);
+const EXAMPLES = ['Which day are you arriving?', 'Will you need an airport transfer?', 'Song request for the party?'];
+
+(async function init() {
+  user = await requireUser(); if (!user) return;
+  ev = await loadEventOrLeave(); if (!ev) return;
+  Layout.render('site', user, ev);
+  $('plus-ic').innerHTML = ICON.plus;
+
+  const url = location.origin + '/e/' + ev.slug;
+  $('link').value = url;
+  $('preview-btn').href = url;
+  $('live-toggle').checked = ev.guest_site_live;
+  $('live-toggle').addEventListener('change', toggleLive);
+
+  const { count } = await sb.from('rooms').select('id', { count: 'exact', head: true }).eq('event_id', ev.id);
+  roomCount = count || 0;
+
+  questions = (ev.rsvp_questions || []).map(q => Object.assign({ type: 'text', options: [], required: false }, q));
+  renderLive();
+  renderQuestions();
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  $('loading').style.display = 'none';
+  $('page').style.display = 'block';
+})();
+
+function renderLive() {
+  const on = ev.guest_site_live;
+  $('live-dot').classList.toggle('on', on);
+  $('live-title').textContent = on ? 'Your guest site is live' : 'Your guest site is off';
+  $('live-sub').textContent = on ? 'Anyone with the link can see it, RSVP and reserve a room.' : 'Only you can preview it. Switch it on when you\'re ready to share the link.';
+  const item = (ok, text) => '<li><span class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '&#10003;' : '&#9675;') + '</span>' + text + '</li>';
+  $('checklist').innerHTML =
+    item(!!ev.description, ev.description ? 'Welcome message added' : 'Add a welcome message in <a href="/event-details?id=' + ev.id + '">Event details</a>') +
+    item(!!ev.cover_image_url, ev.cover_image_url ? 'Cover photo added' : 'Add a cover photo in <a href="/event-details?id=' + ev.id + '">Event details</a>') +
+    item(roomCount > 0, roomCount > 0 ? roomCount + ' room' + (roomCount > 1 ? 's' : '') + ' for guests to choose from' : 'Add rooms in <a href="/event-rooms?id=' + ev.id + '">Rooms</a> (optional)');
+}
+
+async function toggleLive(e) {
+  const on = e.target.checked;
+  if (on && !confirm('Switch your guest site on?\n\nAnyone with the link will be able to see it, RSVP and reserve rooms.')) { e.target.checked = false; return; }
+  const { error } = await sb.from('events').update({ guest_site_live: on }).eq('id', ev.id);
+  if (error) { e.target.checked = !on; return toast('Could not change it: ' + error.message, true); }
+  ev.guest_site_live = on;
+  renderLive();
+  toast(on ? 'Guest site is live' : 'Guest site switched off');
+}
+
+async function copyLink() {
+  try { await navigator.clipboard.writeText($('link').value); toast('Link copied'); }
+  catch (e) { $('link').select(); toast('Press Ctrl+C (or Cmd+C) to copy'); }
+}
+
+// ── QUESTIONS ──
+function renderQuestions() {
+  if (!questions.length) {
+    $('questions').innerHTML = '<p class="fixed-qs">No extra questions yet. For example: "' + EXAMPLES[0] + '"</p>';
+    return;
+  }
+  $('questions').innerHTML = questions.map((q, i) =>
+    '<div class="q"><div class="q-top">' +
+      '<input class="input" placeholder="e.g. ' + esc(EXAMPLES[i % EXAMPLES.length]) + '" value="' + esc(q.label || '') + '" oninput="setQ(' + i + ',\'label\',this.value)">' +
+      '<div class="q-tools">' +
+        '<button class="icon-btn" title="Move up" onclick="moveQ(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + '>' + ICON.up + '</button>' +
+        '<button class="icon-btn" title="Move down" onclick="moveQ(' + i + ',1)"' + (i === questions.length - 1 ? ' disabled' : '') + '>' + ICON.down + '</button>' +
+        '<button class="icon-btn" title="Delete" onclick="deleteQ(' + i + ')">' + ICON.trash + '</button>' +
+      '</div></div>' +
+      '<div class="q-opts">' +
+        '<select class="input" onchange="setQ(' + i + ',\'type\',this.value);renderQuestions()">' +
+          '<option value="text"' + (q.type === 'text' ? ' selected' : '') + '>Guest types an answer</option>' +
+          '<option value="choice"' + (q.type === 'choice' ? ' selected' : '') + '>Guest picks one option</option></select>' +
+        '<label><input type="checkbox"' + (q.required ? ' checked' : '') + ' onchange="setQ(' + i + ',\'required\',this.checked)">Must answer</label>' +
+      '</div>' +
+      (q.type === 'choice' ? '<div class="q-options"><input class="input" placeholder="Options, separated by commas: Friday, Saturday, Sunday" value="' + esc((q.options || []).join(', ')) + '" oninput="setQ(' + i + ',\'options\',this.value.split(\',\').map(s=>s.trim()).filter(Boolean))"></div>' : '') +
+    '</div>'
+  ).join('');
+}
+function markDirty() { dirty = true; $('save-state').textContent = 'Unsaved changes'; }
+function setQ(i, key, val) { questions[i][key] = val; markDirty(); }
+function addQuestion() { questions.push({ label: '', type: 'text', options: [], required: false }); renderQuestions(); markDirty(); const inputs = document.querySelectorAll('.q-top .input'); inputs[inputs.length - 1].focus(); }
+function deleteQ(i) { questions.splice(i, 1); renderQuestions(); markDirty(); }
+function moveQ(i, d) { const q = questions.splice(i, 1)[0]; questions.splice(i + d, 0, q); renderQuestions(); markDirty(); }
+
+async function saveQuestions() {
+  const clean = questions.map(q => ({ label: (q.label || '').trim(), type: q.type, options: q.type === 'choice' ? (q.options || []) : [], required: !!q.required }))
+    .filter(q => q.label);
+  const labels = clean.map(q => q.label.toLowerCase());
+  if (new Set(labels).size !== labels.length) return toast('Two questions have the same wording. Please make each one different.', true);
+  const bad = clean.find(q => q.type === 'choice' && q.options.length < 2);
+  if (bad) return toast('"' + bad.label + '" needs at least two options, separated by commas.', true);
+
+  const btn = $('save-btn'); btn.disabled = true; btn.textContent = 'Saving...';
+  const { error } = await sb.from('events').update({ rsvp_questions: clean }).eq('id', ev.id);
+  btn.disabled = false; btn.textContent = 'Save questions';
+  if (error) return toast('Could not save: ' + error.message, true);
+  questions = clean; ev.rsvp_questions = clean;
+  dirty = false; $('save-state').textContent = 'All changes saved';
+  renderQuestions();
+  toast('Questions saved');
+}
+</script>
+</body>
+</html>

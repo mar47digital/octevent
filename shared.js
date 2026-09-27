@@ -133,7 +133,7 @@ const ICON = {
 
 // ── LAYOUT ──
 // Builds the sidebar + mobile top bar around the page's <main class="main">.
-// active: 'events' | 'details' | 'rooms' ; event: the current event row (or null)
+// active: 'events' | 'details' | 'rooms' | 'site' ; event: the current event row (or null)
 const Layout = {
   render(active, user, event) {
     const name = userName(user);
@@ -147,9 +147,9 @@ const Layout = {
       nav =
         link('details', '/event-details?id=' + eid, 'Event details') +
         link('rooms', '/event-rooms?id=' + eid, 'Rooms') +
+        link('site', '/event-site?id=' + eid, 'Guest site') +
         link('guests', '#', 'Guests', true) +
         link('bookings', '#', 'Bookings', true) +
-        link('site', '#', 'Guest site', true) +
         '<div class="sb-divider"></div>' +
         '<a class="sb-link" href="/dashboard">' + ICON.back + 'All events</a>';
     } else {

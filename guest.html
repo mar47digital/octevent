@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--accent:#6B3FD6;--on-accent:#fff;--accent-soft:#EDE9FE;--ink:#18181A;--ink2:#555;--ink3:#8a8a8a;--cream:#FAFAF7;--rule:#ECEAE4;--green:#2d6a4f;--green-bg:#eef6f1;--red:#c0392b;--red-bg:#fdf0f0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:var(--ink);font-size:16px;line-height:1.6;}
+img{display:block;max-width:100%;}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;}
+.wrap{max-width:900px;margin:0 auto;padding:0 1.25rem;}
+
+/* HERO */
+.hero{position:relative;min-height:340px;display:flex;align-items:flex-end;color:#fff;background:var(--accent);overflow:hidden;}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.65),rgba(0,0,0,0.05) 65%);}
+.hero .wrap{position:relative;z-index:1;width:100%;padding-top:4rem;padding-bottom:2.25rem;}
+.hero-type{font-size:0.75rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.9;}
+.hero h1{font-size:clamp(2rem,6vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-0.02em;margin:0.35rem 0 0.6rem;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:0.4rem 1.25rem;font-size:0.95rem;opacity:0.95;}
+.hero-meta span{display:inline-flex;align-items:center;gap:6px;}
+.hero-meta svg{width:16px;height:16px;}
+
+/* TABS */
+.tabs{position:sticky;top:0;z-index:20;background:rgba(250,250,247,0.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);}
+.tabs .wrap{display:flex;gap:0.25rem;}
+.tab{padding:1rem 0.9rem;font-size:0.92rem;font-weight:600;color:var(--ink3);text-decoration:none;border-bottom:2.5px solid transparent;margin-bottom:-1px;}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent);}
+
+section{padding:2.5rem 0 4rem;display:none;}
+section.active{display:block;}
+h2{font-size:1.6rem;font-weight:800;letter-spacing:-0.01em;margin-bottom:0.4rem;}
+.lead{color:var(--ink2);margin-bottom:2rem;}
+
+/* INFO */
+.info-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:2.5rem;}
+@media (max-width:720px){.info-grid{grid-template-columns:1fr;gap:1.75rem;}}
+.prose{white-space:pre-line;color:var(--ink2);}
+.side-card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:1.4rem;}
+.side-card h3{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink3);margin-bottom:0.3rem;}
+.side-card p{font-weight:600;margin-bottom:1rem;}
+.side-card p:last-of-type{margin-bottom:1.25rem;}
+.schedule{margin-top:2rem;}
+.schedule h3{font-size:1.1rem;font-weight:700;margin-bottom:0.6rem;}
+.schedule .prose{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:1.25rem 1.4rem;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0.8rem 1.5rem;border-radius:100px;border:1.5px solid transparent;font-weight:700;font-size:0.92rem;cursor:pointer;text-decoration:none;transition:filter 0.15s,border-color 0.15s;}
+.btn-accent{background:var(--accent);color:var(--on-accent);}
+.btn-accent:hover{filter:brightness(0.92);}
+.btn-ghost{background:#fff;border-color:var(--rule);color:var(--ink);}
+.btn-ghost:hover{border-color:var(--ink);}
+.btn:disabled{opacity:0.5;cursor:not-allowed;filter:none;}
+.btn-block{width:100%;}
+
+/* ROOMS */
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1.25rem;}
+.room{background:#fff;border:1px solid var(--rule);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;}
+.room.mine{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent);}
+.gallery{position:relative;aspect-ratio:4/3;background:var(--accent-soft);}
+.slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;height:100%;scrollbar-width:none;}
+.slides::-webkit-scrollbar{display:none;}
+.slides img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;scroll-snap-align:start;}
+.no-photo{height:100%;display:flex;align-items:center;justify-content:center;color:var(--accent);opacity:0.5;}
+.no-photo svg{width:36px;height:36px;}
+.g-btn{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+.g-btn svg{width:16px;height:16px;}
+.g-prev{left:10px;}.g-next{right:10px;}
+.dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:5px;pointer-events:none;}
+.dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.55);}
+.dot.on{background:#fff;}
+.flag{position:absolute;top:12px;left:12px;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:100px;background:#fff;color:var(--ink);z-index:2;}
+.flag.mine{background:var(--accent);color:var(--on-accent);}
+.room-body{padding:1.1rem 1.2rem 1.25rem;display:flex;flex-direction:column;flex:1;}
+.room-top{display:flex;justify-content:space-between;gap:0.75rem;align-items:baseline;}
+.room-name{font-weight:700;font-size:1.08rem;line-height:1.3;}
+.room-price{font-weight:800;font-size:1.1rem;white-space:nowrap;}
+.room-price small{display:block;font-size:0.68rem;font-weight:500;color:var(--ink3);text-align:right;}
+.facts{display:flex;gap:1rem;font-size:0.84rem;color:var(--ink2);margin:0.3rem 0 0.6rem;flex-wrap:wrap;}
+.facts span{display:inline-flex;align-items:center;gap:5px;}
+.facts svg{width:15px;height:15px;color:var(--ink3);}
+.room-desc{font-size:0.88rem;color:var(--ink2);white-space:pre-line;margin-bottom:1rem;}
+.room-body .btn{margin-top:auto;}
+
+/* RSVP */
+.form-card{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:1.75rem;max-width:620px;}
+.field{margin-bottom:1.1rem;}
+.field label,.field .lbl{display:block;font-size:0.84rem;font-weight:600;margin-bottom:0.4rem;}
+.field .req{color:var(--red);}
+.input{width:100%;padding:0.75rem 0.95rem;border:1.5px solid var(--rule);border-radius:10px;background:#fff;outline:none;}
+.input:focus{border-color:var(--accent);}
+textarea.input{resize:vertical;min-height:80px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media (max-width:560px){.row2{grid-template-columns:1fr;}}
+.choice{display:flex;gap:0.6rem;flex-wrap:wrap;}
+.choice label{flex:1;min-width:140px;display:flex;align-items:center;gap:10px;padding:0.8rem 1rem;border:1.5px solid var(--rule);border-radius:10px;cursor:pointer;font-weight:600;font-size:0.92rem;margin:0;}
+.choice input{accent-color:var(--accent);width:17px;height:17px;}
+.choice label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);}
+.attending-only.hidden{display:none;}
+
+.notice{padding:0.9rem 1.1rem;border-radius:12px;margin-bottom:1.25rem;font-size:0.92rem;}
+.notice-error{background:var(--red-bg);color:var(--red);}
+.notice-ok{background:var(--green-bg);color:var(--green);}
+.notice-info{background:#fff;border:1px solid var(--rule);color:var(--ink2);}
+.done{text-align:center;padding:2.5rem 1.5rem;}
+.done svg{width:44px;height:44px;color:var(--accent);margin:0 auto 1rem;}
+.done h3{font-size:1.35rem;font-weight:800;margin-bottom:0.4rem;}
+.done p{color:var(--ink2);margin-bottom:1.5rem;}
+.done .btns{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;}
+
+/* MODAL */
+.modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;padding:1rem;z-index:50;}
+.modal-wrap.open{display:flex;}
+.modal{background:#fff;border-radius:18px;max-width:440px;width:100%;padding:1.75rem;}
+.modal h3{font-size:1.3rem;font-weight:800;margin-bottom:0.3rem;}
+.modal p{color:var(--ink2);font-size:0.92rem;margin-bottom:1.25rem;}
+.modal .btns{display:flex;gap:0.6rem;margin-top:1.25rem;}
+.modal .btns .btn{flex:1;}
+
+.preview-bar{background:var(--ink);color:#fff;font-size:0.85rem;text-align:center;padding:0.6rem 1rem;}
+.preview-bar a{color:#fff;font-weight:700;}
+footer{border-top:1px solid var(--rule);padding:2rem 0;text-align:center;font-size:0.78rem;color:var(--ink3);}
+footer a{color:var(--ink2);font-weight:600;text-decoration:none;}
+.center{text-align:center;padding:6rem 1.5rem;}
+.center h1{font-size:1.6rem;font-weight:800;margin-bottom:0.5rem;}
+.center p{color:var(--ink2);}
+.spinner{width:28px;height:28px;border:3px solid var(--rule);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div id="app"><div class="center"><div class="spinner"></div></div></div>
+
+<!-- RESERVE MODAL -->
+<div class="modal-wrap" id="reserve-modal">
+  <div class="modal">
+    <h3 id="rm-title">Reserve this room</h3>
+    <p id="rm-text"></p>
+    <div class="notice notice-error" id="rm-error" style="display:none"></div>
+    <div class="field">
+      <label for="rm-email">The email you RSVP'd with</label>
+      <input class="input" type="email" id="rm-email" placeholder="you@example.com">
+    </div>
+    <div class="btns">
+      <button class="btn btn-ghost" onclick="closeReserve()">Cancel</button>
+      <button class="btn btn-accent" id="rm-btn" onclick="confirmReserve()">Reserve</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  'https://esjmzvhxbwcpslutprel.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzam16dmh4YndjcHNsdXRwcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzcxNjAsImV4cCI6MjA5Mzc1MzE2MH0.fsr1_P_ZB68SaiK00GPXvJLQUePM4eLght_CaAYOeF0'
+);
+const TYPES = { retreat: 'Retreat', wedding: 'Wedding', group_holiday: 'Group holiday', corporate: 'Corporate offsite' };
+const IC = {
+  cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  bed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><line x1="2" y1="17" x2="22" y2="17"/></svg>',
+  img: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+  left: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+  right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+};
+
+// slug from /e/<slug>  (or ?e=<slug> as a fallback)
+const slug = (location.pathname.match(/^\/e\/([^\/?#]+)/) || [])[1] || new URLSearchParams(location.search).get('e');
+const STORE_KEY = 'octevent-guest-' + slug;
+let site = null, preview = false, reserving = null;
+
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function fmtDate(d, withYear) { if (!d) return ''; const [y,m,day] = d.split('-').map(Number); const o = {weekday:'short',day:'numeric',month:'long'}; if (withYear !== false) o.year = 'numeric'; return new Date(y,m-1,day).toLocaleDateString('en-GB', o); }
+function fmtRange(a, b) { if (!a) return ''; if (!b || a === b) return fmtDate(a); return fmtDate(a, a.slice(0,4) !== b.slice(0,4)) + ' – ' + fmtDate(b); }
+function fmtEuro(n) { const v = Number(n || 0); return '€' + v.toLocaleString('en-GB', {minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2}); }
+function me() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; } }
+function saveMe(obj) { try { localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign(me(), obj))); } catch (e) {} }
+
+// pick white or dark text for buttons, whatever the brand colour
+function setAccent(hex) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) hex = '#6B3FD6';
+  const [r,g,b] = [1,3,5].map(i => parseInt(hex.slice(i, i+2), 16) / 255).map(c => c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4));
+  const lum = 0.2126*r + 0.7152*g + 0.0722*b;
+  const root = document.documentElement.style;
+  root.setProperty('--accent', hex);
+  root.setProperty('--on-accent', lum > 0.4 ? '#18181A' : '#fff');
+  root.setProperty('--accent-soft', hex + '1a');
+}
+
+async function load() {
+  if (!slug) return notFound();
+  const { data, error } = await sb.rpc('get_guest_site', { p_slug: slug });
+  if (error) return fail('Something went wrong loading this page. Please try again in a moment.');
+  if (data) { site = data; return render(); }
+
+  // Not live: if the organiser is logged in, show them a preview
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const { data: ev } = await sb.from('events').select('*').eq('slug', slug).maybeSingle();
+    if (ev) {
+      const [{ data: rooms }, { data: bk }] = await Promise.all([
+        sb.from('rooms').select('*').eq('event_id', ev.id).order('sort_order').order('created_at'),
+        sb.from('bookings').select('room_id').eq('event_id', ev.id).neq('status', 'cancelled')
+      ]);
+      const booked = new Set((bk || []).map(b => b.room_id));
+      preview = { eventId: ev.id };
+      site = { event: ev, rooms: (rooms || []).map(r => Object.assign({}, r, { available: !booked.has(r.id) })) };
+      return render();
+    }
+  }
+  notFound();
+}
+function notFound() {
+  document.title = 'Event not found';
+  document.getElementById('app').innerHTML = '<div class="center"><h1>This event page isn\'t available</h1><p>The link may be wrong, or the organiser hasn\'t opened it yet. Please check with them.</p></div>';
+}
+function fail(msg) { document.getElementById('app').innerHTML = '<div class="center"><h1>Sorry</h1><p>' + esc(msg) + '</p></div>'; }
+
+function render() {
+  const ev = site.event;
+  document.title = ev.name;
+  setAccent(ev.brand_colour);
+  const where = [ev.venue_name, ev.location].filter(Boolean).join(', ');
+  const hasRooms = site.rooms.length > 0;
+
+  document.getElementById('app').innerHTML =
+    (preview ? '<div class="preview-bar">Preview only. Guests can\'t see this page until you switch it on in <a href="/event-site?id=' + preview.eventId + '">Guest site settings</a>.</div>' : '') +
+    '<header class="hero">' + (ev.cover_image_url ? '<img src="' + esc(ev.cover_image_url) + '" alt="">' : '') +
+      '<div class="wrap">' + (TYPES[ev.event_type] ? '<div class="hero-type">' + TYPES[ev.event_type] + '</div>' : '') +
+      '<h1>' + esc(ev.name) + '</h1><div class="hero-meta">' +
+      (ev.start_date ? '<span>' + IC.cal + esc(fmtRange(ev.start_date, ev.end_date)) + '</span>' : '') +
+      (where ? '<span>' + IC.pin + esc(where) + '</span>' : '') + '</div></div></header>' +
+    '<nav class="tabs"><div class="wrap">' +
+      '<a class="tab" href="#info" data-tab="info">Event info</a>' +
+      (hasRooms ? '<a class="tab" href="#rooms" data-tab="rooms">Rooms</a>' : '') +
+      '<a class="tab" href="#rsvp" data-tab="rsvp">RSVP</a></div></nav>' +
+    '<main class="wrap">' +
+      '<section id="info">' + infoHtml(ev, where, hasRooms) + '</section>' +
+      (hasRooms ? '<section id="rooms"></section>' : '') +
+      '<section id="rsvp"></section>' +
+    '</main>' +
+    '<footer>Event page powered by <a href="https://octevent.com" target="_blank" rel="noopener">Octevent</a></footer>';
+
+  renderRooms();
+  renderRsvp();
+  showTab();
+}
+
+function infoHtml(ev, where, hasRooms) {
+  const guest = me();
+  const cta = guest.attending === true && hasRooms && !guest.roomId
+    ? '<a class="btn btn-accent btn-block" href="#rooms">Choose your room</a>'
+    : guest.attending !== undefined ? '<a class="btn btn-ghost btn-block" href="#rsvp">View your RSVP</a>'
+    : '<a class="btn btn-accent btn-block" href="#rsvp">RSVP now</a>';
+  return '<div class="info-grid"><div>' +
+      '<h2>Welcome</h2>' +
+      (ev.description ? '<div class="prose">' + esc(ev.description) + '</div>' : '<p class="prose">More details coming soon.</p>') +
+      (ev.schedule ? '<div class="schedule"><h3>Schedule</h3><div class="prose">' + esc(ev.schedule) + '</div></div>' : '') +
+    '</div><div><div class="side-card">' +
+      (ev.start_date ? '<h3>When</h3><p>' + esc(fmtRange(ev.start_date, ev.end_date)) + '</p>' : '') +
+      (where ? '<h3>Where</h3><p>' + esc(where) + '</p>' : '') +
+      cta + '</div></div></div>';
+}
+
+// ── ROOMS ──
+function renderRooms() {
+  const el = document.getElementById('rooms');
+  if (!el) return;
+  const guest = me();
+  const free = site.rooms.filter(r => r.available).length;
+  el.innerHTML = '<h2>Choose your room</h2><p class="lead">' +
+    (free ? free + ' of ' + site.rooms.length + ' rooms still available. Prices are for the whole stay.' : 'All rooms have now been reserved.') + '</p>' +
+    (guest.roomId ? '<div class="notice notice-ok">You\'ve reserved <strong>' + esc((site.rooms.find(r => r.id === guest.roomId) || {}).name || 'a room') + '</strong>. The organiser will be in touch about payment.</div>' : '') +
+    (guest.attending !== true && !guest.roomId ? '<div class="notice notice-info">Please <a href="#rsvp">RSVP</a> first, then come back here to reserve your room.</div>' : '') +
+    '<div class="rooms">' + site.rooms.map((r, i) => {
+      const mine = guest.roomId === r.id;
+      const photos = r.photos || [];
+      const gallery = photos.length
+        ? '<div class="slides" data-i="' + i + '">' + photos.map(p => '<img src="' + esc(p) + '" alt="' + esc(r.name) + '" loading="lazy">').join('') + '</div>' +
+          (photos.length > 1 ? '<button class="g-btn g-prev" aria-label="Previous photo" onclick="slide(' + i + ',-1)">' + IC.left + '</button>' +
+            '<button class="g-btn g-next" aria-label="Next photo" onclick="slide(' + i + ',1)">' + IC.right + '</button>' +
+            '<div class="dots" id="dots-' + i + '">' + photos.map((_, j) => '<span class="dot' + (j ? '' : ' on') + '"></span>').join('') + '</div>' : '')
+        : '<div class="no-photo">' + IC.img + '</div>';
+      const flag = mine ? '<span class="flag mine">Your room</span>' : !r.available ? '<span class="flag">Reserved</span>' : '';
+      const btn = mine ? '<button class="btn btn-ghost btn-block" disabled>Reserved for you</button>'
+        : !r.available ? '<button class="btn btn-ghost btn-block" disabled>Already reserved</button>'
+        : guest.roomId ? '<button class="btn btn-ghost btn-block" disabled>You already have a room</button>'
+        : '<button class="btn btn-accent btn-block" onclick="openReserve(' + i + ')">Reserve this room</button>';
+      return '<div class="room' + (mine ? ' mine' : '') + '"><div class="gallery">' + flag + gallery + '</div>' +
+        '<div class="room-body"><div class="room-top"><div class="room-name">' + esc(r.name) + '</div>' +
+        '<div class="room-price">' + fmtEuro(r.price) + '<small>whole stay</small></div></div>' +
+        '<div class="facts"><span>' + IC.person + 'Sleeps ' + esc(r.sleeps) + '</span>' + (r.bed_type ? '<span>' + IC.bed + esc(r.bed_type) + '</span>' : '') + '</div>' +
+        (r.description ? '<div class="room-desc">' + esc(r.description) + '</div>' : '') + btn + '</div></div>';
+    }).join('') + '</div>';
+
+  el.querySelectorAll('.slides').forEach(s => s.addEventListener('scroll', () => {
+    const n = Math.round(s.scrollLeft / s.clientWidth);
+    const dots = document.getElementById('dots-' + s.dataset.i);
+    if (dots) dots.querySelectorAll('.dot').forEach((d, j) => d.classList.toggle('on', j === n));
+  }, { passive: true }));
+}
+function slide(i, dir) {
+  const s = document.querySelector('.slides[data-i="' + i + '"]');
+  const n = Math.round(s.scrollLeft / s.clientWidth) + dir;
+  const max = s.children.length - 1;
+  s.scrollTo({ left: s.clientWidth * (n < 0 ? max : n > max ? 0 : n), behavior: 'smooth' });
+}
+
+function openReserve(i) {
+  reserving = site.rooms[i];
+  document.getElementById('rm-title').textContent = 'Reserve ' + reserving.name;
+  document.getElementById('rm-text').textContent = fmtEuro(reserving.price) + ' for the whole stay. Reserving holds the room for you; the organiser will be in touch about payment.';
+  document.getElementById('rm-email').value = me().email || '';
+  document.getElementById('rm-error').style.display = 'none';
+  document.getElementById('reserve-modal').classList.add('open');
+}
+function closeReserve() { document.getElementById('reserve-modal').classList.remove('open'); }
+
+async function confirmReserve() {
+  const err = document.getElementById('rm-error');
+  const showErr = m => { err.textContent = m; err.style.display = 'block'; };
+  if (preview) return showErr('This is a preview. Switch the guest site on to take reservations.');
+  const email = document.getElementById('rm-email').value.trim();
+  if (!/^\S+@\S+\.\S+$/.test(email)) return showErr('Please enter the email address you RSVP\'d with.');
+  const btn = document.getElementById('rm-btn'); btn.disabled = true; btn.textContent = 'Reserving...';
+  const { error } = await sb.rpc('reserve_room', { p_slug: slug, p_room_id: reserving.id, p_email: email });
+  btn.disabled = false; btn.textContent = 'Reserve';
+  if (error) {
+    showErr(cleanError(error));
+    if (/taken/i.test(error.message)) refresh();
+    return;
+  }
+  saveMe({ email: email.toLowerCase(), attending: true, roomId: reserving.id });
+  closeReserve();
+  await refresh();
+  window.scrollTo({ top: document.querySelector('.tabs').offsetTop, behavior: 'smooth' });
+}
+function cleanError(error) {
+  const m = (error && error.message) || '';
+  if (/RSVP before/i.test(m)) return 'We couldn\'t find a "yes" RSVP for that email. Please RSVP first (or check the spelling).';
+  if (/already have a room/i.test(m)) return 'You already have a room reserved. Contact the organiser if you\'d like to change it.';
+  if (/taken/i.test(m)) return 'Sorry, someone has just reserved that room. Please choose another.';
+  if (/not found/i.test(m)) return 'This event page is no longer taking reservations.';
+  return 'Something went wrong. Please try again.';
+}
+async function refresh() {
+  const { data } = await sb.rpc('get_guest_site', { p_slug: slug });
+  if (data) { site = data; renderRooms(); document.getElementById('info').innerHTML = infoHtml(site.event, [site.event.venue_name, site.event.location].filter(Boolean).join(', '), site.rooms.length > 0); }
+}
+
+// ── RSVP ──
+function renderRsvp(forceForm) {
+  const el = document.getElementById('rsvp');
+  const guest = me();
+  if (guest.attending !== undefined && !forceForm) {
+    const hasRooms = site.rooms.length > 0;
+    el.innerHTML = '<div class="form-card done">' + IC.check +
+      (guest.attending
+        ? '<h3>You\'re coming, ' + esc(guest.first_name || '') + '!</h3><p>Thanks for your RSVP. ' + (hasRooms && !guest.roomId ? 'Next, choose the room you\'d like.' : guest.roomId ? 'Your room is reserved.' : 'See you there.') + '</p>'
+        : '<h3>Thanks for letting us know</h3><p>Sorry you can\'t make it. You can change your answer any time.</p>') +
+      '<div class="btns">' + (guest.attending && hasRooms && !guest.roomId ? '<a class="btn btn-accent" href="#rooms">Choose your room</a>' : '') +
+      '<button class="btn btn-ghost" onclick="renderRsvp(true)">Change my RSVP</button></div></div>';
+    return;
+  }
+  const qs = site.event.rsvp_questions || [];
+  el.innerHTML = '<h2>RSVP</h2><p class="lead">Let us know if you can come' + (site.rooms.length ? ', then choose your room.' : '.') + '</p>' +
+    '<div class="form-card"><div class="notice notice-error" id="rsvp-error" style="display:none"></div>' +
+    '<div class="row2"><div class="field"><label for="g-first">First name <span class="req">*</span></label><input class="input" id="g-first" autocomplete="given-name" value="' + esc(guest.first_name || '') + '"></div>' +
+    '<div class="field"><label for="g-last">Last name</label><input class="input" id="g-last" autocomplete="family-name" value="' + esc(guest.last_name || '') + '"></div></div>' +
+    '<div class="field"><label for="g-email">Email <span class="req">*</span></label><input class="input" type="email" id="g-email" autocomplete="email" value="' + esc(guest.email || '') + '"></div>' +
+    '<div class="field"><span class="lbl">Can you come? <span class="req">*</span></span><div class="choice">' +
+      '<label><input type="radio" name="attending" value="yes"' + (guest.attending === true ? ' checked' : '') + '>Yes, I\'ll be there</label>' +
+      '<label><input type="radio" name="attending" value="no"' + (guest.attending === false ? ' checked' : '') + '>Sorry, I can\'t</label></div></div>' +
+    '<div class="attending-only' + (guest.attending === false ? ' hidden' : '') + '" id="attending-only">' +
+      '<div class="field"><label for="g-diet">Dietary requirements</label><input class="input" id="g-diet" placeholder="e.g. vegetarian, nut allergy"></div>' +
+      '<div class="field"><label for="g-access">Accessibility needs</label><input class="input" id="g-access" placeholder="Anything we should know?"></div>' +
+      qs.map((q, i) => {
+        const req = q.required ? ' <span class="req">*</span>' : '';
+        if (q.type === 'choice' && (q.options || []).length) {
+          return '<div class="field"><span class="lbl">' + esc(q.label) + req + '</span><div class="choice">' +
+            q.options.map(o => '<label><input type="radio" name="q' + i + '" value="' + esc(o) + '">' + esc(o) + '</label>').join('') + '</div></div>';
+        }
+        return '<div class="field"><label for="q' + i + '">' + esc(q.label) + req + '</label><input class="input" id="q' + i + '"></div>';
+      }).join('') +
+    '</div>' +
+    '<button class="btn btn-accent btn-block" id="rsvp-btn" onclick="submitRsvp()">Send RSVP</button></div>';
+
+  el.querySelectorAll('input[name=attending]').forEach(r => r.addEventListener('change', e =>
+    document.getElementById('attending-only').classList.toggle('hidden', e.target.value === 'no')));
+}
+
+async function submitRsvp() {
+  const err = document.getElementById('rsvp-error');
+  const showErr = m => { err.textContent = m; err.style.display = 'block'; err.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  err.style.display = 'none';
+  const first = document.getElementById('g-first').value.trim();
+  const last = document.getElementById('g-last').value.trim();
+  const email = document.getElementById('g-email').value.trim();
+  const att = document.querySelector('input[name=attending]:checked');
+  if (!first) return showErr('Please enter your first name.');
+  if (!/^\S+@\S+\.\S+$/.test(email)) return showErr('Please enter a valid email address.');
+  if (!att) return showErr('Please let us know if you can come.');
+  const attending = att.value === 'yes';
+
+  const answers = {};
+  if (attending) {
+    const qs = site.event.rsvp_questions || [];
+    for (let i = 0; i < qs.length; i++) {
+      const q = qs[i];
+      let v = '';
+      if (q.type === 'choice' && (q.options || []).length) { const c = document.querySelector('input[name=q' + i + ']:checked'); v = c ? c.value : ''; }
+      else v = document.getElementById('q' + i).value.trim();
+      if (q.required && !v) return showErr('Please answer: ' + q.label);
+      if (v) answers[q.label] = v;
+    }
+  }
+  if (preview) return showErr('This is a preview. Switch the guest site on to accept RSVPs.');
+
+  const btn = document.getElementById('rsvp-btn'); btn.disabled = true; btn.textContent = 'Sending...';
+  const { error } = await sb.rpc('submit_rsvp', {
+    p_slug: slug, p_first_name: first, p_last_name: last, p_email: email, p_attending: attending,
+    p_dietary: attending ? (document.getElementById('g-diet').value.trim() || null) : null,
+    p_accessibility: attending ? (document.getElementById('g-access').value.trim() || null) : null,
+    p_answers: answers
+  });
+  btn.disabled = false; btn.textContent = 'Send RSVP';
+  if (error) return showErr(/not found/i.test(error.message) ? 'This event page is no longer taking RSVPs.' : 'Something went wrong. Please try again.');
+
+  const prev = me();
+  const sameGuest = prev.email === email.toLowerCase();
+  saveMe({ first_name: first, last_name: last, email: email.toLowerCase(), attending, roomId: attending && sameGuest ? prev.roomId : null });
+  if (site.rooms.length) await refresh();
+  renderRsvp();
+  document.getElementById('rsvp').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── TABS ──
+function showTab() {
+  let tab = (location.hash || '#info').slice(1);
+  if (!document.getElementById(tab) || !['info', 'rooms', 'rsvp'].includes(tab)) tab = 'info';
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('active', s.id === tab));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+}
+// in-page links (#info, #rooms, #rsvp) switch tabs without jumping under the sticky bar
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  history.pushState(null, '', a.getAttribute('href'));
+  showTab();
+  const tabs = document.querySelector('.tabs');
+  if (tabs && window.scrollY > tabs.offsetTop) window.scrollTo({ top: tabs.offsetTop, behavior: 'smooth' });
+});
+window.addEventListener('popstate', showTab);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReserve(); });
+
+load();
+</script>
+</body>
+</html>
