@@ -241,12 +241,12 @@ function render() {
       (where ? '<span>' + IC.pin + esc(where) + '</span>' : '') + '</div></div></header>' +
     '<nav class="tabs"><div class="wrap">' +
       '<a class="tab" href="#info" data-tab="info">Event info</a>' +
-      (hasRooms ? '<a class="tab" href="#rooms" data-tab="rooms">Rooms</a>' : '') +
-      '<a class="tab" href="#rsvp" data-tab="rsvp">RSVP</a></div></nav>' +
+      '<a class="tab" href="#rsvp" data-tab="rsvp">RSVP</a>' +
+      (hasRooms ? '<a class="tab" href="#rooms" data-tab="rooms">Rooms</a>' : '') + '</div></nav>' +
     '<main class="wrap">' +
       '<section id="info">' + infoHtml(ev, where, hasRooms) + '</section>' +
-      (hasRooms ? '<section id="rooms"></section>' : '') +
       '<section id="rsvp"></section>' +
+      (hasRooms ? '<section id="rooms"></section>' : '') +
     '</main>' +
     '<footer>Event page powered by <a href="https://octevent.com" target="_blank" rel="noopener">Octevent</a></footer>';
 
@@ -446,7 +446,7 @@ async function submitRsvp() {
 // ── TABS ──
 function showTab() {
   let tab = (location.hash || '#info').slice(1);
-  if (!document.getElementById(tab) || !['info', 'rooms', 'rsvp'].includes(tab)) tab = 'info';
+  if (!document.getElementById(tab) || !['info', 'rsvp', 'rooms'].includes(tab)) tab = 'info';
   document.querySelectorAll('section').forEach(s => s.classList.toggle('active', s.id === tab));
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
 }
